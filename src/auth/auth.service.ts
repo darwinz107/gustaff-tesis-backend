@@ -6,26 +6,27 @@ import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { Response } from 'express';
+import { InjectRepository } from '@nestjs/typeorm';
 
 @Injectable()
 export class AuthService {
 
-  constructor(@Injectable(User) private readonly userRepository:Repository<User>,
+  constructor(@InjectRepository(User) private readonly userRepository:Repository<User>,
  private readonly jwtService:JwtService,
 ){}
 
-  createToken(createAuthDto: CreateAuthDto,response:Response) {
+  async createToken(createAuthDto: CreateAuthDto,response:Response) {
     
     const login = await this.userRepository.findOne({where:{email:createAuthDto.email}});
 
     if(!login){
-    return NotFoundException("Usuario no valido");
+    return new NotFoundException("Usuario no valido");
     }
 
-    const validatePassword = bcrypt.compare(createAuthDto.password,login.password);
+    const validatePassword = await bcrypt.compare(createAuthDto.password,login.password);
 
-    if(validatePassword ==false){
-       return NotFoundException("Contraseña incorrecta");
+    if(validatePassword == false){
+       return new NotFoundException("Contraseña incorrecta");
     }
 
     const token = this.jwtService.sign({id:login.id,rol:login.rolId.id},{secret:process.env.SECRET||"messi"});
@@ -37,7 +38,7 @@ export class AuthService {
       maxAge:3600*1000
     });
 
-    return {msj:"Bienvenido"};
+    return {msj:"Bienvenido",access:true};
   }
 
   findAll() {

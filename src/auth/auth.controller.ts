@@ -8,9 +8,9 @@ import { Response } from 'express';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @Post()
+  @Post('login')
   create(@Body() createAuthDto: CreateAuthDto,@Res({passthrough:true}) response:Response) {
-    return this.authService.create(createAuthDto,response);
+    return this.authService.createToken(createAuthDto,response);
   }
 
   @Get()
