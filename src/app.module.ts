@@ -19,7 +19,7 @@ import { RolesModule } from './roles/roles.module';
       database: process.env.db,
       entities: [],
       autoLoadEntities:true,
-      synchronize: false,
+      synchronize: true,
   }),UsersModule, AuthModule,RolesModule],
   controllers: [AppController],
   providers: [AppService],

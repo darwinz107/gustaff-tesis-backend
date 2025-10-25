@@ -37,7 +37,7 @@ export class UsersService {
     const createUser = this.userRepository.create(createUserDto);
     createUser.rolId = rol;
     await this.userRepository.save(createUser);
-    return 'Usuario creado!';
+    return {msj:'Usuario creado!'};
     } catch (error) {
       return Error(error);
     }

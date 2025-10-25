@@ -1,11 +1,43 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateAuthDto } from './dto/create-auth.dto';
 import { UpdateAuthDto } from './dto/update-auth.dto';
+import { User } from 'src/users/entities/user.entity';
+import { Repository } from 'typeorm';
+import * as bcrypt from 'bcrypt';
+import { JwtService } from '@nestjs/jwt';
+import { Response } from 'express';
 
 @Injectable()
 export class AuthService {
-  create(createAuthDto: CreateAuthDto) {
-    return 'This action adds a new auth';
+
+  constructor(@Injectable(User) private readonly userRepository:Repository<User>,
+ private readonly jwtService:JwtService,
+){}
+
+  createToken(createAuthDto: CreateAuthDto,response:Response) {
+    
+    const login = await this.userRepository.findOne({where:{email:createAuthDto.email}});
+
+    if(!login){
+    return NotFoundException("Usuario no valido");
+    }
+
+    const validatePassword = bcrypt.compare(createAuthDto.password,login.password);
+
+    if(validatePassword ==false){
+       return NotFoundException("Contraseña incorrecta");
+    }
+
+    const token = this.jwtService.sign({id:login.id,rol:login.rolId.id},{secret:process.env.SECRET||"messi"});
+
+    response.cookie("token",token,{
+      httpOnly:true,
+      secure:true,
+      sameSite:'none',
+      maxAge:3600*1000
+    });
+
+    return {msj:"Bienvenido"};
   }
 
   findAll() {
