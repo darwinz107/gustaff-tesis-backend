@@ -29,7 +29,7 @@ export class AuthService {
        return new NotFoundException("Contraseña incorrecta");
     }
 
-    const token = this.jwtService.sign({id:login.id,rol:login.rolId.id},{secret:process.env.SECRET||"messi"});
+    const token = this.jwtService.sign({id:login.id,rol:login.rolId.id});
 
     response.cookie("token",token,{
       httpOnly:true,
@@ -39,6 +39,19 @@ export class AuthService {
     });
 
     return {msj:"Bienvenido",access:true};
+  }
+
+  async logout(response:Response){
+  
+    response.clearCookie("token",{
+      httpOnly:true,
+      secure:true,
+      sameSite:'none'
+    });
+
+    response.json({
+      msj:"Sesion terminada"
+    });
   }
 
   findAll() {

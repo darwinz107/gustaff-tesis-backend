@@ -1,8 +1,10 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Res } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Res, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateAuthDto } from './dto/create-auth.dto';
 import { UpdateAuthDto } from './dto/update-auth.dto';
 import { Response } from 'express';
+import { Rol } from './rol/rol.decorator';
+import { AuthGuard } from './auth/auth.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -32,4 +34,18 @@ export class AuthController {
   remove(@Param('id') id: string) {
     return this.authService.remove(+id);
   }
+
+  @Rol(['admin'])
+  @UseGuards(AuthGuard)
+  @Get('rol')
+  validateRol(){
+    return {isRol:true};
+  }
+
+  @Get('logout')
+  logout(@Res() response:Response){
+    return this.authService.logout(response);
+  }  
+  
+
 }

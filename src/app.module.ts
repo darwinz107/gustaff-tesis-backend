@@ -6,10 +6,15 @@ import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { RolesModule } from './roles/roles.module';
+import { JwtModule } from '@nestjs/jwt';
 
 @Module({
   imports: [ConfigModule.forRoot({
     isGlobal:true
+  }),JwtModule.register({
+    global:true,
+    secret:process.env.SECRET || "messi",
+    signOptions:{expiresIn:'1h'}
   }),TypeOrmModule.forRoot({
      type: 'mysql',
       host: 'localhost',
