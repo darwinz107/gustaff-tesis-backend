@@ -17,18 +17,20 @@ export class AuthService {
 
   async createToken(createAuthDto: CreateAuthDto,response:Response) {
     
-    const login = await this.userRepository.findOne({where:{email:createAuthDto.email}});
+    const login = await this.userRepository.findOne({where:{email:createAuthDto.email},relations:['rolId']});
 
     if(!login){
+      
     return new NotFoundException("Usuario no valido");
     }
 
     const validatePassword = await bcrypt.compare(createAuthDto.password,login.password);
-
+  
     if(validatePassword == false){
        return new NotFoundException("Contraseña incorrecta");
     }
 
+    console.log("login",login);
     const token = this.jwtService.sign({id:login.id,rol:login.rolId.id});
 
     response.cookie("token",token,{
