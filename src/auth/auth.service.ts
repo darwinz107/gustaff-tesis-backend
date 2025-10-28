@@ -51,7 +51,7 @@ export class AuthService {
       sameSite:'none'
     });
 
-    response.json({
+    response.send({
       msj:"Sesion terminada"
     });
   }

@@ -37,12 +37,12 @@ export class AuthController {
 
   @Rol(['admin'])
   @UseGuards(AuthGuard)
-  @Get('rol')
+  @Get('validate/rol')
   validateRol(){
     return {isRol:true};
   }
 
-  @Get('logout')
+  @Get('logout/token')
   logout(@Res() response:Response){
     return this.authService.logout(response);
   }  
