@@ -7,6 +7,7 @@ import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { RolesModule } from './roles/roles.module';
 import { JwtModule } from '@nestjs/jwt';
+import { OrdenDeTrabajoModule } from './orden-de-trabajo/orden-de-trabajo.module';
 
 @Module({
   imports: [ConfigModule.forRoot({
@@ -25,7 +26,7 @@ import { JwtModule } from '@nestjs/jwt';
       entities: [],
       autoLoadEntities:true,
       synchronize: true,
-  }),UsersModule, AuthModule,RolesModule],
+  }),UsersModule, AuthModule,RolesModule, OrdenDeTrabajoModule],
   controllers: [AppController],
   providers: [AppService],
 })
