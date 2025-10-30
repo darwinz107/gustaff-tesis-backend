@@ -6,6 +6,8 @@ import { Area } from './entities/area.entity';
 import { Repository } from 'typeorm';
 import { Codigo } from './entities/codigo.entity';
 import { Maquina } from './entities/maquina.entity';
+import { CreateAreaDto } from './dto/create-area.dto';
+import { CreateMaquinaDto } from './dto/create-maquina.dto';
 
 @Injectable()
 export class OrdenDeTrabajoService {
@@ -14,25 +16,67 @@ export class OrdenDeTrabajoService {
               @InjectRepository(Codigo) private readonly codigoRepository:Repository<Codigo>,
               @InjectRepository(Maquina) private readonly maquinaRepository:Repository<Maquina>,){}
 
- async crearArea(area:string) {
-    
-    const newArea = this.areaRepository.create({nombre:area});
+ async crearArea(createAreaDto:CreateAreaDto) {
+
+  
+  
+  if(!createAreaDto.area || !createAreaDto.cod){
+   return {msj:"No se permite valores vacios"};
+  }
+
+    const newArea = this.areaRepository.create({nombre:createAreaDto.area,cod:createAreaDto.cod});
    await this.areaRepository.save(newArea);
    
     return 'This action adds a new crearArea';
   }
 
-  async createMaquina(area:string,maquina:string){
+  async createMaquina(createMaquinaDto:CreateMaquinaDto) {
  
-    if(!area){
-     return {msj:"Asigne una area a la maquina"}
+    if(!createMaquinaDto.area){
+     return {msj:"Asigne una area a la maquina"};
     }
 
-    
+    if(!createMaquinaDto.maquina){
+     return {msj:"Ingrese una maquina"};
+    }
+
+    const searchArea = await this.areaRepository.findOne({where:{
+      nombre:createMaquinaDto.area
+    }});
+
+    if(!searchArea){
+      return {msj:"No existe esa area, digite una existente"}
+    }
+
+    const searchCodigo = await this.codigoRepository.find({where:{
+     area:{id:searchArea.id}
+    }});
+
+    const newCod = searchArea.cod +`-${searchCodigo.length +1}`;
+
+    const nuevoCodigo = await this.codigoRepository.create({cod:newCod,area:{id:searchArea.id}});
+    await this.codigoRepository.save(nuevoCodigo);
+
+    const nuevaMaquina = await this.maquinaRepository.create({nombre:createMaquinaDto.maquina,codigo:{id:nuevoCodigo.id}});
+    await this.maquinaRepository.save(nuevaMaquina);
+
+    return {msj:"Maquina creada!"}
   }
 
-  findAll() {
-    return `This action returns all ordenDeTrabajo`;
+  async findAll() {
+
+    const areas = await this.areaRepository.find({select:['nombre']});
+    return areas;
+  }
+
+  async findAllCodbyArea(area:string) {
+   const searchCodigos = await this.codigoRepository.find({
+    where:{
+      area:{nombre:area}
+    },
+    select:['cod']
+   });
+    return searchCodigos;
   }
 
   findOne(id: number) {

@@ -2,19 +2,32 @@ import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/commo
 import { OrdenDeTrabajoService } from './orden-de-trabajo.service';
 import { CreateOrdenDeTrabajoDto } from './dto/create-orden-de-trabajo.dto';
 import { UpdateOrdenDeTrabajoDto } from './dto/update-orden-de-trabajo.dto';
+import { create } from 'domain';
+import { CreateAreaDto } from './dto/create-area.dto';
+import { CreateMaquinaDto } from './dto/create-maquina.dto';
 
 @Controller('orden-de-trabajo')
 export class OrdenDeTrabajoController {
   constructor(private readonly ordenDeTrabajoService: OrdenDeTrabajoService) {}
 
-  @Post()
-  create(@Body() area: string) {
-    return this.ordenDeTrabajoService.crearArea(area);
+  @Post("create/area")
+  createArea(@Body() createAreaDto:CreateAreaDto) {
+    return this.ordenDeTrabajoService.crearArea(createAreaDto);
+  }
+
+  @Post("create/maquina")
+  createMaquina(@Body() createMaquinaDto:CreateMaquinaDto){
+    return this.ordenDeTrabajoService.createMaquina(createMaquinaDto);
   }
 
   @Get()
   findAll() {
     return this.ordenDeTrabajoService.findAll();
+  }
+
+  @Post('all/codigos')
+  findAllCodbyArea(area:string) {
+    return this.ordenDeTrabajoService.findAllCodbyArea(area);
   }
 
   @Get(':id')

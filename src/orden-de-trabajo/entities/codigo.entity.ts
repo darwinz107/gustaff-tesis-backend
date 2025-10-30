@@ -1,4 +1,4 @@
-import { Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { Area } from "./area.entity";
 import { Maquina } from "./maquina.entity";
 
@@ -9,6 +9,7 @@ export class Codigo{
    @Column()
    cod:string;
    @ManyToOne(()=>Area,(area)=>area.codigo)
+   @JoinColumn()
    area:Area;
 
    @OneToMany(()=>Maquina,(maquina)=>maquina.codigo)
