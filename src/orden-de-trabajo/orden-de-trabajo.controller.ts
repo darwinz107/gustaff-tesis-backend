@@ -5,6 +5,7 @@ import { UpdateOrdenDeTrabajoDto } from './dto/update-orden-de-trabajo.dto';
 import { create } from 'domain';
 import { CreateAreaDto } from './dto/create-area.dto';
 import { CreateMaquinaDto } from './dto/create-maquina.dto';
+import { AreaDto } from './dto/area.dto';
 
 @Controller('orden-de-trabajo')
 export class OrdenDeTrabajoController {
@@ -26,8 +27,13 @@ export class OrdenDeTrabajoController {
   }
 
   @Post('all/codigos')
-  findAllCodbyArea(area:string) {
-    return this.ordenDeTrabajoService.findAllCodbyArea(area);
+  findAllCodbyArea(@Body() areaDto:AreaDto) {
+    return this.ordenDeTrabajoService.findAllCodbyArea(areaDto);
+  }
+
+  @Post('all/maquinas')
+  findAllMaquinasByCod(codigo:string) {
+    return this.ordenDeTrabajoService.findAllMaquinasByCod(codigo);
   }
 
   @Get(':id')

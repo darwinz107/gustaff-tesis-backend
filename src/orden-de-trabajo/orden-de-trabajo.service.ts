@@ -8,6 +8,7 @@ import { Codigo } from './entities/codigo.entity';
 import { Maquina } from './entities/maquina.entity';
 import { CreateAreaDto } from './dto/create-area.dto';
 import { CreateMaquinaDto } from './dto/create-maquina.dto';
+import { AreaDto } from './dto/area.dto';
 
 @Injectable()
 export class OrdenDeTrabajoService {
@@ -69,15 +70,38 @@ export class OrdenDeTrabajoService {
     return areas;
   }
 
-  async findAllCodbyArea(area:string) {
+  async findAllCodbyArea(areaDto:AreaDto) {
+    
+    const areaid = await this.areaRepository.findOne({where:{nombre:areaDto.area}});
+    
+    if(!areaid){
+      return {msj:"No existe esa area"}
+    }
+
    const searchCodigos = await this.codigoRepository.find({
     where:{
-      area:{nombre:area}
+      area:{id:areaid.id}
     },
     select:['cod']
    });
+   
     return searchCodigos;
+    
   }
+
+  async findAllMaquinasByCod(codigo:string) {
+
+    const codid = await this.codigoRepository.findOne({where:{cod:codigo}});
+    if(!codid){
+      return {msj:"No existe ese codigo"}
+    }
+    const searchMaquinas = await this.maquinaRepository.find({
+      where:{
+        codigo:{id:codid.id}
+  },select:['nombre']});
+
+    return searchMaquinas;
+}
 
   findOne(id: number) {
     return `This action returns a #${id} ordenDeTrabajo`;
