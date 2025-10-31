@@ -9,6 +9,7 @@ import { Maquina } from './entities/maquina.entity';
 import { CreateAreaDto } from './dto/create-area.dto';
 import { CreateMaquinaDto } from './dto/create-maquina.dto';
 import { AreaDto } from './dto/area.dto';
+import { MaquinaDto } from './dto/maquina.dto';
 
 @Injectable()
 export class OrdenDeTrabajoService {
@@ -89,17 +90,21 @@ export class OrdenDeTrabajoService {
     
   }
 
-  async findAllMaquinasByCod(codigo:string) {
-
-    const codid = await this.codigoRepository.findOne({where:{cod:codigo}});
+  async findAllMaquinasByCod(maquinaDto:MaquinaDto) {
+   
+    const codid = await this.codigoRepository.findOne({where:{cod:maquinaDto.codigo}});
     if(!codid){
       return {msj:"No existe ese codigo"}
     }
+
+    console.log(maquinaDto.codigo,codid);
+
     const searchMaquinas = await this.maquinaRepository.find({
       where:{
         codigo:{id:codid.id}
   },select:['nombre']});
 
+  
     return searchMaquinas;
 }
 

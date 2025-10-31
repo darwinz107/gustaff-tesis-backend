@@ -6,6 +6,7 @@ import { create } from 'domain';
 import { CreateAreaDto } from './dto/create-area.dto';
 import { CreateMaquinaDto } from './dto/create-maquina.dto';
 import { AreaDto } from './dto/area.dto';
+import { MaquinaDto } from './dto/maquina.dto';
 
 @Controller('orden-de-trabajo')
 export class OrdenDeTrabajoController {
@@ -32,8 +33,8 @@ export class OrdenDeTrabajoController {
   }
 
   @Post('all/maquinas')
-  findAllMaquinasByCod(codigo:string) {
-    return this.ordenDeTrabajoService.findAllMaquinasByCod(codigo);
+  findAllMaquinasByCod(@Body() maquinaDto:MaquinaDto) {
+    return this.ordenDeTrabajoService.findAllMaquinasByCod(maquinaDto);
   }
 
   @Get(':id')
