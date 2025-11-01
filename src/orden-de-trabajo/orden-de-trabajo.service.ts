@@ -29,7 +29,7 @@ export class OrdenDeTrabajoService {
     const newArea = this.areaRepository.create({nombre:createAreaDto.area,cod:createAreaDto.cod});
    await this.areaRepository.save(newArea);
    
-    return 'This action adds a new crearArea';
+    return {msj:'This action adds a new crearArea'};
   }
 
   async createMaquina(createMaquinaDto:CreateMaquinaDto) {
