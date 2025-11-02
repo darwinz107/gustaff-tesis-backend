@@ -10,13 +10,16 @@ import { CreateAreaDto } from './dto/create-area.dto';
 import { CreateMaquinaDto } from './dto/create-maquina.dto';
 import { AreaDto } from './dto/area.dto';
 import { MaquinaDto } from './dto/maquina.dto';
+import { CreateCategoriaDto } from './dto/create-categoria.dto';
+import { Categoria } from './entities/categoria.entity';
 
 @Injectable()
 export class OrdenDeTrabajoService {
 
   constructor(@InjectRepository(Area) private readonly areaRepository:Repository<Area>,
               @InjectRepository(Codigo) private readonly codigoRepository:Repository<Codigo>,
-              @InjectRepository(Maquina) private readonly maquinaRepository:Repository<Maquina>,){}
+              @InjectRepository(Maquina) private readonly maquinaRepository:Repository<Maquina>,
+              @InjectRepository(Categoria) private readonly categoriaRepository:Repository<Categoria>,){}
 
  async crearArea(createAreaDto:CreateAreaDto) {
 
@@ -106,6 +109,18 @@ export class OrdenDeTrabajoService {
 
   
     return searchMaquinas;
+}
+
+async createCategoria(createCategoriaDto:CreateCategoriaDto) {
+ 
+  const newCategoria = await this.categoriaRepository.create(createCategoriaDto);
+  await this.categoriaRepository.save(newCategoria);
+  return {msj:"Categoria creada!"}
+}
+
+async findAllCategorias() {
+  const categorias = await this.categoriaRepository.find();
+  return categorias;
 }
 
   findOne(id: number) {
