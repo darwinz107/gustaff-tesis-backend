@@ -1,4 +1,5 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { User } from "src/users/entities/user.entity";
+import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 
 
 @Entity('solicitud_orden')
@@ -27,5 +28,10 @@ export class SolicitudOrden {
     TipoTrabajo:string;
     @Column()
     DescripcionTrabajo:string;
-
+    @ManyToOne(()=>User,(user)=>user.solicitanteId)
+    userSolicitante:User;
+    @ManyToOne(()=>User,(user)=>user.receptorId)
+    userReceptor:User;
+    @ManyToOne(()=>User,(user)=>user.tecnicoId)
+    userTecnico:User; 
 }

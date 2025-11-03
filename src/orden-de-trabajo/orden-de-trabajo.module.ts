@@ -8,9 +8,12 @@ import { Maquina } from './entities/maquina.entity';
 import { SolicitudOrden } from './entities/solicitudOrden.entity';
 import { Categoria } from './entities/categoria.entity';
 
+
+
 @Module({
-  imports:[TypeOrmModule.forFeature([Area,Codigo,Maquina,SolicitudOrden,Categoria])],
+  imports:[TypeOrmModule.forFeature([Area,Codigo,Maquina,Categoria,SolicitudOrden])],
   controllers: [OrdenDeTrabajoController],
   providers: [OrdenDeTrabajoService],
+  
 })
 export class OrdenDeTrabajoModule {}

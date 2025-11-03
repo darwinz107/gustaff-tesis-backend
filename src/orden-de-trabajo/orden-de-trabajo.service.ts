@@ -12,6 +12,9 @@ import { AreaDto } from './dto/area.dto';
 import { MaquinaDto } from './dto/maquina.dto';
 import { CreateCategoriaDto } from './dto/create-categoria.dto';
 import { Categoria } from './entities/categoria.entity';
+import { User } from 'src/users/entities/user.entity';
+import { CreateSolicitudOrdenDto } from './dto/create-solicitud-orden.dto';
+import { SolicitudOrden } from './entities/solicitudOrden.entity';
 
 @Injectable()
 export class OrdenDeTrabajoService {
@@ -19,7 +22,9 @@ export class OrdenDeTrabajoService {
   constructor(@InjectRepository(Area) private readonly areaRepository:Repository<Area>,
               @InjectRepository(Codigo) private readonly codigoRepository:Repository<Codigo>,
               @InjectRepository(Maquina) private readonly maquinaRepository:Repository<Maquina>,
-              @InjectRepository(Categoria) private readonly categoriaRepository:Repository<Categoria>,){}
+              @InjectRepository(Categoria) private readonly categoriaRepository:Repository<Categoria>,
+              @InjectRepository(User) private readonly userRepository:Repository<User>,
+              @InjectRepository(SolicitudOrden) private readonly solicitudOrdenRepository:Repository<SolicitudOrden>,){}
 
  async crearArea(createAreaDto:CreateAreaDto) {
 
@@ -119,8 +124,21 @@ async createCategoria(createCategoriaDto:CreateCategoriaDto) {
 }
 
 async findAllCategorias() {
-  const categorias = await this.categoriaRepository.find();
+  const categorias = await this.categoriaRepository.find({select:['nombre']});
   return categorias;
+}
+
+async findAllUsers(){
+ 
+  const users = await this.userRepository.find({select:['name']});
+  return users;
+}
+
+async registerSolicitudOrden(createSolicitudOrdenDto:CreateSolicitudOrdenDto){
+   
+  const nuevaSolicitud = await this.solicitudOrdenRepository.create(createSolicitudOrdenDto);
+  await this.solicitudOrdenRepository.save(nuevaSolicitud);
+  return {msj:"Solicitud de orden creada!"};
 }
 
   findOne(id: number) {

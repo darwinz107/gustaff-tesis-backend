@@ -8,6 +8,7 @@ import { CreateMaquinaDto } from './dto/create-maquina.dto';
 import { AreaDto } from './dto/area.dto';
 import { MaquinaDto } from './dto/maquina.dto';
 import { CreateCategoriaDto } from './dto/create-categoria.dto';
+import { CreateSolicitudOrdenDto } from './dto/create-solicitud-orden.dto';
 
 @Controller('orden-de-trabajo')
 export class OrdenDeTrabajoController {
@@ -46,6 +47,16 @@ export class OrdenDeTrabajoController {
   @Get('categorias/all')
   findAllCategorias(){
     return this.ordenDeTrabajoService.findAllCategorias();
+  }
+
+  @Get('users/all')
+  findAllUsers(){
+    return this.ordenDeTrabajoService.findAllUsers();
+  }
+
+  @Post('create/solicitud-orden')
+  registerSolicituOrden(@Body() createSolicitudOrdenDto:CreateSolicitudOrdenDto){
+    return this.ordenDeTrabajoService.registerSolicitudOrden(createSolicitudOrdenDto);
   }
 
   @Get(':id')
