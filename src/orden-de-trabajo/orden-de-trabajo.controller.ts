@@ -8,6 +8,8 @@ import { CreateMaquinaDto } from './dto/create-maquina.dto';
 import { AreaDto } from './dto/area.dto';
 import { MaquinaDto } from './dto/maquina.dto';
 import { CreateCategoriaDto } from './dto/create-categoria.dto';
+import { CreateSolicitudOrdenDto } from './dto/create-solicitud-orden.dto';
+import { CreateTipoTrabajoDto } from './dto/create-tipo-trabajo.dto';
 
 @Controller('orden-de-trabajo')
 export class OrdenDeTrabajoController {
@@ -46,6 +48,22 @@ export class OrdenDeTrabajoController {
   @Get('categorias/all')
   findAllCategorias(){
     return this.ordenDeTrabajoService.findAllCategorias();
+  }
+
+
+  @Post('create/solicitud-orden')
+  registerSolicituOrden(@Body() createSolicitudOrdenDto:CreateSolicitudOrdenDto){
+    return this.ordenDeTrabajoService.registerSolicitudOrden(createSolicitudOrdenDto);
+  }
+
+  @Post('create/tipo-trabajo')
+  registerTipoTrabajo(@Body() createTipoTrabajoDto:CreateTipoTrabajoDto){
+    return this.ordenDeTrabajoService.registerTipoTrabajo(createTipoTrabajoDto);
+  }
+
+  @Get('all/tipo-trabajo/:categoria')
+  getAllTipoTrabajoByCategoria(@Param('categoria') categoria:string){
+    return this.ordenDeTrabajoService.getAllTipoTrabajoByCategoria(categoria);
   }
 
   @Get(':id')

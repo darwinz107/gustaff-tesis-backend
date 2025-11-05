@@ -35,14 +35,11 @@ constructor(private reflector:Reflector,
       if(!validate){
         return true;
       }
+      console.log(validate.rolName);
+      const validateRol = rol.includes(validate.rolName);
+      console.log(validateRol);
 
-      const validateRol = rol.includes(validate.rol.rol);
-
-      if(validateRol){
-        return false;
-      }
-
-      return true;
+      return validateRol;
       
     } catch (error) {
       console.error(error);

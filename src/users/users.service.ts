@@ -44,6 +44,12 @@ export class UsersService {
     
   }
 
+  async findAllUsers(){
+   
+    const users = await this.userRepository.find({select:['name']});
+    return users;
+  }
+
   findAll() {
     return `This action returns all users`;
   }

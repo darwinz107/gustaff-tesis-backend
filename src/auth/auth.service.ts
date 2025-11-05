@@ -31,7 +31,7 @@ export class AuthService {
     }
 
     console.log("login",login);
-    const token = this.jwtService.sign({id:login.id,rol:login.rolId.id});
+    const token = this.jwtService.sign({id:login.id,rol:login.rolId.id,rolName:login.rolId.role});
 
     response.cookie("token",token,{
       httpOnly:true,
