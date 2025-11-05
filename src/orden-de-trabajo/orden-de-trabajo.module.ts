@@ -7,11 +7,12 @@ import { Codigo } from './entities/codigo.entity';
 import { Maquina } from './entities/maquina.entity';
 import { SolicitudOrden } from './entities/solicitudOrden.entity';
 import { Categoria } from './entities/categoria.entity';
+import { TipoTrabajo } from './entities/tipoTrabajo.entity';
 
 
 
 @Module({
-  imports:[TypeOrmModule.forFeature([Area,Codigo,Maquina,Categoria,SolicitudOrden])],
+  imports:[TypeOrmModule.forFeature([Area,Codigo,Maquina,Categoria,SolicitudOrden,TipoTrabajo])],
   controllers: [OrdenDeTrabajoController],
   providers: [OrdenDeTrabajoService],
   

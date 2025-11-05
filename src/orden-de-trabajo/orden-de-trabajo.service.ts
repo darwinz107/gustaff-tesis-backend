@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateOrdenDeTrabajoDto } from './dto/create-orden-de-trabajo.dto';
 import { UpdateOrdenDeTrabajoDto } from './dto/update-orden-de-trabajo.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -12,134 +12,158 @@ import { AreaDto } from './dto/area.dto';
 import { MaquinaDto } from './dto/maquina.dto';
 import { CreateCategoriaDto } from './dto/create-categoria.dto';
 import { Categoria } from './entities/categoria.entity';
-import { User } from 'src/users/entities/user.entity';
+
 import { CreateSolicitudOrdenDto } from './dto/create-solicitud-orden.dto';
 import { SolicitudOrden } from './entities/solicitudOrden.entity';
+import { CreateTipoTrabajoDto } from './dto/create-tipo-trabajo.dto';
+import { TipoTrabajo } from './entities/tipoTrabajo.entity';
 
 @Injectable()
 export class OrdenDeTrabajoService {
 
-  constructor(@InjectRepository(Area) private readonly areaRepository:Repository<Area>,
-              @InjectRepository(Codigo) private readonly codigoRepository:Repository<Codigo>,
-              @InjectRepository(Maquina) private readonly maquinaRepository:Repository<Maquina>,
-              @InjectRepository(Categoria) private readonly categoriaRepository:Repository<Categoria>,
-              @InjectRepository(User) private readonly userRepository:Repository<User>,
-              @InjectRepository(SolicitudOrden) private readonly solicitudOrdenRepository:Repository<SolicitudOrden>,){}
+  constructor(@InjectRepository(Area) private readonly areaRepository: Repository<Area>,
+    @InjectRepository(Codigo) private readonly codigoRepository: Repository<Codigo>,
+    @InjectRepository(Maquina) private readonly maquinaRepository: Repository<Maquina>,
+    @InjectRepository(Categoria) private readonly categoriaRepository: Repository<Categoria>,
 
- async crearArea(createAreaDto:CreateAreaDto) {
+    @InjectRepository(SolicitudOrden) private readonly solicitudOrdenRepository: Repository<SolicitudOrden>,
+    @InjectRepository(TipoTrabajo) private readonly tipoTrabajoRepository: Repository<TipoTrabajo>,) { }
 
-  
-  
-  if(!createAreaDto.area || !createAreaDto.cod){
-   return {msj:"No se permite valores vacios"};
+  async crearArea(createAreaDto: CreateAreaDto) {
+
+
+
+    if (!createAreaDto.area || !createAreaDto.cod) {
+      return { msj: "No se permite valores vacios" };
+    }
+
+    const newArea = this.areaRepository.create({ nombre: createAreaDto.area, cod: createAreaDto.cod });
+    await this.areaRepository.save(newArea);
+
+    return { msj: 'This action adds a new crearArea' };
   }
 
-    const newArea = this.areaRepository.create({nombre:createAreaDto.area,cod:createAreaDto.cod});
-   await this.areaRepository.save(newArea);
-   
-    return {msj:'This action adds a new crearArea'};
-  }
+  async createMaquina(createMaquinaDto: CreateMaquinaDto) {
 
-  async createMaquina(createMaquinaDto:CreateMaquinaDto) {
- 
-    if(!createMaquinaDto.area){
-     return {msj:"Asigne una area a la maquina"};
+    if (!createMaquinaDto.area) {
+      return { msj: "Asigne una area a la maquina" };
     }
 
-    if(!createMaquinaDto.maquina){
-     return {msj:"Ingrese una maquina"};
+    if (!createMaquinaDto.maquina) {
+      return { msj: "Ingrese una maquina" };
     }
 
-    const searchArea = await this.areaRepository.findOne({where:{
-      nombre:createMaquinaDto.area
-    }});
+    const searchArea = await this.areaRepository.findOne({
+      where: {
+        nombre: createMaquinaDto.area
+      }
+    });
 
-    if(!searchArea){
-      return {msj:"No existe esa area, digite una existente"}
+    if (!searchArea) {
+      return { msj: "No existe esa area, digite una existente" }
     }
 
-    const searchCodigo = await this.codigoRepository.find({where:{
-     area:{id:searchArea.id}
-    }});
+    const searchCodigo = await this.codigoRepository.find({
+      where: {
+        area: { id: searchArea.id }
+      }
+    });
 
-    const newCod = searchArea.cod +`-${searchCodigo.length +1}`;
+    const newCod = searchArea.cod + `-${searchCodigo.length + 1}`;
 
-    const nuevoCodigo = await this.codigoRepository.create({cod:newCod,area:{id:searchArea.id}});
+    const nuevoCodigo = await this.codigoRepository.create({ cod: newCod, area: { id: searchArea.id } });
     await this.codigoRepository.save(nuevoCodigo);
 
-    const nuevaMaquina = await this.maquinaRepository.create({nombre:createMaquinaDto.maquina,codigo:{id:nuevoCodigo.id}});
+    const nuevaMaquina = await this.maquinaRepository.create({ nombre: createMaquinaDto.maquina, codigo: { id: nuevoCodigo.id } });
     await this.maquinaRepository.save(nuevaMaquina);
 
-    return {msj:"Maquina creada!"}
+    return { msj: "Maquina creada!" }
   }
 
   async findAll() {
 
-    const areas = await this.areaRepository.find({select:['nombre']});
+    const areas = await this.areaRepository.find({ select: ['nombre'] });
     return areas;
   }
 
-  async findAllCodbyArea(areaDto:AreaDto) {
-    
-    const areaid = await this.areaRepository.findOne({where:{nombre:areaDto.area}});
-    
-    if(!areaid){
-      return {msj:"No existe esa area"}
+  async findAllCodbyArea(areaDto: AreaDto) {
+
+    const areaid = await this.areaRepository.findOne({ where: { nombre: areaDto.area } });
+
+    if (!areaid) {
+      return { msj: "No existe esa area" }
     }
 
-   const searchCodigos = await this.codigoRepository.find({
-    where:{
-      area:{id:areaid.id}
-    },
-    select:['cod']
-   });
-   
+    const searchCodigos = await this.codigoRepository.find({
+      where: {
+        area: { id: areaid.id }
+      },
+      select: ['cod']
+    });
+
     return searchCodigos;
-    
+
   }
 
-  async findAllMaquinasByCod(maquinaDto:MaquinaDto) {
-   
-    const codid = await this.codigoRepository.findOne({where:{cod:maquinaDto.codigo}});
-    if(!codid){
-      return {msj:"No existe ese codigo"}
+  async findAllMaquinasByCod(maquinaDto: MaquinaDto) {
+
+    const codid = await this.codigoRepository.findOne({ where: { cod: maquinaDto.codigo } });
+    if (!codid) {
+      return { msj: "No existe ese codigo" }
     }
 
-    console.log(maquinaDto.codigo,codid);
+    console.log(maquinaDto.codigo, codid);
 
     const searchMaquinas = await this.maquinaRepository.find({
-      where:{
-        codigo:{id:codid.id}
-  },select:['nombre']});
+      where: {
+        codigo: { id: codid.id }
+      }, select: ['nombre']
+    });
 
-  
+
     return searchMaquinas;
-}
+  }
 
-async createCategoria(createCategoriaDto:CreateCategoriaDto) {
- 
-  const newCategoria = await this.categoriaRepository.create(createCategoriaDto);
-  await this.categoriaRepository.save(newCategoria);
-  return {msj:"Categoria creada!"}
-}
+  async createCategoria(createCategoriaDto: CreateCategoriaDto) {
 
-async findAllCategorias() {
-  const categorias = await this.categoriaRepository.find({select:['nombre']});
-  return categorias;
-}
+    const newCategoria = await this.categoriaRepository.create(createCategoriaDto);
+    await this.categoriaRepository.save(newCategoria);
+    return { msj: "Categoria creada!" }
+  }
 
-async findAllUsers(){
- 
-  const users = await this.userRepository.find({select:['name']});
-  return users;
-}
+  async findAllCategorias() {
+    const categorias = await this.categoriaRepository.find({ select: ['nombre'] });
+    return categorias;
+  }
 
-async registerSolicitudOrden(createSolicitudOrdenDto:CreateSolicitudOrdenDto){
+  async registerTipoTrabajo(createTipoTrabajoDto:CreateTipoTrabajoDto){
    
-  const nuevaSolicitud = await this.solicitudOrdenRepository.create(createSolicitudOrdenDto);
-  await this.solicitudOrdenRepository.save(nuevaSolicitud);
-  return {msj:"Solicitud de orden creada!"};
-}
+    const categoria = await this.categoriaRepository.findOne({where:{nombre:createTipoTrabajoDto.categoria}});
+    if(!categoria){
+    return new NotFoundException("No se encontro una categoria");
+    }
+    
+    const newTipoTrabajo = await this.tipoTrabajoRepository.create({tipo:createTipoTrabajoDto.tipo,categoriaId:categoria});
+    await this.tipoTrabajoRepository.save(newTipoTrabajo);
+
+    return {msj:"Tipo de trabajo registrado!"}
+
+  }
+
+  async getAllTipoTrabajoByCategoria(categoria:string){
+         
+    const allTipoTrabajo = await this.tipoTrabajoRepository.find({where:{categoriaId:{nombre:categoria}},select:['tipo']});
+    return allTipoTrabajo;
+  }
+
+  async registerSolicitudOrden(createSolicitudOrdenDto: CreateSolicitudOrdenDto) {
+
+    const nuevaSolicitud = await this.solicitudOrdenRepository.create(createSolicitudOrdenDto);
+    await this.solicitudOrdenRepository.save(nuevaSolicitud);
+    return { msj: "Solicitud de orden creada!" };
+  }
+
+
 
   findOne(id: number) {
     return `This action returns a #${id} ordenDeTrabajo`;
