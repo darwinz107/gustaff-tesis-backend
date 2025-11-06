@@ -218,6 +218,35 @@ export class OrdenDeTrabajoService {
   return {msj:"No se pudo crear la solicitud"};
   }
 
+  async getSolicitudReciente(){
+    const solicitud = await this.solicitudOrdenRepository.createQueryBuilder('solicitud')
+    .innerJoin('solicitud.userSolicitante','userSolicitante')
+    .innerJoin('solicitud.userReceptor','userReceptor')
+    .leftJoin('solicitud.userTecnico','userTecnico')
+    .select([
+      'solicitud.fechaInicio',
+      'solicitud.fechaFinal',
+      'solicitud.HoraInicio',
+      'solicitud.HoraFinal',
+      'solicitud.Area',
+      'solicitud.Categoria',
+      'solicitud.TipoTrabajo',
+      'solicitud.Codigo',
+      'solicitud.Maquina',
+      'solicitud.DescripcionTrabajo',
+      'userSolicitante.name',
+      'userReceptor.name',
+      'userTecnico.name'
+    ])
+    .orderBy('solicitud.fechaInicio','DESC')
+    .getOne();
+    
+    if(solicitud){
+    return solicitud;
+    }
+    return new NotFoundException("No existen solicitudes");
+  }
+
 
 
   findOne(id: number) {
