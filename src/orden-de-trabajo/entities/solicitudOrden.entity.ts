@@ -7,7 +7,7 @@ export class SolicitudOrden {
     @PrimaryGeneratedColumn()
     id:number;
     @Column({type:'date'})
-    fechaInicio :Date;
+    fechaInicio:Date;
     @Column({type:'date'})
     fechaFinal:Date;
     @Column({type:'time'})
@@ -20,18 +20,18 @@ export class SolicitudOrden {
     Codigo:string;
     @Column()
     Maquina:string;
-    @Column()
+    @Column({nullable:true})
     EspecificacionMaquina:string;
     @Column()
     Categoria:string;
     @Column()
     TipoTrabajo:string;
-    @Column()
+    @Column({nullable:true})
     DescripcionTrabajo:string;
     @ManyToOne(()=>User,(user)=>user.solicitanteId)
     userSolicitante:User;
     @ManyToOne(()=>User,(user)=>user.receptorId)
     userReceptor:User;
-    @ManyToOne(()=>User,(user)=>user.tecnicoId)
-    userTecnico:User; 
+    @ManyToOne(()=>User,(user)=>user.tecnicoId,{nullable:true})
+    userTecnico:User|null; 
 }

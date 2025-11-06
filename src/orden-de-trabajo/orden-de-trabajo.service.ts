@@ -17,6 +17,8 @@ import { CreateSolicitudOrdenDto } from './dto/create-solicitud-orden.dto';
 import { SolicitudOrden } from './entities/solicitudOrden.entity';
 import { CreateTipoTrabajoDto } from './dto/create-tipo-trabajo.dto';
 import { TipoTrabajo } from './entities/tipoTrabajo.entity';
+import { User } from 'src/users/entities/user.entity';
+import { ExceptionsHandler } from '@nestjs/core/exceptions/exceptions-handler';
 
 @Injectable()
 export class OrdenDeTrabajoService {
@@ -27,7 +29,8 @@ export class OrdenDeTrabajoService {
     @InjectRepository(Categoria) private readonly categoriaRepository: Repository<Categoria>,
 
     @InjectRepository(SolicitudOrden) private readonly solicitudOrdenRepository: Repository<SolicitudOrden>,
-    @InjectRepository(TipoTrabajo) private readonly tipoTrabajoRepository: Repository<TipoTrabajo>,) { }
+    @InjectRepository(TipoTrabajo) private readonly tipoTrabajoRepository: Repository<TipoTrabajo>,
+    @InjectRepository(User) private readonly userRepository: Repository<User>,) { }
 
   async crearArea(createAreaDto: CreateAreaDto) {
 
@@ -157,10 +160,62 @@ export class OrdenDeTrabajoService {
   }
 
   async registerSolicitudOrden(createSolicitudOrdenDto: CreateSolicitudOrdenDto) {
+    console.log(createSolicitudOrdenDto.userTecnico);
+    const solicitante = await this.userRepository.findOne({where:{name:createSolicitudOrdenDto.userSolicitante},select:['id']});
+    const receptor = await this.userRepository.findOne({where:{name:createSolicitudOrdenDto.userReceptor},select:['id']});
+    const tecnico = await this.userRepository.findOne({where:{name:createSolicitudOrdenDto.userTecnico},select:['id']});
 
-    const nuevaSolicitud = await this.solicitudOrdenRepository.create(createSolicitudOrdenDto);
-    await this.solicitudOrdenRepository.save(nuevaSolicitud);
+    if(solicitante && receptor){
+
+        const nuevaSolicitud = 
+      { 
+        fechaInicio:createSolicitudOrdenDto.fechaInicio,
+        fechaFinal:createSolicitudOrdenDto.fechaFinal,
+        HoraInicio:createSolicitudOrdenDto.HoraInicio,
+        HoraFinal:createSolicitudOrdenDto.HoraFinal,     
+        Area:createSolicitudOrdenDto.Area,
+        Codigo:createSolicitudOrdenDto.Codigo,
+        Maquina:createSolicitudOrdenDto.Maquina,
+        EspecificacionMaquina:createSolicitudOrdenDto.EspecificacionMaquina,
+        Categoria:createSolicitudOrdenDto.Categoria,
+        TipoTrabajo:createSolicitudOrdenDto.TipoTrabajo,
+        DescripcionTrabajo:createSolicitudOrdenDto.DescripcionTrabajo,
+        userSolicitante:solicitante,
+        userReceptor:receptor,
+        userTecnico:null
+      };
+     
+    const crearSolicitud =  this.solicitudOrdenRepository.create(nuevaSolicitud);
+    await this.solicitudOrdenRepository.save(crearSolicitud);
+   
     return { msj: "Solicitud de orden creada!" };
+    }/*else{
+        const nuevaSolicitud = 
+      { 
+        fechaInicio:createSolicitudOrdenDto.fechaInicio,
+        fechaFinal:createSolicitudOrdenDto.fechaFinal,
+        HoraInicio:createSolicitudOrdenDto.HoraInicio,
+        HoraFinal:createSolicitudOrdenDto.HoraFinal,     
+        Area:createSolicitudOrdenDto.Area,
+        Codigo:createSolicitudOrdenDto.Codigo,
+        Maquina:createSolicitudOrdenDto.Maquina,
+        EspecificacionMaquina:createSolicitudOrdenDto.EspecificacionMaquina,
+        Categoria:createSolicitudOrdenDto.Categoria,
+        TipoTrabajo:createSolicitudOrdenDto.TipoTrabajo,
+        DescripcionTrabajo:createSolicitudOrdenDto.DescripcionTrabajo,
+        userSolicitante:solicitante,
+        userReceptor:receptor,
+       // userTecnico:null
+      };
+      const crearSolicitud = await this.solicitudOrdenRepository.create(nuevaSolicitud);
+    await this.solicitudOrdenRepository.save(crearSolicitud);
+    
+    return { msj: "Solicitud de orden creada!" };
+    }
+   */
+  
+    //await this.solicitudOrdenRepository.save(nuevaSolicitud);
+  return {msj:"No se pudo crear la solicitud"};
   }
 
 
