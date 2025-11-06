@@ -1,6 +1,7 @@
 import { Type } from "class-transformer";
 import { IsDate, IsEmpty, IsNotEmpty, IsNumber, IsString } from "class-validator";
 
+
 export class CreateSolicitudOrdenDto {
     @Type(()=> Date)
     @IsDate()
@@ -25,7 +26,7 @@ export class CreateSolicitudOrdenDto {
     @IsNotEmpty()
     @IsString()
     Maquina:string;
-    @IsNotEmpty()
+    @IsEmpty()
     @IsString()
     EspecificacionMaquina:string;
     @IsNotEmpty()
@@ -37,13 +38,14 @@ export class CreateSolicitudOrdenDto {
     @IsEmpty()
     @IsString()
     DescripcionTrabajo:string;
-    @IsNumber()
+    @IsString()
     @IsNotEmpty()
-    solicitanteId:number;
-    @IsNumber()
+    userSolicitante:string;
+    @IsString()
     @IsNotEmpty()
-    receptorId:number;
-    @IsNumber()
+    userReceptor:string;
+    @IsString()
     @IsEmpty()
-    tecnicoId:number;  
+    
+    userTecnico:string;  
 }

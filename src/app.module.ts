@@ -25,7 +25,7 @@ import { OrdenDeTrabajoModule } from './orden-de-trabajo/orden-de-trabajo.module
       database: process.env.db,
       entities: [],
       autoLoadEntities:true,
-      synchronize: false,
+      synchronize: true,
   }),UsersModule, AuthModule,RolesModule, OrdenDeTrabajoModule],
   controllers: [AppController],
   providers: [AppService],

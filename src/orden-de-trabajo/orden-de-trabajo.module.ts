@@ -8,11 +8,12 @@ import { Maquina } from './entities/maquina.entity';
 import { SolicitudOrden } from './entities/solicitudOrden.entity';
 import { Categoria } from './entities/categoria.entity';
 import { TipoTrabajo } from './entities/tipoTrabajo.entity';
+import { UsersModule } from 'src/users/users.module';
 
 
 
 @Module({
-  imports:[TypeOrmModule.forFeature([Area,Codigo,Maquina,Categoria,SolicitudOrden,TipoTrabajo])],
+  imports:[TypeOrmModule.forFeature([Area,Codigo,Maquina,Categoria,SolicitudOrden,TipoTrabajo]),UsersModule],
   controllers: [OrdenDeTrabajoController],
   providers: [OrdenDeTrabajoService],
   
