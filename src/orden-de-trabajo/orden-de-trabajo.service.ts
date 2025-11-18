@@ -139,7 +139,7 @@ export class OrdenDeTrabajoService {
     return categorias;
   }
 
-  async registerTipoTrabajo(createTipoTrabajoDto:CreateTipoTrabajoDto){
+  /*async registerTipoTrabajo(createTipoTrabajoDto:CreateTipoTrabajoDto){
    
     const categoria = await this.categoriaRepository.findOne({where:{nombre:createTipoTrabajoDto.categoria}});
     if(!categoria){
@@ -151,13 +151,13 @@ export class OrdenDeTrabajoService {
 
     return {msj:"Tipo de trabajo registrado!"}
 
-  }
+  }*/
 
-  async getAllTipoTrabajoByCategoria(categoria:string){
+  /*async getAllTipoTrabajoByCategoria(categoria:string){
          
     const allTipoTrabajo = await this.tipoTrabajoRepository.find({where:{categoriaId:{nombre:categoria}},select:['tipo']});
     return allTipoTrabajo;
-  }
+  }*/
 
   async registerSolicitudOrden(createSolicitudOrdenDto: CreateSolicitudOrdenDto) {
     console.log(createSolicitudOrdenDto.userTecnico);

@@ -56,7 +56,7 @@ export class OrdenDeTrabajoController {
     return this.ordenDeTrabajoService.registerSolicitudOrden(createSolicitudOrdenDto);
   }
 
-  @Post('create/tipo-trabajo')
+  /*@Post('create/tipo-trabajo')
   registerTipoTrabajo(@Body() createTipoTrabajoDto:CreateTipoTrabajoDto){
     return this.ordenDeTrabajoService.registerTipoTrabajo(createTipoTrabajoDto);
   }
@@ -64,7 +64,7 @@ export class OrdenDeTrabajoController {
   @Get('all/tipo-trabajo/:categoria')
   getAllTipoTrabajoByCategoria(@Param('categoria') categoria:string){
     return this.ordenDeTrabajoService.getAllTipoTrabajoByCategoria(categoria);
-  }
+  }*/
 
   @Get("last/solicitud")
   getSolicitudReciente(){

@@ -13,7 +13,7 @@ export class RolesService implements OnModuleInit{
   };
 
   async onModuleInit() {
-    const rolesDefault = ["admin","user"];
+    const rolesDefault = ["admin","user1","user2"];
 
     for(const rol of rolesDefault) {
       const exits = await this.roleRepository.findOne({where:{role:rol}});
