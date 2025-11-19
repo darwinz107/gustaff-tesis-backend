@@ -10,10 +10,10 @@ import { AuthGuard } from './auth/auth.guard';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
- /* @Post('login')
+  @Post('login')
   create(@Body() createAuthDto: CreateAuthDto,@Res({passthrough:true}) response:Response) {
     return this.authService.createToken(createAuthDto,response);
-  }*/
+  }
 
   @Get()
   findAll() {
@@ -35,12 +35,12 @@ export class AuthController {
     return this.authService.remove(+id);
   }
 
- /* @Rol(['admin'])
+  @Rol(['admin'])
   @UseGuards(AuthGuard)
   @Get('validate/rol')
   validateRol(){
     return {isRol:true};
-  }*/
+  }
 
   @Get('logout/token')
   logout(@Res() response:Response){

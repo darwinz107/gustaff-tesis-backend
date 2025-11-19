@@ -6,18 +6,20 @@ import { User } from './entities/user.entity';
 import { Repository } from 'typeorm';
 import { Role } from 'src/roles/entities/role.entity';
 import * as bcrypt from 'bcrypt';
+import { Cargo } from 'src/cargo/entities/cargo.entity';
 
 @Injectable()
 export class UsersService {
 
   constructor(@InjectRepository(User) private readonly userRepository:Repository<User>,
   @InjectRepository(Role) private readonly rolRepository:Repository<Role>,
+  @InjectRepository(Cargo) private readonly cargoRepository:Repository<Cargo>,
 ){}
 
-  /*async create(createUserDto: CreateUserDto) {
+  async create(createUserDto: CreateUserDto) {
     try {
       console.log("entro");
-      const rol = await this.rolRepository.findOne({where:{id:2}});
+      const cargo = await this.cargoRepository.findOne({where:{nombre:createUserDto.cargo}});
 
     const user = await this.userRepository.findOne({where:{email:createUserDto.email}});
 
@@ -25,8 +27,8 @@ export class UsersService {
     return Error("Correo ya registrado"); 
     }
 
-    if(!rol){
-    return new NotFoundException("rol");
+    if(!cargo){
+    return new NotFoundException("cargp");
     }
     
 
@@ -35,14 +37,14 @@ export class UsersService {
     createUserDto.password = passHashed;
  
     const createUser = this.userRepository.create(createUserDto);
-    createUser.rolId = rol;
+    createUser.infoCargo = cargo;
     await this.userRepository.save(createUser);
     return {msj:'Usuario creado!'};
     } catch (error) {
       return Error(error);
     }
     
-  }*/
+  }
 
   async findAllUsers(){
    

@@ -15,9 +15,9 @@ export class AuthService {
  private readonly jwtService:JwtService,
 ){}
 
- /* async createToken(createAuthDto: CreateAuthDto,response:Response) {
+  async createToken(createAuthDto: CreateAuthDto,response:Response) {
     
-    const login = await this.userRepository.findOne({where:{email:createAuthDto.email},relations:['rolId']});
+    const login = await this.userRepository.findOne({where:{email:createAuthDto.email},relations:['infoCargoId']});
 
     if(!login){
       
@@ -31,7 +31,7 @@ export class AuthService {
     }
 
     console.log("login",login);
-    const token = this.jwtService.sign({id:login.id,rol:login.rolId.id,rolName:login.rolId.role});
+    const token = this.jwtService.sign({id:login.id,cargoId:login.infoCargo.id,rolName:login.infoCargo.rol.id});
 
     response.cookie("token",token,{
       httpOnly:true,
@@ -41,7 +41,7 @@ export class AuthService {
     });
 
     return {msj:"Bienvenido",access:true};
-  }*/
+  }
 
   async logout(response:Response){
   

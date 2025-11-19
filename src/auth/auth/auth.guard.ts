@@ -24,13 +24,13 @@ constructor(private reflector:Reflector,
     
     try {
      
-      const token = request.cookies.token || request.headers.authorization?.split(' ')[1];
+      const token:{id:number,cargoId:number,rolName:string} = request.cookies.token || request.headers.authorization?.split(' ')[1];
 
       if(!token){
          return true;
       }
 
-      const validate = this.jwtService.verify(token);
+      const validate:{id:number,cargoId:number,rolName:string} = this.jwtService.verify(token);
 
       if(!validate){
         return true;
