@@ -1,3 +1,4 @@
+import { Cargo } from "src/cargo/entities/cargo.entity";
 import { User } from "src/users/entities/user.entity";
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 
@@ -7,6 +8,6 @@ export class Role {
     id:number;
     @Column()
     role:string;
-    @OneToMany(()=>User,(user)=>user.rolId)
-    user:User[]
+    @OneToMany(()=>Cargo,(cargo)=>cargo.rol)
+    infoRol:Cargo[]
 }

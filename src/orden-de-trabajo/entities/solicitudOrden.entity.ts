@@ -1,6 +1,9 @@
 import { SolicitudDeCompra } from "src/solicitud-de-compra/entities/solicitud-de-compra.entity";
 import { User } from "src/users/entities/user.entity";
 import { Column, Entity, ManyToOne, OneToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Area } from "./area.entity";
+import { Codigo } from "./codigo.entity";
+import { Maquina } from "./maquina.entity";
 
 
 @Entity('orden_trabajo')
@@ -17,12 +20,15 @@ export class SolicitudOrden {
     HoraInicio:Date;
     @Column({type:'time'})
     HoraFinal:Date;
-    @Column()
-    Area:string;
-    @Column()
-    Codigo:string;
-    @Column()
-    Maquina:string;
+    //@Column()
+    @ManyToOne(()=>Area,(area)=>area.infoArea)
+    area:Area;
+    //@Column()
+    @ManyToOne(()=>Codigo,(codigo)=>codigo.infoCodigo)
+    codigo:Codigo;
+    //@Column()
+    @ManyToOne(()=>Maquina,(maquina)=>maquina.infoMaquina)
+    maquina:Maquina;
     @Column({nullable:true})
     EspecificacionMaquina:string;
     @Column()

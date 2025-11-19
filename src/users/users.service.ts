@@ -14,7 +14,7 @@ export class UsersService {
   @InjectRepository(Role) private readonly rolRepository:Repository<Role>,
 ){}
 
-  async create(createUserDto: CreateUserDto) {
+  /*async create(createUserDto: CreateUserDto) {
     try {
       console.log("entro");
       const rol = await this.rolRepository.findOne({where:{id:2}});
@@ -42,7 +42,7 @@ export class UsersService {
       return Error(error);
     }
     
-  }
+  }*/
 
   async findAllUsers(){
    

@@ -1,19 +1,19 @@
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { Proovedores } from "./proovedores.entity";
 import { RegistroEntrada } from "./registroEntrada.entity";
+import { Inventario } from "./inventario.entity";
 
 @Entity()
 export class ItemsEntrada {
      @PrimaryGeneratedColumn()
      id:number;
-     @Column()
-     nombre:string;
+    @ManyToOne(()=>Inventario,(inventario)=>inventario.entrada)
+     infoItem:Inventario;
      @Column()
      stockMin:number;
      @Column()
      cantidad:number;
-     @Column()
-     costo:number;
+    
      @Column()
      bodega:string;
      @Column()

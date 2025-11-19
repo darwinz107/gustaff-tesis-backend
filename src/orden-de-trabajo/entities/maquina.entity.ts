@@ -1,5 +1,6 @@
-import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { Codigo } from "./codigo.entity";
+import { SolicitudOrden } from "./solicitudOrden.entity";
 
 @Entity()
 export class Maquina{
@@ -10,4 +11,6 @@ export class Maquina{
    @ManyToOne(()=>Codigo,(codigo)=>codigo.maquina)
    @JoinColumn()
    codigo:Codigo;
+   @OneToMany(()=>SolicitudOrden,(solicitudOrden)=>solicitudOrden.maquina)
+       infoMaquina:SolicitudOrden[] 
 }

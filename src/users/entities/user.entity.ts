@@ -1,3 +1,4 @@
+import { Cargo } from "src/cargo/entities/cargo.entity";
 import { SolicitudOrden } from "src/orden-de-trabajo/entities/solicitudOrden.entity";
 import { Role } from "src/roles/entities/role.entity";
 import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
@@ -16,9 +17,8 @@ cellphone:number;
 email:string;
 @Column()
 password:string;
-@ManyToOne(()=>Role,(role)=>role.user)
-@JoinColumn({name:"rolId"})
-rolId:Role;
+@ManyToOne(()=>Cargo,(cargo)=>cargo.user)
+infoCargo:Cargo;
 @OneToMany(()=>SolicitudOrden,(solicitudOrden)=>solicitudOrden.userSolicitante)
 solicitanteId:SolicitudOrden[];
 @OneToMany(()=>SolicitudOrden,(solicitudOrden)=>solicitudOrden.userReceptor)
