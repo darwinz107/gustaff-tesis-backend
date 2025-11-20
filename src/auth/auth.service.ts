@@ -15,6 +15,11 @@ export class AuthService {
  private readonly jwtService:JwtService,
 ){}
 
+
+  async createUser(params:type) {
+    
+  }
+
   async createToken(createAuthDto: CreateAuthDto,response:Response) {
     
     const login = await this.userRepository.findOne({where:{email:createAuthDto.email},relations:['rolId']});
