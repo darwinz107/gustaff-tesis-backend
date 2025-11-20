@@ -34,13 +34,13 @@ export class OrdenDeTrabajoService {
 
   async crearArea(createAreaDto: CreateAreaDto) {
 
+   
 
-
-    if (!createAreaDto.area || !createAreaDto.cod) {
+    if (!createAreaDto.area) {
       return { msj: "No se permite valores vacios" };
     }
 
-    const newArea = this.areaRepository.create({ nombre: createAreaDto.area, cod: createAreaDto.cod });
+    const newArea = this.areaRepository.create({ nombre: createAreaDto.area});
     await this.areaRepository.save(newArea);
 
     return { msj: 'This action adds a new crearArea' };
@@ -66,13 +66,10 @@ export class OrdenDeTrabajoService {
       return { msj: "No existe esa area, digite una existente" }
     }
 
-    const searchCodigo = await this.codigoRepository.find({
-      where: {
-        area: { id: searchArea.id }
-      }
-    });
+    const maquinas = await this.maquinaRepository.find();
 
-    const newCod = searchArea.cod + `-${searchCodigo.length + 1}`;
+
+    const newCod = `GUFF-${createMaquinaDto.maquina.slice(0,2)}-${maquinas.length + 1}`;
 
     const nuevoCodigo = await this.codigoRepository.create({ cod: newCod, area: { id: searchArea.id } });
     await this.codigoRepository.save(nuevoCodigo);

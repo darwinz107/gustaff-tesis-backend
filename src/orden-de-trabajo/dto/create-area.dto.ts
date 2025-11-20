@@ -4,7 +4,5 @@ export class CreateAreaDto {
     @IsString()
     @IsNotEmpty()
     area:string;
-    @IsString()
-    @IsNotEmpty()
-    cod:string;
+    
 }
