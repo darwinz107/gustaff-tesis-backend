@@ -10,6 +10,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { OrdenDeTrabajoModule } from './orden-de-trabajo/orden-de-trabajo.module';
 import { SolicitudDeCompraModule } from './solicitud-de-compra/solicitud-de-compra.module';
 import { InventarioModule } from './inventario/inventario.module';
+import { ParametroModule } from './parametro/parametro.module';
 
 @Module({
   imports: [ConfigModule.forRoot({
@@ -28,7 +29,7 @@ import { InventarioModule } from './inventario/inventario.module';
       entities: [],
       autoLoadEntities:true,
       synchronize: true,
-  }),UsersModule, AuthModule,RolesModule, OrdenDeTrabajoModule, SolicitudDeCompraModule, InventarioModule],
+  }),UsersModule, AuthModule,RolesModule, OrdenDeTrabajoModule, SolicitudDeCompraModule, InventarioModule, ParametroModule],
   controllers: [AppController],
   providers: [AppService],
 })

@@ -2,21 +2,21 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateOrdenDeTrabajoDto } from './dto/create-orden-de-trabajo.dto';
 import { UpdateOrdenDeTrabajoDto } from './dto/update-orden-de-trabajo.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Area } from './entities/area.entity';
+import { Area } from '../parametro/entities/area.entity';
 import { Repository } from 'typeorm';
-import { Codigo } from './entities/codigo.entity';
-import { Maquina } from './entities/maquina.entity';
-import { CreateAreaDto } from './dto/create-area.dto';
-import { CreateMaquinaDto } from './dto/create-maquina.dto';
-import { AreaDto } from './dto/area.dto';
-import { MaquinaDto } from './dto/maquina.dto';
-import { CreateCategoriaDto } from './dto/create-categoria.dto';
-import { Categoria } from './entities/categoria.entity';
+import { Codigo } from '../parametro/entities/codigo.entity';
+import { Maquina } from '../parametro/entities/maquina.entity';
+import { CreateAreaDto } from '../auth/dto/create-area.dto';
+import { CreateMaquinaDto } from '../auth/dto/create-maquina.dto';
+import { AreaDto } from '../auth/dto/area.dto';
+import { MaquinaDto } from '../auth/dto/maquina.dto';
+import { CreateCategoriaDto } from '../auth/dto/create-categoria.dto';
+import { Categoria } from '../parametro/entities/categoria.entity';
 
 import { CreateSolicitudOrdenDto } from './dto/create-solicitud-orden.dto';
 import { SolicitudOrden } from './entities/solicitudOrden.entity';
-import { CreateTipoTrabajoDto } from './dto/create-tipo-trabajo.dto';
-import { TipoTrabajo } from './entities/tipoTrabajo.entity';
+import { CreateTipoTrabajoDto } from '../auth/dto/create-tipo-trabajo.dto';
+import { TipoTrabajo } from '../parametro/entities/tipoTrabajo.entity';
 import { User } from 'src/users/entities/user.entity';
 import { ExceptionsHandler } from '@nestjs/core/exceptions/exceptions-handler';
 
@@ -32,112 +32,7 @@ export class OrdenDeTrabajoService {
     @InjectRepository(TipoTrabajo) private readonly tipoTrabajoRepository: Repository<TipoTrabajo>,
     @InjectRepository(User) private readonly userRepository: Repository<User>,) { }
 
-  async crearArea(createAreaDto: CreateAreaDto) {
 
-
-
-    if (!createAreaDto.area || !createAreaDto.cod) {
-      return { msj: "No se permite valores vacios" };
-    }
-
-    const newArea = this.areaRepository.create({ nombre: createAreaDto.area, cod: createAreaDto.cod });
-    await this.areaRepository.save(newArea);
-
-    return { msj: 'This action adds a new crearArea' };
-  }
-
-  async createMaquina(createMaquinaDto: CreateMaquinaDto) {
-
-    if (!createMaquinaDto.area) {
-      return { msj: "Asigne una area a la maquina" };
-    }
-
-    if (!createMaquinaDto.maquina) {
-      return { msj: "Ingrese una maquina" };
-    }
-
-    const searchArea = await this.areaRepository.findOne({
-      where: {
-        nombre: createMaquinaDto.area
-      }
-    });
-
-    if (!searchArea) {
-      return { msj: "No existe esa area, digite una existente" }
-    }
-
-    const searchCodigo = await this.codigoRepository.find({
-      where: {
-        area: { id: searchArea.id }
-      }
-    });
-
-    const newCod = searchArea.cod + `-${searchCodigo.length + 1}`;
-
-    const nuevoCodigo = await this.codigoRepository.create({ cod: newCod, area: { id: searchArea.id } });
-    await this.codigoRepository.save(nuevoCodigo);
-
-    const nuevaMaquina = await this.maquinaRepository.create({ nombre: createMaquinaDto.maquina, codigo: { id: nuevoCodigo.id } });
-    await this.maquinaRepository.save(nuevaMaquina);
-
-    return { msj: "Maquina creada!" }
-  }
-
-  async findAll() {
-
-    const areas = await this.areaRepository.find({ select: ['nombre'] });
-    return areas;
-  }
-
-  async findAllCodbyArea(areaDto: AreaDto) {
-
-    const areaid = await this.areaRepository.findOne({ where: { nombre: areaDto.area } });
-
-    if (!areaid) {
-      return { msj: "No existe esa area" }
-    }
-
-    const searchCodigos = await this.codigoRepository.find({
-      where: {
-        area: { id: areaid.id }
-      },
-      select: ['cod']
-    });
-
-    return searchCodigos;
-
-  }
-
-  async findAllMaquinasByCod(maquinaDto: MaquinaDto) {
-
-    const codid = await this.codigoRepository.findOne({ where: { cod: maquinaDto.codigo } });
-    if (!codid) {
-      return { msj: "No existe ese codigo" }
-    }
-
-    console.log(maquinaDto.codigo, codid);
-
-    const searchMaquinas = await this.maquinaRepository.find({
-      where: {
-        codigo: { id: codid.id }
-      }, select: ['nombre']
-    });
-
-
-    return searchMaquinas;
-  }
-
-  async createCategoria(createCategoriaDto: CreateCategoriaDto) {
-
-    const newCategoria = await this.categoriaRepository.create(createCategoriaDto);
-    await this.categoriaRepository.save(newCategoria);
-    return { msj: "Categoria creada!" }
-  }
-
-  async findAllCategorias() {
-    const categorias = await this.categoriaRepository.find({ select: ['nombre'] });
-    return categorias;
-  }
 
   /*async registerTipoTrabajo(createTipoTrabajoDto:CreateTipoTrabajoDto){
    
