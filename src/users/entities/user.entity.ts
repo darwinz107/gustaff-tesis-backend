@@ -17,9 +17,11 @@ cellphone:number;
 email:string;
 @Column()
 password:string;
+@Column({type:'date',nullable:true})
+fechaNac:Date;
 @ManyToOne(()=>Cargo,(cargo)=>cargo.relacionUser)
 @JoinColumn({name:"cargoId"})
-cargoId:Role;
+cargoId:Cargo;
 @OneToMany(()=>SolicitudOrden,(solicitudOrden)=>solicitudOrden.userSolicitante)
 solicitanteId:SolicitudOrden[];
 @OneToMany(()=>SolicitudOrden,(solicitudOrden)=>solicitudOrden.userReceptor)

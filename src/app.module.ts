@@ -11,6 +11,7 @@ import { OrdenDeTrabajoModule } from './orden-de-trabajo/orden-de-trabajo.module
 import { SolicitudDeCompraModule } from './solicitud-de-compra/solicitud-de-compra.module';
 import { InventarioModule } from './inventario/inventario.module';
 import { ParametroModule } from './parametro/parametro.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [ConfigModule.forRoot({
@@ -29,7 +30,7 @@ import { ParametroModule } from './parametro/parametro.module';
       entities: [],
       autoLoadEntities:true,
       synchronize: true,
-  }),UsersModule, AuthModule,RolesModule, OrdenDeTrabajoModule, SolicitudDeCompraModule, InventarioModule, ParametroModule],
+  }),UsersModule, AuthModule,RolesModule, OrdenDeTrabajoModule, SolicitudDeCompraModule, InventarioModule, ParametroModule, AdminModule],
   controllers: [AppController],
   providers: [AppService],
 })

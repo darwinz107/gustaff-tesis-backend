@@ -46,7 +46,7 @@ export class UsersService {
 
   async findAllUsers(){
    
-    const users = await this.userRepository.find({select:['name']});
+    const users = await this.userRepository.find({select:['name','cellphone','email','password','cargoId'],relations:['cargoId']});
     return users;
   }
 

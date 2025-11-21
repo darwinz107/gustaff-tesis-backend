@@ -6,16 +6,16 @@ import { Area } from '../parametro/entities/area.entity';
 import { Repository } from 'typeorm';
 import { Codigo } from '../parametro/entities/codigo.entity';
 import { Maquina } from '../parametro/entities/maquina.entity';
-import { CreateAreaDto } from '../auth/dto/create-area.dto';
-import { CreateMaquinaDto } from '../auth/dto/create-maquina.dto';
-import { AreaDto } from '../auth/dto/area.dto';
-import { MaquinaDto } from '../auth/dto/maquina.dto';
-import { CreateCategoriaDto } from '../auth/dto/create-categoria.dto';
+import { CreateAreaDto } from '../admin/dto/create-area.dto';
+import { CreateMaquinaDto } from '../admin/dto/create-maquina.dto';
+import { AreaDto } from '../admin/dto/area.dto';
+import { MaquinaDto } from '../admin/dto/maquina.dto';
+import { CreateCategoriaDto } from '../admin/dto/create-categoria.dto';
 import { Categoria } from '../parametro/entities/categoria.entity';
 
 import { CreateSolicitudOrdenDto } from './dto/create-solicitud-orden.dto';
 import { SolicitudOrden } from './entities/solicitudOrden.entity';
-import { CreateTipoTrabajoDto } from '../auth/dto/create-tipo-trabajo.dto';
+import { CreateTipoTrabajoDto } from '../admin/dto/create-tipo-trabajo.dto';
 import { TipoTrabajo } from '../parametro/entities/tipoTrabajo.entity';
 import { User } from 'src/users/entities/user.entity';
 import { ExceptionsHandler } from '@nestjs/core/exceptions/exceptions-handler';
@@ -23,13 +23,10 @@ import { ExceptionsHandler } from '@nestjs/core/exceptions/exceptions-handler';
 @Injectable()
 export class OrdenDeTrabajoService {
 
-  constructor(@InjectRepository(Area) private readonly areaRepository: Repository<Area>,
-    @InjectRepository(Codigo) private readonly codigoRepository: Repository<Codigo>,
-    @InjectRepository(Maquina) private readonly maquinaRepository: Repository<Maquina>,
-    @InjectRepository(Categoria) private readonly categoriaRepository: Repository<Categoria>,
+  constructor(
 
     @InjectRepository(SolicitudOrden) private readonly solicitudOrdenRepository: Repository<SolicitudOrden>,
-    @InjectRepository(TipoTrabajo) private readonly tipoTrabajoRepository: Repository<TipoTrabajo>,
+    
     @InjectRepository(User) private readonly userRepository: Repository<User>,) { }
 
 

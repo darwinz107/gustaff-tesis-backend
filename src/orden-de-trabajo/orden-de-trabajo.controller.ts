@@ -3,13 +3,13 @@ import { OrdenDeTrabajoService } from './orden-de-trabajo.service';
 import { CreateOrdenDeTrabajoDto } from './dto/create-orden-de-trabajo.dto';
 import { UpdateOrdenDeTrabajoDto } from './dto/update-orden-de-trabajo.dto';
 import { create } from 'domain';
-import { CreateAreaDto } from '../auth/dto/create-area.dto';
-import { CreateMaquinaDto } from '../auth/dto/create-maquina.dto';
-import { AreaDto } from '../auth/dto/area.dto';
-import { MaquinaDto } from '../auth/dto/maquina.dto';
-import { CreateCategoriaDto } from '../auth/dto/create-categoria.dto';
+import { CreateAreaDto } from '../admin/dto/create-area.dto';
+import { CreateMaquinaDto } from '../admin/dto/create-maquina.dto';
+import { AreaDto } from '../admin/dto/area.dto';
+import { MaquinaDto } from '../admin/dto/maquina.dto';
+import { CreateCategoriaDto } from '../admin/dto/create-categoria.dto';
 import { CreateSolicitudOrdenDto } from './dto/create-solicitud-orden.dto';
-import { CreateTipoTrabajoDto } from '../auth/dto/create-tipo-trabajo.dto';
+import { CreateTipoTrabajoDto } from '../admin/dto/create-tipo-trabajo.dto';
 
 @Controller('orden-de-trabajo')
 export class OrdenDeTrabajoController {
