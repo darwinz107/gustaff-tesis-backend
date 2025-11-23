@@ -5,6 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
 import { Repository } from 'typeorm';
 import { Role } from 'src/roles/entities/role.entity';
+import * as bcrypt from 'bcrypt';
 
 
 @Injectable()
@@ -46,7 +47,8 @@ export class UsersService {
 
   async findAllUsers(){
    
-    const users = await this.userRepository.find({select:['name','fechaNac','cellphone','email','password','cargoId'],relations:['cargoId']});
+    const users = await this.userRepository.find({select:['id','name','fechaNac','identification','cellphone','email','password','cargoId'],relations:['cargoId']});
+
     return users;
   }
 
@@ -54,15 +56,17 @@ export class UsersService {
     return `This action returns all users`;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
+  async findOne(id: number) {
+
+    const users = await this.userRepository.findOne({where:{id:id},select:['id','name','fechaNac','identification','cellphone','email','password','cargoId'],relations:['cargoId']});
+    
+    return users;
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
-  }
+
 
   remove(id: number) {
     return `This action removes a #${id} user`;
   }
 }
+

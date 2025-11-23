@@ -10,6 +10,7 @@ import { CreateMaquinaDto } from './dto/create-maquina.dto';
 import { CreateTipoTrabajoDto } from './dto/create-tipo-trabajo.dto';
 import { MaquinaDto } from './dto/maquina.dto';
 import { CreateUserDto } from 'src/users/dto/create-user.dto';
+import { UpdateUserDto } from 'src/users/dto/update-user.dto';
 
 @Controller('admin')
 export class AdminController {
@@ -80,9 +81,9 @@ export class AdminController {
     return this.adminService.findOne(+id);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateAdminDto: UpdateAdminDto) {
-    return this.adminService.update(+id, updateAdminDto);
+  @Patch('user/:id')
+  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+    return this.adminService.update(+id, updateUserDto);
   }
 
   @Delete(':id')

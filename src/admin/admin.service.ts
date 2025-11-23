@@ -21,6 +21,7 @@ import { CreateCategoriaDto } from './dto/create-categoria.dto';
 import { CreateMaquinaDto } from './dto/create-maquina.dto';
 import { CreateTipoTrabajoDto } from './dto/create-tipo-trabajo.dto';
 import { MaquinaDto } from './dto/maquina.dto';
+import { UpdateUserDto } from 'src/users/dto/update-user.dto';
 
 
 @Injectable()
@@ -216,13 +217,33 @@ export class AdminService implements OnModuleInit{
       return getCargos;
       }  
 
+      async update(id: number, updateUserDto: UpdateUserDto) {
+
+    const cargo = await this.cargoRepository.findOne({where:{id:updateUserDto.cargo}});    
+    if(!cargo){
+      return new NotFoundException("cargo");
+    }
+
+    const infoUpdate = {
+      name:updateUserDto.name,
+      fechaNac:updateUserDto.fechaNac,
+      identification:updateUserDto.identification,
+      cellphone:updateUserDto.cellphone,
+      email:updateUserDto.email,
+      password:updateUserDto.password,
+      cargoId:cargo
+    };
+
+    await this.userRepository.update(id,infoUpdate);
+
+    return {msj:`Se actualizo la informacion de ${updateUserDto.name}`};
+  }  
+
   findOne(id: number) {
     return `This action returns a #${id} admin`;
   }
 
-  update(id: number, updateAdminDto: UpdateAdminDto) {
-    return `This action updates a #${id} admin`;
-  }
+ 
 
   remove(id: number) {
     return `This action removes a #${id} admin`;
