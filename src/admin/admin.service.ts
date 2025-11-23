@@ -50,7 +50,7 @@ export class AdminService implements OnModuleInit{
   
     async createUser(createUserDto: CreateUserDto) {
       try {
-        console.log("entro");
+        
         const cargo = await this.cargoRepository.findOne({where:{id:createUserDto.cargo}});
   
       const user = await this.userRepository.findOne({where:{email:createUserDto.email}});

@@ -1,5 +1,5 @@
 import { Type } from "class-transformer";
-import { IsEmail, IsEmpty, IsNotEmpty, IsNumber, IsString, Length, MaxLength, MinLength } from "class-validator";
+import { IsDate, IsEmail, IsEmpty, IsNotEmpty, IsNumber, IsString, Length, MaxLength, MinLength } from "class-validator";
 import { Role } from "src/roles/entities/role.entity";
 
 export class CreateUserDto {
@@ -23,6 +23,7 @@ export class CreateUserDto {
     @MinLength(8)
     password:string;
     @Type(()=>Date)
+    @IsDate()
     @IsEmpty()
     fechaNac:Date;
     @IsNumber()
