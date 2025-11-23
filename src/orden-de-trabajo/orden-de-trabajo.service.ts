@@ -3,7 +3,7 @@ import { CreateOrdenDeTrabajoDto } from './dto/create-orden-de-trabajo.dto';
 import { UpdateOrdenDeTrabajoDto } from './dto/update-orden-de-trabajo.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Area } from '../parametro/entities/area.entity';
-import { Repository } from 'typeorm';
+import { Like, Repository } from 'typeorm';
 import { Codigo } from '../parametro/entities/codigo.entity';
 import { Maquina } from '../parametro/entities/maquina.entity';
 import { CreateAreaDto } from '../admin/dto/create-area.dto';
@@ -19,6 +19,7 @@ import { CreateTipoTrabajoDto } from '../admin/dto/create-tipo-trabajo.dto';
 import { TipoTrabajo } from '../parametro/entities/tipoTrabajo.entity';
 import { User } from 'src/users/entities/user.entity';
 import { ExceptionsHandler } from '@nestjs/core/exceptions/exceptions-handler';
+import { FiltrarOrdenDeTrabajoDto } from './dto/filtrar-orden-de-trabajo.dto';
 
 @Injectable()
 export class OrdenDeTrabajoService {
@@ -26,7 +27,7 @@ export class OrdenDeTrabajoService {
   constructor(
 
     @InjectRepository(SolicitudOrden) private readonly solicitudOrdenRepository: Repository<SolicitudOrden>,
-    
+
     @InjectRepository(User) private readonly userRepository: Repository<User>,) { }
 
 
@@ -53,34 +54,34 @@ export class OrdenDeTrabajoService {
 
   async registerSolicitudOrden(createSolicitudOrdenDto: CreateSolicitudOrdenDto) {
     console.log(createSolicitudOrdenDto.userTecnico);
-    const solicitante = await this.userRepository.findOne({where:{name:createSolicitudOrdenDto.userSolicitante},select:['id']});
-    const receptor = await this.userRepository.findOne({where:{name:createSolicitudOrdenDto.userReceptor},select:['id']});
-    const tecnico = await this.userRepository.findOne({where:{name:createSolicitudOrdenDto.userTecnico},select:['id']});
+    const solicitante = await this.userRepository.findOne({ where: { name: createSolicitudOrdenDto.userSolicitante }, select: ['id'] });
+    const receptor = await this.userRepository.findOne({ where: { name: createSolicitudOrdenDto.userReceptor }, select: ['id'] });
+    const tecnico = await this.userRepository.findOne({ where: { name: createSolicitudOrdenDto.userTecnico }, select: ['id'] });
 
-    if(solicitante && receptor){
+    if (solicitante && receptor) {
 
-        const nuevaSolicitud = 
-      { 
-        fechaInicio:createSolicitudOrdenDto.fechaInicio,
-        fechaFinal:createSolicitudOrdenDto.fechaFinal,
-        HoraInicio:createSolicitudOrdenDto.HoraInicio,
-        HoraFinal:createSolicitudOrdenDto.HoraFinal,     
-        Area:createSolicitudOrdenDto.Area,
-        Codigo:createSolicitudOrdenDto.Codigo,
-        Maquina:createSolicitudOrdenDto.Maquina,
-        EspecificacionMaquina:createSolicitudOrdenDto.EspecificacionMaquina,
-        Categoria:createSolicitudOrdenDto.Categoria,
-        TipoTrabajo:createSolicitudOrdenDto.TipoTrabajo,
-        DescripcionTrabajo:createSolicitudOrdenDto.DescripcionTrabajo,
-        userSolicitante:solicitante,
-        userReceptor:receptor,
-        userTecnico:null
+      const nuevaSolicitud =
+      {
+        fechaInicio: createSolicitudOrdenDto.fechaInicio,
+        fechaFinal: createSolicitudOrdenDto.fechaFinal,
+        HoraInicio: createSolicitudOrdenDto.HoraInicio,
+        HoraFinal: createSolicitudOrdenDto.HoraFinal,
+        Area: createSolicitudOrdenDto.Area,
+        Codigo: createSolicitudOrdenDto.Codigo,
+        Maquina: createSolicitudOrdenDto.Maquina,
+        EspecificacionMaquina: createSolicitudOrdenDto.EspecificacionMaquina,
+        Categoria: createSolicitudOrdenDto.Categoria,
+        TipoTrabajo: createSolicitudOrdenDto.TipoTrabajo,
+        DescripcionTrabajo: createSolicitudOrdenDto.DescripcionTrabajo,
+        userSolicitante: solicitante,
+        userReceptor: receptor,
+        userTecnico: null
       };
-     
-    const crearSolicitud =  this.solicitudOrdenRepository.create(nuevaSolicitud);
-    await this.solicitudOrdenRepository.save(crearSolicitud);
-   
-    return { msj: "Solicitud de orden creada!" };
+
+      const crearSolicitud = this.solicitudOrdenRepository.create(nuevaSolicitud);
+      await this.solicitudOrdenRepository.save(crearSolicitud);
+
+      return { msj: "Solicitud de orden creada!" };
     }/*else{
         const nuevaSolicitud = 
       { 
@@ -105,41 +106,46 @@ export class OrdenDeTrabajoService {
     return { msj: "Solicitud de orden creada!" };
     }
    */
-  
+
     //await this.solicitudOrdenRepository.save(nuevaSolicitud);
-  return {msj:"No se pudo crear la solicitud"};
+    return { msj: "No se pudo crear la solicitud" };
   }
 
-  async getSolicitudReciente(){
+  async getSolicitudReciente() {
     const solicitud = await this.solicitudOrdenRepository.createQueryBuilder('solicitud')
-    .innerJoin('solicitud.userSolicitante','userSolicitante')
-    .innerJoin('solicitud.userReceptor','userReceptor')
-    .leftJoin('solicitud.userTecnico','userTecnico')
-    .select([
-      'solicitud.fechaInicio',
-      'solicitud.fechaFinal',
-      'solicitud.HoraInicio',
-      'solicitud.HoraFinal',
-      'solicitud.Area',
-      'solicitud.Categoria',
-      'solicitud.TipoTrabajo',
-      'solicitud.Codigo',
-      'solicitud.Maquina',
-      'solicitud.DescripcionTrabajo',
-      'userSolicitante.name',
-      'userReceptor.name',
-      'userTecnico.name'
-    ])
-    .orderBy('solicitud.fechaInicio','DESC')
-    .getOne();
-    
-    if(solicitud){
-    return solicitud;
+      .innerJoin('solicitud.userSolicitante', 'userSolicitante')
+      .innerJoin('solicitud.userReceptor', 'userReceptor')
+      .leftJoin('solicitud.userTecnico', 'userTecnico')
+      .select([
+        'solicitud.fechaInicio',
+        'solicitud.fechaFinal',
+        'solicitud.HoraInicio',
+        'solicitud.HoraFinal',
+        'solicitud.Area',
+        'solicitud.Categoria',
+        'solicitud.TipoTrabajo',
+        'solicitud.Codigo',
+        'solicitud.Maquina',
+        'solicitud.DescripcionTrabajo',
+        'userSolicitante.name',
+        'userReceptor.name',
+        'userTecnico.name'
+      ])
+      .orderBy('solicitud.fechaInicio', 'DESC')
+      .getOne();
+
+    if (solicitud) {
+      return solicitud;
     }
     return new NotFoundException("No existen solicitudes");
   }
 
+  async filtrarOrdenDeTrabajo(filtrarOrdenDeTrabajoDto: FiltrarOrdenDeTrabajoDto) {
 
+    const ordenTrabajo = await this.solicitudOrdenRepository.find({ where: [{ userSolicitante: { name: Like(`${filtrarOrdenDeTrabajoDto.userSolicitante}%`) }, fechaInicio: filtrarOrdenDeTrabajoDto.fechaInicio }] });
+    return ordenTrabajo;
+
+  }
 
   findOne(id: number) {
     return `This action returns a #${id} ordenDeTrabajo`;

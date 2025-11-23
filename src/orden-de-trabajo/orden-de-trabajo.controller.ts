@@ -10,6 +10,7 @@ import { MaquinaDto } from '../admin/dto/maquina.dto';
 import { CreateCategoriaDto } from '../admin/dto/create-categoria.dto';
 import { CreateSolicitudOrdenDto } from './dto/create-solicitud-orden.dto';
 import { CreateTipoTrabajoDto } from '../admin/dto/create-tipo-trabajo.dto';
+import { FiltrarOrdenDeTrabajoDto } from './dto/filtrar-orden-de-trabajo.dto';
 
 @Controller('orden-de-trabajo')
 export class OrdenDeTrabajoController {
@@ -20,6 +21,11 @@ export class OrdenDeTrabajoController {
   @Post('create/solicitud-orden')
   registerSolicituOrden(@Body() createSolicitudOrdenDto:CreateSolicitudOrdenDto){
     return this.ordenDeTrabajoService.registerSolicitudOrden(createSolicitudOrdenDto);
+  }
+
+  @Post('filtrar/solicitud-orden')
+  filtrarOrdenDeTrabajo(@Body() filtrarOrdenDeTrabajoDto:FiltrarOrdenDeTrabajoDto){
+    return this.ordenDeTrabajoService.filtrarOrdenDeTrabajo(filtrarOrdenDeTrabajoDto);
   }
 
   /*@Post('create/tipo-trabajo')
