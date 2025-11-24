@@ -13,7 +13,7 @@ export class InventarioController {
   }
 
   @Post('filtrar')
-  filtrarInventario(@Body('item') item:string){
+  filtrarInventario(@Body('item') item: string){
     return this.inventarioService.filtrarInventario(item);
   }
 

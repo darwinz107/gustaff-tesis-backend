@@ -11,7 +11,7 @@ export class Inventario {
      stock:number;
      @Column()
      costo:number;
-     @Column()
-     estado:string;
+     @Column({type:'boolean'})
+     estado:boolean;
      
 }
