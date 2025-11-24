@@ -11,4 +11,6 @@ export class ItemsSolicitados{
     cantidad:number;
     @ManyToOne(()=>SolicitudDeCompra,(solicitudDeCompra)=>solicitudDeCompra.itemSolicitados)
     ordenCompra:SolicitudDeCompra;
+    @Column({type:'boolean'})
+    existencia:boolean;
 }

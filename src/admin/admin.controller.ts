@@ -81,6 +81,11 @@ export class AdminController {
     return this.adminService.findOne(+id);
   }
 
+  @Get('all/tipo-trabajo')
+  findAllTipoTrabajo(){
+    return this.adminService.findAllTipoTrabajo();
+  }
+
   @Patch('user/:id')
   update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
     return this.adminService.update(+id, updateUserDto);

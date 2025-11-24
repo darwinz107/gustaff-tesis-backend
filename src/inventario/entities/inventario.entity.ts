@@ -13,5 +13,5 @@ export class Inventario {
      costo:number;
      @Column()
      estado:string;
-
+     
 }

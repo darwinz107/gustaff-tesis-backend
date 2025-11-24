@@ -57,11 +57,14 @@ export class OrdenDeTrabajoService {
     const solicitante = await this.userRepository.findOne({ where: { name: createSolicitudOrdenDto.userSolicitante }, select: ['id'] });
     const receptor = await this.userRepository.findOne({ where: { name: createSolicitudOrdenDto.userReceptor }, select: ['id'] });
     const tecnico = await this.userRepository.findOne({ where: { name: createSolicitudOrdenDto.userTecnico }, select: ['id'] });
+    const lgtOrdenTrabajo = await this.solicitudOrdenRepository.count();
+    createSolicitudOrdenDto.NumOrden = 'OT-' + (lgtOrdenTrabajo + 1).toString().padStart(5, '0');
 
     if (solicitante && receptor) {
 
       const nuevaSolicitud =
       {
+        NumOrden: createSolicitudOrdenDto.NumOrden,
         fechaInicio: createSolicitudOrdenDto.fechaInicio,
         fechaFinal: createSolicitudOrdenDto.fechaFinal,
         HoraInicio: createSolicitudOrdenDto.HoraInicio,
@@ -75,7 +78,8 @@ export class OrdenDeTrabajoService {
         DescripcionTrabajo: createSolicitudOrdenDto.DescripcionTrabajo,
         userSolicitante: solicitante,
         userReceptor: receptor,
-        userTecnico: null
+        userTecnico: null,
+
       };
 
       const crearSolicitud = this.solicitudOrdenRepository.create(nuevaSolicitud);
@@ -117,6 +121,7 @@ export class OrdenDeTrabajoService {
       .innerJoin('solicitud.userReceptor', 'userReceptor')
       .leftJoin('solicitud.userTecnico', 'userTecnico')
       .select([
+        'solicitud.NumOrden',
         'solicitud.fechaInicio',
         'solicitud.fechaFinal',
         'solicitud.HoraInicio',
@@ -142,8 +147,22 @@ export class OrdenDeTrabajoService {
 
   async filtrarOrdenDeTrabajo(filtrarOrdenDeTrabajoDto: FiltrarOrdenDeTrabajoDto) {
 
-    const ordenTrabajo = await this.solicitudOrdenRepository.find({ where: [{ userSolicitante: { name: Like(`${filtrarOrdenDeTrabajoDto.userSolicitante}%`) }, fechaInicio: filtrarOrdenDeTrabajoDto.fechaInicio }] });
+    if(!filtrarOrdenDeTrabajoDto.userSolicitante && !filtrarOrdenDeTrabajoDto.fechaInicio){
+      console.log(filtrarOrdenDeTrabajoDto);
+    return []
+    }
+
+    if(!filtrarOrdenDeTrabajoDto.fechaInicio){
+     const ordenTrabajo = await this.solicitudOrdenRepository.find({ where: { userSolicitante: { name: Like(`${filtrarOrdenDeTrabajoDto.userSolicitante}%`) } },
+    select: ['NumOrden','Area','Codigo','Maquina','userSolicitante'],relations:['userSolicitante']});
+    console.log(ordenTrabajo);
     return ordenTrabajo;
+    }else{
+      const ordenTrabajo = await this.solicitudOrdenRepository.find({ where: [{ userSolicitante: { name: Like(`${filtrarOrdenDeTrabajoDto.userSolicitante}%`) }, fechaInicio: filtrarOrdenDeTrabajoDto.fechaInicio }],
+    select: ['NumOrden','Area','Codigo','Maquina','userSolicitante'],relations:['userSolicitante'] });
+    console.log(ordenTrabajo);
+    return ordenTrabajo;
+    }
 
   }
 

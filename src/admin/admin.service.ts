@@ -57,10 +57,12 @@ export class AdminService implements OnModuleInit{
       const user = await this.userRepository.findOne({where:{email:createUserDto.email}});
   
       if(user){
-      return Error("Correo ya registrado"); 
+        return {msj:'Correo ya registrado'};
+        
       }
   
       if(!cargo){
+        
       return new NotFoundException("cargo");
       }
       
@@ -74,6 +76,7 @@ export class AdminService implements OnModuleInit{
       await this.userRepository.save(createUser);
       return {msj:'Usuario creado!'};
       } catch (error) {
+        console.log(error);
         return Error(error);
       }
       
@@ -237,7 +240,12 @@ export class AdminService implements OnModuleInit{
     await this.userRepository.update(id,infoUpdate);
 
     return {msj:`Se actualizo la informacion de ${updateUserDto.name}`};
-  }  
+  } 
+  
+  async findAllTipoTrabajo(){
+    const allTipoTrabajo = await this.tipoTrabajoRepository.find({select:['tipo']});
+    return allTipoTrabajo;
+  }
 
   findOne(id: number) {
     return `This action returns a #${id} admin`;

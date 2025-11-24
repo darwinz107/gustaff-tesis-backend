@@ -12,6 +12,11 @@ export class InventarioController {
     return this.inventarioService.create(createInventarioDto);
   }
 
+  @Post('filtrar')
+  filtrarInventario(@Body('item') item:string){
+    return this.inventarioService.filtrarInventario(item);
+  }
+
   @Get()
   findAll() {
     return this.inventarioService.findAll();

@@ -3,6 +3,8 @@ import { IsDate, IsEmpty, IsNotEmpty, IsNumber, IsString } from "class-validator
 
 
 export class CreateSolicitudOrdenDto {
+    @IsEmpty()
+    NumOrden:string;
     @Type(()=> Date)
     @IsDate()
     @IsNotEmpty()
