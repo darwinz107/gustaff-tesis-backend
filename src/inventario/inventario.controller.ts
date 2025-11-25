@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/commo
 import { InventarioService } from './inventario.service';
 import { CreateInventarioDto } from './dto/create-inventario.dto';
 import { UpdateInventarioDto } from './dto/update-inventario.dto';
+import { CreateItemsSolicitadosDto } from './dto/create-items-solicitados.dto';
 
 @Controller('inventario')
 export class InventarioController {
@@ -15,6 +16,11 @@ export class InventarioController {
   @Post('filtrar')
   filtrarInventario(@Body('item') item: string){
     return this.inventarioService.filtrarInventario(item);
+  }
+
+  @Post('items-solicitados')
+  createItemsSolicitados(@Body() createItemsSolicitadosDto: CreateItemsSolicitadosDto) {
+    return this.inventarioService.createItemsSolicitados(createItemsSolicitadosDto);
   }
 
   @Get()

@@ -154,12 +154,12 @@ export class OrdenDeTrabajoService {
 
     if(!filtrarOrdenDeTrabajoDto.fechaInicio){
      const ordenTrabajo = await this.solicitudOrdenRepository.find({ where: { userSolicitante: { name: Like(`${filtrarOrdenDeTrabajoDto.userSolicitante}%`) } },
-    select: ['NumOrden','Area','Codigo','Maquina','userSolicitante'],relations:['userSolicitante']});
+    select: ['id','NumOrden','Area','Codigo','Maquina','userSolicitante'],relations:['userSolicitante']});
     console.log(ordenTrabajo);
     return ordenTrabajo;
     }else{
       const ordenTrabajo = await this.solicitudOrdenRepository.find({ where: [{ userSolicitante: { name: Like(`${filtrarOrdenDeTrabajoDto.userSolicitante}%`) }, fechaInicio: filtrarOrdenDeTrabajoDto.fechaInicio }],
-    select: ['NumOrden','Area','Codigo','Maquina','userSolicitante'],relations:['userSolicitante'] });
+    select: ['id','NumOrden','Area','Codigo','Maquina','userSolicitante'],relations:['userSolicitante'] });
     console.log(ordenTrabajo);
     return ordenTrabajo;
     }

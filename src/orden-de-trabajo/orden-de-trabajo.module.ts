@@ -13,6 +13,6 @@ import { UsersModule } from 'src/users/users.module';
   imports:[TypeOrmModule.forFeature([SolicitudOrden]),UsersModule],
   controllers: [OrdenDeTrabajoController],
   providers: [OrdenDeTrabajoService],
-  
+  exports:[TypeOrmModule]
 })
 export class OrdenDeTrabajoModule {}

@@ -9,10 +9,12 @@ import { ItemsSalida } from './entities/itemsSalida.entity';
 import { ItemsSolicitados } from './entities/itemsSolicitados.entity';
 import { RegistroEntrada } from './entities/registroEntrada.entity';
 import { ItemsEntrada } from './entities/itemsEntrada.entity';
+import { SolicitudDeCompraModule } from 'src/solicitud-de-compra/solicitud-de-compra.module';
 
 @Module({
-  imports:[TypeOrmModule.forFeature([Inventario,Proovedores,ItemsSolicitados,RegistroSalida,ItemsSalida,RegistroEntrada,ItemsEntrada])],
+  imports:[TypeOrmModule.forFeature([Inventario,Proovedores,ItemsSolicitados,RegistroSalida,ItemsSalida,RegistroEntrada,ItemsEntrada]),SolicitudDeCompraModule],
   controllers: [InventarioController],
   providers: [InventarioService],
+  exports:[TypeOrmModule.forFeature([ItemsSolicitados])]
 })
 export class InventarioModule {}

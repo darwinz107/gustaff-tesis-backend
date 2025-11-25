@@ -9,6 +9,10 @@ export class ItemsSolicitados{
     item:string;
     @Column()
     cantidad:number;
+    @Column({nullable:true})
+    caracteristica:string;
+    @Column({nullable:true})
+    Observacion:string;
     @ManyToOne(()=>SolicitudDeCompra,(solicitudDeCompra)=>solicitudDeCompra.itemSolicitados)
     ordenCompra:SolicitudDeCompra;
     @Column({type:'boolean'})

@@ -17,6 +17,11 @@ export class SolicitudDeCompraController {
     return this.solicitudDeCompraService.findAll();
   }
 
+ /* @Get('ultima-solicitud-compra') 
+  getUltimaSolicitudCompra() {
+    return this.solicitudDeCompraService.getUltimaSolicitudCompra();
+  }*/
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.solicitudDeCompraService.findOne(+id);
