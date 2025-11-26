@@ -7,11 +7,12 @@ import { SolicitudOrden } from './entities/solicitudOrden.entity';
 
 import { UsersModule } from 'src/users/users.module';
 import { EstadoTrabajo } from './entities/estadoTrabajo';
+import { SolicitudDeCompra } from 'src/solicitud-de-compra/entities/solicitud-de-compra.entity';
 
 
 
 @Module({
-  imports:[TypeOrmModule.forFeature([SolicitudOrden,EstadoTrabajo]),UsersModule],
+  imports:[TypeOrmModule.forFeature([SolicitudOrden,EstadoTrabajo,SolicitudDeCompra]),UsersModule],
   controllers: [OrdenDeTrabajoController],
   providers: [OrdenDeTrabajoService],
   exports:[TypeOrmModule]

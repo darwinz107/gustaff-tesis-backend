@@ -1,6 +1,6 @@
 
 export enum EstadoTrabajoEnum{
     PROC = 'EN PROCESO',
-    FIN = 'FINALIZADO',
+    FIN = 'PROCESADO',
     VEN = 'VENCIDO',
 }

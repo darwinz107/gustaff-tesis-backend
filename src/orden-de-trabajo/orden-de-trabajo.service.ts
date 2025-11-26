@@ -23,6 +23,7 @@ import { FiltrarOrdenDeTrabajoDto } from './dto/filtrar-orden-de-trabajo.dto';
 import { EstadoTrabajoEnum } from './enums/estado-trabajo.enum';
 import { EstadoTrabajo } from './entities/estadoTrabajo';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { SolicitudDeCompra } from 'src/solicitud-de-compra/entities/solicitud-de-compra.entity';
 
 @Injectable()
 export class OrdenDeTrabajoService implements OnModuleInit{
@@ -33,6 +34,7 @@ export class OrdenDeTrabajoService implements OnModuleInit{
 
     @InjectRepository(User) private readonly userRepository: Repository<User>,
     @InjectRepository(EstadoTrabajo) private readonly estadoTrabajoRepository: Repository<EstadoTrabajo>, 
+    @InjectRepository(SolicitudDeCompra) private readonly solicitudDeCompraRepository: Repository<SolicitudDeCompra>, 
   ) { }
 
   async onModuleInit() {
@@ -47,25 +49,36 @@ export class OrdenDeTrabajoService implements OnModuleInit{
     }
   }
 
-  @Cron(CronExpression.EVERY_30_SECONDS)
+  @Cron(CronExpression.EVERY_5_MINUTES)
   async ordenTrabajoVencida(){
 
     try {
         const ordenesTrabajo = await this.solicitudOrdenRepository.find({where:{estadoTrabajo:{id:1}},relations:['estadoTrabajo']});
         const estadoVencido = await this.estadoTrabajoRepository.findOne({where:{id:3}});
+        const estadoProcesado = await this.estadoTrabajoRepository.findOne({where:{id:2}});
 
         if(!estadoVencido){
        throw new ExceptionsHandler();
         }
+        if(!estadoProcesado){
+       throw new ExceptionsHandler();
+        }
 const fechaActual = new Date();
     for(const orden of ordenesTrabajo){
+      const existSolicitudCompra = await this.solicitudDeCompraRepository.findOne({where:{numOrdenTrabajo:{id:orden.id}}});
+
+      if(existSolicitudCompra){
+        orden.estadoTrabajo = estadoProcesado;
+        await this.solicitudOrdenRepository.save(orden);
+      }
+      if(!existSolicitudCompra){
        const fechaFinal = new Date(orden.fechaFinal);
       if(fechaActual > fechaFinal){
         orden.estadoTrabajo = estadoVencido;
         await this.solicitudOrdenRepository.save(orden);
             console.log('Verificación de vencidos ejecutada...');
 
-      }
+      }}
     }
     } catch (error) {
       console.log(error);

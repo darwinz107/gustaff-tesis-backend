@@ -12,9 +12,9 @@ export class SolicitudDeCompraController {
     return this.solicitudDeCompraService.create(createSolicitudDeCompraDto);
   }
 
-  @Get()
-  findAll() {
-    return this.solicitudDeCompraService.findAll();
+  @Get('solicitudes-de-compra')
+  findAllSolicitudesCompra() {
+    return this.solicitudDeCompraService.findAllSolicitudesCompra();
   }
 
  /* @Get('ultima-solicitud-compra') 
