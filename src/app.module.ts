@@ -12,9 +12,12 @@ import { SolicitudDeCompraModule } from './solicitud-de-compra/solicitud-de-comp
 import { InventarioModule } from './inventario/inventario.module';
 import { ParametroModule } from './parametro/parametro.module';
 import { AdminModule } from './admin/admin.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
-  imports: [ConfigModule.forRoot({
+  imports: [
+    ScheduleModule.forRoot(),
+    ConfigModule.forRoot({
     isGlobal:true
   }),JwtModule.register({
     global:true,

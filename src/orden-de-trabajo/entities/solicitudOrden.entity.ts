@@ -1,6 +1,7 @@
 import { SolicitudDeCompra } from "src/solicitud-de-compra/entities/solicitud-de-compra.entity";
 import { User } from "src/users/entities/user.entity";
 import { Column, Entity, ManyToOne, OneToOne, PrimaryGeneratedColumn } from "typeorm";
+import { EstadoTrabajo } from "./estadoTrabajo";
 
 
 @Entity('orden_trabajo')
@@ -31,8 +32,6 @@ export class SolicitudOrden {
     TipoTrabajo:string;
     @Column({nullable:true})
     DescripcionTrabajo:string;
-    @Column({default:"En proceso"})
-    Estado:string;
     @ManyToOne(()=>User,(user)=>user.solicitanteId)
     userSolicitante:User;
     @ManyToOne(()=>User,(user)=>user.receptorId)
@@ -41,4 +40,6 @@ export class SolicitudOrden {
     userTecnico:User|null; 
     @OneToOne(()=>SolicitudDeCompra,(solicitudDeCompra)=>solicitudDeCompra.numOrdenTrabajo)
     solicitudTrabajo:SolicitudDeCompra;
+    @ManyToOne(()=>EstadoTrabajo,(estadoTrabajo)=>estadoTrabajo.ordenTrabajo)
+    estadoTrabajo:EstadoTrabajo; 
 }

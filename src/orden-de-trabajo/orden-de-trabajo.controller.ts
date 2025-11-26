@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
 import { OrdenDeTrabajoService } from './orden-de-trabajo.service';
-import { CreateOrdenDeTrabajoDto } from './dto/create-orden-de-trabajo.dto';
+
 import { UpdateOrdenDeTrabajoDto } from './dto/update-orden-de-trabajo.dto';
 import { create } from 'domain';
 import { CreateAreaDto } from '../admin/dto/create-area.dto';
@@ -16,7 +16,10 @@ import { FiltrarOrdenDeTrabajoDto } from './dto/filtrar-orden-de-trabajo.dto';
 export class OrdenDeTrabajoController {
   constructor(private readonly ordenDeTrabajoService: OrdenDeTrabajoService) {}
 
- 
+ @Get('all-ordenes')
+ getAllOrdenesTrabajo(){
+  return this.ordenDeTrabajoService.getAllOrdenesTrabajo();
+ }
 
   @Post('create/solicitud-orden')
   registerSolicituOrden(@Body() createSolicitudOrdenDto:CreateSolicitudOrdenDto){

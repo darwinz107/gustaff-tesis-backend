@@ -1,5 +1,5 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { CreateOrdenDeTrabajoDto } from './dto/create-orden-de-trabajo.dto';
+import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
+
 import { UpdateOrdenDeTrabajoDto } from './dto/update-orden-de-trabajo.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Area } from '../parametro/entities/area.entity';
@@ -20,17 +20,60 @@ import { TipoTrabajo } from '../parametro/entities/tipoTrabajo.entity';
 import { User } from 'src/users/entities/user.entity';
 import { ExceptionsHandler } from '@nestjs/core/exceptions/exceptions-handler';
 import { FiltrarOrdenDeTrabajoDto } from './dto/filtrar-orden-de-trabajo.dto';
+import { EstadoTrabajoEnum } from './enums/estado-trabajo.enum';
+import { EstadoTrabajo } from './entities/estadoTrabajo';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
-export class OrdenDeTrabajoService {
+export class OrdenDeTrabajoService implements OnModuleInit{
 
   constructor(
 
     @InjectRepository(SolicitudOrden) private readonly solicitudOrdenRepository: Repository<SolicitudOrden>,
 
-    @InjectRepository(User) private readonly userRepository: Repository<User>,) { }
+    @InjectRepository(User) private readonly userRepository: Repository<User>,
+    @InjectRepository(EstadoTrabajo) private readonly estadoTrabajoRepository: Repository<EstadoTrabajo>, 
+  ) { }
 
+  async onModuleInit() {
+    const estados = [EstadoTrabajoEnum.PROC,EstadoTrabajoEnum.FIN,EstadoTrabajoEnum.VEN];
 
+    for(const estado of estados){
+      const exist = await this.estadoTrabajoRepository.findOne({where:{estado:estado}});
+      if(!exist){
+        const newEstado = this.estadoTrabajoRepository.create({estado:estado});
+        await this.estadoTrabajoRepository.save(newEstado);
+      }
+    }
+  }
+
+  @Cron(CronExpression.EVERY_5_MINUTES)
+  async ordenTrabajoVencida(){
+console.log('Entro a cron..');
+    try {
+        const ordenesTrabajo = await this.solicitudOrdenRepository.find({where:{estadoTrabajo:{id:1}},relations:['estadoTrabajo']});
+        const estadoVencido = await this.estadoTrabajoRepository.findOne({where:{id:3}});
+
+        if(!estadoVencido){
+       throw new ExceptionsHandler();
+        }
+const fechaActual = new Date();
+    for(const orden of ordenesTrabajo){
+       const fechaFinal = new Date(orden.fechaFinal);
+      if(fechaActual > fechaFinal){
+        orden.estadoTrabajo = estadoVencido;
+        await this.solicitudOrdenRepository.save(orden);
+            console.log('Verificación de vencidos ejecutada...');
+
+      }
+    }
+    } catch (error) {
+      console.log(error);
+      throw new ExceptionsHandler(error);
+    }
+    
+  
+  }
 
   /*async registerTipoTrabajo(createTipoTrabajoDto:CreateTipoTrabajoDto){
    
@@ -57,6 +100,12 @@ export class OrdenDeTrabajoService {
     const solicitante = await this.userRepository.findOne({ where: { name: createSolicitudOrdenDto.userSolicitante }, select: ['id'] });
     const receptor = await this.userRepository.findOne({ where: { name: createSolicitudOrdenDto.userReceptor }, select: ['id'] });
     const tecnico = await this.userRepository.findOne({ where: { name: createSolicitudOrdenDto.userTecnico }, select: ['id'] });
+    const estado = await this.estadoTrabajoRepository.findOne({where:{id:1}});
+
+   if(!estado){
+     throw new NotFoundException("No se encontro un estado");
+   }
+
     const lgtOrdenTrabajo = await this.solicitudOrdenRepository.count();
     createSolicitudOrdenDto.NumOrden = 'OT-' + (lgtOrdenTrabajo + 1).toString().padStart(5, '0');
 
@@ -78,8 +127,8 @@ export class OrdenDeTrabajoService {
         DescripcionTrabajo: createSolicitudOrdenDto.DescripcionTrabajo,
         userSolicitante: solicitante,
         userReceptor: receptor,
-        userTecnico: null,
-
+        userTecnico: tecnico ?? null,
+        estadoTrabajo:estado
       };
 
       const crearSolicitud = this.solicitudOrdenRepository.create(nuevaSolicitud);
@@ -113,6 +162,39 @@ export class OrdenDeTrabajoService {
 
     //await this.solicitudOrdenRepository.save(nuevaSolicitud);
     return { msj: "No se pudo crear la solicitud" };
+  }
+
+  async getAllOrdenesTrabajo(){
+     
+      const ordenes = await this.solicitudOrdenRepository.createQueryBuilder('solicitud')
+      .innerJoin('solicitud.userSolicitante', 'userSolicitante')
+      .innerJoin('solicitud.userReceptor', 'userReceptor')
+      .leftJoin('solicitud.userTecnico', 'userTecnico')
+      .innerJoin('solicitud.estadoTrabajo','estado')
+      .select([
+        'solicitud.NumOrden',
+        'solicitud.fechaInicio',
+        'solicitud.fechaFinal',
+        'solicitud.HoraInicio',
+        'solicitud.HoraFinal',
+        'solicitud.Area',
+        'solicitud.Categoria',
+        'solicitud.TipoTrabajo',
+        'solicitud.Codigo',
+        'solicitud.Maquina',
+        'solicitud.DescripcionTrabajo',
+        'userSolicitante.name',
+        'userReceptor.name',
+        'userTecnico.name',
+        'estado.estado'
+      ])
+     
+      .getMany();
+
+    if (ordenes) {
+      return ordenes;
+    }
+    return new NotFoundException("No existen solicitudes");
   }
 
   async getSolicitudReciente() {

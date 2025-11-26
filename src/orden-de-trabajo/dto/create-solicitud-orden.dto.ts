@@ -50,4 +50,6 @@ export class CreateSolicitudOrdenDto {
     @IsEmpty()
     
     userTecnico:string;  
+    
+
 }
