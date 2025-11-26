@@ -41,9 +41,9 @@ export class OrdenDeTrabajoController {
     return this.ordenDeTrabajoService.getAllTipoTrabajoByCategoria(categoria);
   }*/
 
-  @Get("last/solicitud")
-  getSolicitudReciente(){
-    return this.ordenDeTrabajoService.getSolicitudReciente();
+  @Get("last/solicitud/:id")
+  getSolicitudReciente(@Param('id') id:string){
+    return this.ordenDeTrabajoService.getSolicitudReciente(+id);
   }
    
   @Get(':id')

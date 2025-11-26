@@ -47,9 +47,9 @@ export class OrdenDeTrabajoService implements OnModuleInit{
     }
   }
 
-  @Cron(CronExpression.EVERY_5_MINUTES)
+  @Cron(CronExpression.EVERY_30_SECONDS)
   async ordenTrabajoVencida(){
-console.log('Entro a cron..');
+
     try {
         const ordenesTrabajo = await this.solicitudOrdenRepository.find({where:{estadoTrabajo:{id:1}},relations:['estadoTrabajo']});
         const estadoVencido = await this.estadoTrabajoRepository.findOne({where:{id:3}});
@@ -172,6 +172,7 @@ const fechaActual = new Date();
       .leftJoin('solicitud.userTecnico', 'userTecnico')
       .innerJoin('solicitud.estadoTrabajo','estado')
       .select([
+        'solicitud.id',
         'solicitud.NumOrden',
         'solicitud.fechaInicio',
         'solicitud.fechaFinal',
@@ -192,17 +193,25 @@ const fechaActual = new Date();
       .getMany();
 
     if (ordenes) {
+      console.log(ordenes);
       return ordenes;
     }
     return new NotFoundException("No existen solicitudes");
   }
 
-  async getSolicitudReciente() {
+  async getSolicitudReciente(id:number) {
+
+    console.log(id);
+    if(!id){
+      id = await this.solicitudOrdenRepository.count();
+    }
+
     const solicitud = await this.solicitudOrdenRepository.createQueryBuilder('solicitud')
       .innerJoin('solicitud.userSolicitante', 'userSolicitante')
       .innerJoin('solicitud.userReceptor', 'userReceptor')
       .leftJoin('solicitud.userTecnico', 'userTecnico')
       .select([
+        'solicitud.id',
         'solicitud.NumOrden',
         'solicitud.fechaInicio',
         'solicitud.fechaFinal',
@@ -218,7 +227,7 @@ const fechaActual = new Date();
         'userReceptor.name',
         'userTecnico.name'
       ])
-      .orderBy('solicitud.fechaInicio', 'DESC')
+      .where('solicitud.id = :id', { id })
       .getOne();
 
     if (solicitud) {
