@@ -51,23 +51,32 @@ export class OrdenDeTrabajoService implements OnModuleInit{
 
   @Cron(CronExpression.EVERY_5_MINUTES)
   async ordenTrabajoVencida(){
-
+ //console.log('Verificando ordenes de trabajo vencidas...');
     try {
         const ordenesTrabajo = await this.solicitudOrdenRepository.find({where:{estadoTrabajo:{id:1}},relations:['estadoTrabajo']});
+
+        if(ordenesTrabajo.length === 0){
+         // console.log('No hay ordenes de trabajo en estado procesado');
+          return;
+        }
+
         const estadoVencido = await this.estadoTrabajoRepository.findOne({where:{id:3}});
-        const estadoProcesado = await this.estadoTrabajoRepository.findOne({where:{id:2}});
+        const estadoProcesado = await this.estadoTrabajoRepository.findOne({where:{id:4}});
 
         if(!estadoVencido){
+          console.log('Estado vencido no encontrado');
        throw new ExceptionsHandler();
         }
         if(!estadoProcesado){
+          console.log('Estado procesado no encontrado');
        throw new ExceptionsHandler();
         }
 const fechaActual = new Date();
     for(const orden of ordenesTrabajo){
       const existSolicitudCompra = await this.solicitudDeCompraRepository.findOne({where:{numOrdenTrabajo:{id:orden.id}}});
-
+console.log(existSolicitudCompra);
       if(existSolicitudCompra){
+        console.log('La orden de trabajo ya tiene una solicitud de compra asociada');
         orden.estadoTrabajo = estadoProcesado;
         await this.solicitudOrdenRepository.save(orden);
       }

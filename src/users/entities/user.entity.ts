@@ -26,6 +26,6 @@ cargoId:Cargo;
 solicitanteId:SolicitudOrden[];
 @OneToMany(()=>SolicitudOrden,(solicitudOrden)=>solicitudOrden.userReceptor)
 receptorId:SolicitudOrden[];
-@OneToMany(()=>SolicitudOrden,(solicitudOrden)=>solicitudOrden.userReceptor)
+@OneToMany(()=>SolicitudOrden,(solicitudOrden)=>solicitudOrden.userTecnico)
 tecnicoId:SolicitudOrden[];
 }

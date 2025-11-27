@@ -85,7 +85,73 @@ export class SolicitudDeCompraService implements OnModuleInit{
 
  async findAllSolicitudesCompra() {
 
-    const solicitudesCompra = await this.solicitudDeCompraRepository.find();
+    const solicitudesCompra = await this.solicitudDeCompraRepository.createQueryBuilder('solicitudCompra')
+    .leftJoin('solicitudCompra.numOrdenTrabajo','ordenTrabajo')
+    .leftJoin('ordenTrabajo.userSolicitante','userSolicitante')
+    .leftJoin('solicitudCompra.estadoCompra','estadoCompra')
+    .select([
+      'solicitudCompra.id',
+      'solicitudCompra.numOrden',
+      'solicitudCompra.fechaRemision',
+      'solicitudCompra.Autoriza',
+      'solicitudCompra.Destino',
+      
+      //'ordenTrabajo.id',
+      'ordenTrabajo.NumOrden',
+      'ordenTrabajo.DescripcionTrabajo',
+      //'userSolicitante.id',
+      'userSolicitante.name',
+      'estadoCompra.id',
+      'estadoCompra.estado'
+    ])
+    .getMany();
+    console.log(solicitudesCompra[0]);
+    if(!solicitudesCompra){
+      throw new NotFoundException("No se encontro solicitudes de compra");
+    }
+
+    return solicitudesCompra;
+  
+  }
+
+   async ordenCompraById(id:number) {
+    
+    if(!id){
+      id = await this.solicitudDeCompraRepository.count() +3;
+    }
+
+    console.log('ID de la solicitud de compra:', id);
+
+    const solicitudesCompra = await this.solicitudDeCompraRepository.createQueryBuilder('solicitudCompra')
+    .leftJoin('solicitudCompra.numOrdenTrabajo','ordenTrabajo')
+    .leftJoin('ordenTrabajo.userSolicitante','userSolicitante')
+    .leftJoin('solicitudCompra.estadoCompra','estadoCompra')
+    .leftJoin('solicitudCompra.itemSolicitados','itemSolicitados')
+    .select([
+      'solicitudCompra.id',
+      'solicitudCompra.numOrden',
+      'solicitudCompra.fechaRemision',
+      'solicitudCompra.Autoriza',
+      'solicitudCompra.Destino',
+      
+      //'ordenTrabajo.id',
+      'ordenTrabajo.NumOrden',
+      'ordenTrabajo.DescripcionTrabajo',
+      'ordenTrabajo.Area',
+      'ordenTrabajo.Codigo',
+      'ordenTrabajo.Maquina',
+      //'userSolicitante.id',
+      'userSolicitante.name',
+      'estadoCompra.id',
+      'estadoCompra.estado',
+      'itemSolicitados.id',
+      'itemSolicitados.item',
+      'itemSolicitados.cantidad',
+      'itemSolicitados.caracteristica',
+      'itemSolicitados.Observacion',
+    ])
+    .where('solicitudCompra.id = :id',{id})
+    .getOne();
     if(!solicitudesCompra){
       throw new NotFoundException("No se encontro solicitudes de compra");
     }
