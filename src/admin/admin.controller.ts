@@ -25,7 +25,7 @@ export class AdminController {
     createArea(@Body() createAreaDto:CreateAreaDto) {
       return this.adminService.crearArea(createAreaDto);
     }
-  y
+  
     @Post("create/maquina")
     createMaquina(@Body() createMaquinaDto:CreateMaquinaDto){
       return this.adminService.createMaquina(createMaquinaDto);
