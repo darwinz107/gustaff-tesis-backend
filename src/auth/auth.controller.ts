@@ -44,6 +44,20 @@ export class AuthController {
     return {isRol:true};
   }
 
+  @Rol(['user1'])
+  @UseGuards(AuthGuard)
+  @Get('validate/user1')
+  validateRol1(){
+    return {isRol:true};
+  }
+
+  @Rol(['user2'])
+  @UseGuards(AuthGuard)
+  @Get('validate/user2')
+  validateRol2(){
+    return {isRol:true};
+  }
+
   @Get('logout/token')
   logout(@Res() response:Response){
     return this.authService.logout(response);
