@@ -17,7 +17,7 @@ export class AuthUser2Guard implements CanActivate {
   ): boolean | Promise<boolean> {
       const rol = this.reflector.get(Rol,context.getHandler());
         if(!rol){
-          return true;
+          return false;
         }
          
         const request = context.switchToHttp().getRequest() as Request;
@@ -27,13 +27,13 @@ export class AuthUser2Guard implements CanActivate {
           const token = request.cookies.token || request.headers.authorization?.split(' ')[1];
     
           if(!token){
-             return true;
+             return false;
           }
     
           const validate = this.jwtService.verify(token);
     
           if(!validate){
-            return true;
+            return false;
           }
           console.log(validate.rolName);
           const validateRol = rol.includes(validate.rolName);

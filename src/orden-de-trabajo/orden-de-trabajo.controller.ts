@@ -21,6 +21,16 @@ export class OrdenDeTrabajoController {
   return this.ordenDeTrabajoService.getAllOrdenesTrabajo();
  }
 
+  @Post('orden-by-solicitante')
+ getOrdenTrabajoBySolicitante(@Body() searchbyuser:{solicitante:string}){
+  return this.ordenDeTrabajoService.getOrdenTrabajoBySolicitante(searchbyuser.solicitante);
+ }
+
+ @Get('orden-by-id/:id')
+  getOrdenTrabajoById(@Param('id') id:string){
+    return this.ordenDeTrabajoService.getOrdenTrabajoById(+id);
+  }
+
   @Post('create/solicitud-orden')
   registerSolicituOrden(@Body() createSolicitudOrdenDto:CreateSolicitudOrdenDto){
     return this.ordenDeTrabajoService.registerSolicitudOrden(createSolicitudOrdenDto);

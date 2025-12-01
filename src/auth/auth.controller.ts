@@ -12,6 +12,8 @@ import { CreateMaquinaDto } from '../admin/dto/create-maquina.dto';
 import { MaquinaDto } from '../admin/dto/maquina.dto';
 import { CreateTipoTrabajoDto } from '../admin/dto/create-tipo-trabajo.dto';
 import { CreateCargoDto } from '../admin/dto/create-cargo.dto';
+import { AuthUser1Guard } from './auth/auth.user1.guard';
+import { AuthUser2Guard } from './auth/auth.user2.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -45,14 +47,14 @@ export class AuthController {
   }
 
   @Rol(['user1'])
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthUser1Guard)
   @Get('validate/user1')
   validateRol1(){
     return {isRol:true};
   }
 
   @Rol(['user2'])
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthUser2Guard)
   @Get('validate/user2')
   validateRol2(){
     return {isRol:true};

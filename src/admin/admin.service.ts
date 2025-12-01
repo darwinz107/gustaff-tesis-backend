@@ -136,7 +136,7 @@ export class AdminService implements OnModuleInit{
     
       async findAll() {
     
-        const areas = await this.areaRepository.find({ select: ['nombre'] });
+        const areas = await this.areaRepository.find({ select: ['id','nombre'] });
         return areas;
       }
     

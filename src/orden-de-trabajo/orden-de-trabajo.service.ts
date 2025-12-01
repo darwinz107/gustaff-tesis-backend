@@ -221,6 +221,77 @@ console.log(existSolicitudCompra);
     return new NotFoundException("No existen solicitudes");
   }
 
+  async getOrdenTrabajoBySolicitante(name:string){
+     
+      const orden = await this.solicitudOrdenRepository.createQueryBuilder('solicitud')
+      .innerJoin('solicitud.userSolicitante', 'userSolicitante')
+      .innerJoin('solicitud.userReceptor', 'userReceptor')
+      .leftJoin('solicitud.userTecnico', 'userTecnico')
+      .innerJoin('solicitud.estadoTrabajo','estado')
+      .select([
+        'solicitud.id',
+        'solicitud.NumOrden',
+        'solicitud.fechaInicio',
+        'solicitud.fechaFinal',
+        'solicitud.HoraInicio',
+        'solicitud.HoraFinal',
+        'solicitud.Area',
+        'solicitud.Categoria',
+        'solicitud.TipoTrabajo',
+        'solicitud.Codigo',
+        'solicitud.Maquina',
+        'solicitud.DescripcionTrabajo',
+        'userSolicitante.name',
+        'userReceptor.name',
+        'userTecnico.name',
+        'estado.estado'
+      ])
+     .where(`userSolicitante.name like :name`, { name: `${name}%` })
+      .getMany();
+
+    if (orden) {
+      console.log(orden);
+      return orden;
+    }
+    return new NotFoundException("No existe solicitud para el usuario");
+  }
+
+   async getOrdenTrabajoById(id:number){
+     
+      const orden = await this.solicitudOrdenRepository.createQueryBuilder('solicitud')
+      .innerJoin('solicitud.userSolicitante', 'userSolicitante')
+      .innerJoin('solicitud.userReceptor', 'userReceptor')
+      .leftJoin('solicitud.userTecnico', 'userTecnico')
+      .innerJoin('solicitud.estadoTrabajo','estado')
+      .select([
+        'solicitud.id',
+        'solicitud.NumOrden',
+        'solicitud.fechaInicio',
+        'solicitud.fechaFinal',
+        'solicitud.HoraInicio',
+        'solicitud.HoraFinal',
+        'solicitud.Area',
+        'solicitud.Categoria',
+        'solicitud.TipoTrabajo',
+        'solicitud.Codigo',
+        'solicitud.Maquina',
+        'solicitud.EspecificacionMaquina',
+        'solicitud.DescripcionTrabajo',
+        'userSolicitante.name',
+        'userReceptor.name',
+        'userTecnico.name',
+        'estado.estado'
+      ])
+     .where(`solicitud.id = :id`, { id: id })
+      .getOne();
+
+    if (orden) {
+      //console.log(orden);
+      return orden;
+    }
+    return new NotFoundException("No existe solicitud para el usuario");
+  }
+
   async getSolicitudReciente(id:number) {
 
     console.log(id);
