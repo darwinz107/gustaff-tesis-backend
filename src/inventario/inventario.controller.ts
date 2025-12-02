@@ -3,6 +3,7 @@ import { InventarioService } from './inventario.service';
 import { CreateInventarioDto } from './dto/create-inventario.dto';
 import { UpdateInventarioDto } from './dto/update-inventario.dto';
 import { CreateItemsSolicitadosDto } from './dto/create-items-solicitados.dto';
+import { StockDto } from './dto/stock.dto';
 
 @Controller('inventario')
 export class InventarioController {
@@ -16,6 +17,11 @@ export class InventarioController {
   @Post('filtrar')
   filtrarInventario(@Body('item') item: string){
     return this.inventarioService.filtrarInventario(item);
+  }
+
+  @Post('evaluar-stock')
+  evaluarStock(@Body() stockDto: StockDto){
+    return this.inventarioService.evaluarStock(stockDto);
   }
 
   @Post('items-solicitados')

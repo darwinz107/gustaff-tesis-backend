@@ -30,9 +30,19 @@ const findItem = await this.inventarioRepository.findOne({where:{nombre:stockDto
 
       if(calcStock < 0){
        const compras = [
-        {cantidad:stockDto.cantidad,estado:"En Stock",validate:true},
-        {cantidad:calcStock,estado:"Por Comprar",validate:false}
+        {cantidad:findItem.stock,estado:"En Stock",validate:true},
+        {cantidad:calcStock*(-1),estado:"Por Comprar",validate:false}
        ]
+
+       return compras;
+      }
+
+       if(calcStock >= 0){
+       const compras = [
+        {cantidad:stockDto.cantidad,estado:"En Stock",validate:true}
+       ]
+
+       return compras;
       }
 
 }
@@ -48,7 +58,7 @@ try {
       return {msj:"No se encontro una orden de compra asociada a la orden de trabajo"};
     }
 
-    const findItem = await this.inventarioRepository.findOne({where:{nombre:createItemsSolicitadosDto.item}});
+    /*const findItem = await this.inventarioRepository.findOne({where:{nombre:createItemsSolicitadosDto.item}});
 
     if(!findItem){
 
@@ -99,12 +109,12 @@ try {
         ordenCompra:ordenCompra,
         existencia:false
       });
-
-      await this.itemsSolicitadosRepository.save(newItemNoStock);
+*/
+      await this.itemsSolicitadosRepository.save({item:createItemsSolicitadosDto.item,cantidad:createItemsSolicitadosDto.cantidad,caracteristica:createItemsSolicitadosDto.caracteristica,Observacion:createItemsSolicitadosDto.Observacion,existencia:createItemsSolicitadosDto.existencia,ordenCompra:ordenCompra});
       return {msj:"Item registrado con existencia en inventario"};
-    }
+   // }
     
-  }
+ // }
 } catch (error) {
     console.log(error);
     return {msj:"Error al registrar el item solicitado"};

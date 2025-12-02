@@ -1,4 +1,4 @@
-import { IsEmpty, IsNotEmpty, IsNumber, IsString } from "class-validator";
+import { IsBoolean, IsEmpty, IsNotEmpty, IsNumber, IsString } from "class-validator";
 
 export class CreateItemsSolicitadosDto {
     @IsString()
@@ -13,6 +13,9 @@ export class CreateItemsSolicitadosDto {
     @IsString()
     @IsEmpty()
     Observacion:string; 
+    @IsBoolean()
+    @IsNotEmpty()
+    existencia:boolean;
     @IsNotEmpty()
     @IsNumber()
     ordenTrabajoId:number;
