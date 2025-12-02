@@ -3,7 +3,7 @@ import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { UpdateOrdenDeTrabajoDto } from './dto/update-orden-de-trabajo.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Area } from '../parametro/entities/area.entity';
-import { Like, Repository } from 'typeorm';
+import { In, Like, Repository } from 'typeorm';
 import { Codigo } from '../parametro/entities/codigo.entity';
 import { Maquina } from '../parametro/entities/maquina.entity';
 import { CreateAreaDto } from '../admin/dto/create-area.dto';
@@ -38,7 +38,7 @@ export class OrdenDeTrabajoService implements OnModuleInit{
   ) { }
 
   async onModuleInit() {
-    const estados = [EstadoTrabajoEnum.PROC,EstadoTrabajoEnum.FIN,EstadoTrabajoEnum.VEN];
+    const estados = [EstadoTrabajoEnum.PROC,EstadoTrabajoEnum.FIN,EstadoTrabajoEnum.VEN,EstadoTrabajoEnum.PEN];
 
     for(const estado of estados){
       const exist = await this.estadoTrabajoRepository.findOne({where:{estado:estado}});
@@ -53,41 +53,56 @@ export class OrdenDeTrabajoService implements OnModuleInit{
   async ordenTrabajoVencida(){
  //console.log('Verificando ordenes de trabajo vencidas...');
     try {
-        const ordenesTrabajo = await this.solicitudOrdenRepository.find({where:{estadoTrabajo:{id:1}},relations:['estadoTrabajo']});
+        const ordenesTrabajo = await this.solicitudOrdenRepository.find({where:{estadoTrabajo:{id:In([1,3,4])}},relations:['estadoTrabajo']});
 
         if(ordenesTrabajo.length === 0){
          // console.log('No hay ordenes de trabajo en estado procesado');
           return;
         }
-
+        const estadoEnProceso = await this.estadoTrabajoRepository.findOne({where:{id:1}});
         const estadoVencido = await this.estadoTrabajoRepository.findOne({where:{id:3}});
-        const estadoProcesado = await this.estadoTrabajoRepository.findOne({where:{id:4}});
+        const estadoPendiente = await this.estadoTrabajoRepository.findOne({where:{id:4}});
+
+         if(!estadoEnProceso){
+          console.log('Estado en proceso no encontrado');
+       throw new ExceptionsHandler();
+        }
 
         if(!estadoVencido){
           console.log('Estado vencido no encontrado');
        throw new ExceptionsHandler();
         }
-        if(!estadoProcesado){
-          console.log('Estado procesado no encontrado');
+        if(!estadoPendiente){
+          console.log('Estado pendiente no encontrado');
        throw new ExceptionsHandler();
         }
 const fechaActual = new Date();
     for(const orden of ordenesTrabajo){
-      const existSolicitudCompra = await this.solicitudDeCompraRepository.findOne({where:{numOrdenTrabajo:{id:orden.id}}});
-console.log(existSolicitudCompra);
-      if(existSolicitudCompra){
-        console.log('La orden de trabajo ya tiene una solicitud de compra asociada');
-        orden.estadoTrabajo = estadoProcesado;
-        await this.solicitudOrdenRepository.save(orden);
-      }
-      if(!existSolicitudCompra){
+
+const existOrdenTrabajo = await this.solicitudOrdenRepository.findOne({where:{id:orden.id}});
+      if(existOrdenTrabajo){
        const fechaFinal = new Date(orden.fechaFinal);
+       const fechaInicio = new Date(orden.fechaInicio);
       if(fechaActual > fechaFinal){
         orden.estadoTrabajo = estadoVencido;
         await this.solicitudOrdenRepository.save(orden);
             console.log('Verificación de vencidos ejecutada...');
 
-      }}
+      }
+    if(fechaActual <= fechaFinal && fechaActual >= fechaInicio){
+     orden.estadoTrabajo = estadoEnProceso;
+        await this.solicitudOrdenRepository.save(orden);
+    }
+
+    if(fechaActual < fechaInicio){
+      orden.estadoTrabajo = estadoPendiente;
+      await this.solicitudOrdenRepository.save(orden);
+    }
+    
+    }else{
+      return;
+    }
+
     }
     } catch (error) {
       console.log(error);
@@ -350,15 +365,76 @@ console.log(existSolicitudCompra);
 
   }
 
+  async getEstadosTrabajo(){
+
+    const estados = await this.estadoTrabajoRepository.find();
+
+    return estados;
+  }
   findOne(id: number) {
     return `This action returns a #${id} ordenDeTrabajo`;
   }
 
-  update(id: number, updateOrdenDeTrabajoDto: UpdateOrdenDeTrabajoDto) {
-    return `This action updates a #${id} ordenDeTrabajo`;
+  async update(id: number, updateOrdenDeTrabajoDto: UpdateOrdenDeTrabajoDto) {
+
+    const solicitante = await this.userRepository.findOne({ where: { name: updateOrdenDeTrabajoDto.userSolicitante }, select: ['id'] });
+    const receptor = await this.userRepository.findOne({ where: { name: updateOrdenDeTrabajoDto.userReceptor }, select: ['id'] });
+    const tecnico = await this.userRepository.findOne({ where: { name: updateOrdenDeTrabajoDto.userTecnico }, select: ['id'] });
+    const estado = await this.estadoTrabajoRepository.findOne({where:{estado:updateOrdenDeTrabajoDto.estado},select:['id']});
+
+    if(!solicitante){
+      throw new NotFoundException("No se encontro un solicitante");
+    }
+    if(!receptor){
+      throw new NotFoundException("No se encontro un receptor");
+    }
+
+     if(!estado){
+      throw new NotFoundException("No se encontro un estado");
+    }
+
+    
+   const updateSoli = await this.solicitudOrdenRepository.update(id,{
+    fechaInicio:updateOrdenDeTrabajoDto.fechaInicio,
+    fechaFinal:updateOrdenDeTrabajoDto.fechaFinal,
+    HoraInicio:updateOrdenDeTrabajoDto.HoraInicio,
+    HoraFinal:updateOrdenDeTrabajoDto.HoraFinal,
+    Area:updateOrdenDeTrabajoDto.Area,
+    Codigo:updateOrdenDeTrabajoDto.Codigo,
+    Maquina:updateOrdenDeTrabajoDto.Maquina,
+    EspecificacionMaquina:updateOrdenDeTrabajoDto.EspecificacionMaquina,
+    Categoria:updateOrdenDeTrabajoDto.Categoria,
+    TipoTrabajo:updateOrdenDeTrabajoDto.TipoTrabajo,
+    DescripcionTrabajo:updateOrdenDeTrabajoDto.DescripcionTrabajo,
+    userSolicitante: solicitante,
+    userReceptor: receptor,
+    userTecnico: tecnico ?? null,
+    estadoTrabajo:estado
+   });
+   
+   if(updateSoli){
+    return {msj:"Solicitud de orden actualizada!"};
+   }else{
+
+    return {msj:"No se pudo actualizar la solicitud"};
+   }
+   
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} ordenDeTrabajo`;
+ async remove(id: number) {
+
+  console.log(id);
+  try {
+       const deleteOrdenTrabajo = await this.solicitudOrdenRepository.delete({id});
+
+   if(deleteOrdenTrabajo){
+   return {msj:"Se elimino correctamente!"}
+   }else{
+    return {msj:"Fallo al eliminarse"};
+   }
+  } catch (error) {
+    console.log("Error en eliminar orden de trabajo", error);
   }
-}
+
+  }
+  }

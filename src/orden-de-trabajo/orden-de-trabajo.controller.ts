@@ -55,6 +55,11 @@ export class OrdenDeTrabajoController {
   getSolicitudReciente(@Param('id') id:string){
     return this.ordenDeTrabajoService.getSolicitudReciente(+id);
   }
+
+  @Get("estados")
+  getEstadosTrabajo(){
+    return this.ordenDeTrabajoService.getEstadosTrabajo();
+  }
    
   @Get(':id')
   findOne(@Param('id') id: string) {

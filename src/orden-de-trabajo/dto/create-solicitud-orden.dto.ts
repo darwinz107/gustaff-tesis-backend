@@ -48,8 +48,5 @@ export class CreateSolicitudOrdenDto {
     userReceptor:string;
     @IsString()
     @IsEmpty()
-    
     userTecnico:string;  
-    
-
 }

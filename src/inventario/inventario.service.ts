@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateInventarioDto } from './dto/create-inventario.dto';
 import { UpdateInventarioDto } from './dto/update-inventario.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -93,8 +93,13 @@ try {
   
 }
 
-  findAll() {
-    return `This action returns all inventario`;
+  async findAll() {
+
+    const inventarios = await this.inventarioRepository.find({select:['id','nombre','stock']});
+    if(!inventarios){
+      return new NotFoundException("No se encontro inventarios");
+    }
+    return inventarios;
   }
 
   findOne(id: number) {
