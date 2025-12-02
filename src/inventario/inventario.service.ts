@@ -7,6 +7,7 @@ import { Inventario } from './entities/inventario.entity';
 import { CreateItemsSolicitadosDto } from './dto/create-items-solicitados.dto';
 import { ItemsSolicitados } from './entities/itemsSolicitados.entity';
 import { SolicitudDeCompra } from 'src/solicitud-de-compra/entities/solicitud-de-compra.entity';
+import { StockDto } from './dto/stock.dto';
 
 @Injectable()
 export class InventarioService {
@@ -18,6 +19,24 @@ export class InventarioService {
   create(createInventarioDto: CreateInventarioDto) {
     return 'This action adds a new inventario';
   }
+
+  async evaluarStock(stockDto:StockDto){
+
+const findItem = await this.inventarioRepository.findOne({where:{nombre:stockDto.item}});
+
+     if(findItem){
+
+      const calcStock = (findItem.stock -stockDto.cantidad);
+
+      if(calcStock < 0){
+       const compras = [
+        {cantidad:stockDto.cantidad,estado:"En Stock",validate:true},
+        {cantidad:calcStock,estado:"Por Comprar",validate:false}
+       ]
+      }
+
+}
+}
 
   async createItemsSolicitados(createItemsSolicitadosDto: CreateItemsSolicitadosDto) {
 console.log("llego al servicio de inventario para items solicitados");
@@ -108,7 +127,7 @@ try {
 
  async filtrarInventario(item: string) {
 
-    const inventario = await this.inventarioRepository.find({where:{nombre:Like(`${item}%`)},select:['nombre']});
+    const inventario = await this.inventarioRepository.find({where:{nombre:Like(`${item}%`)},select:['id','nombre','stock']});
 
     return inventario;
   }
