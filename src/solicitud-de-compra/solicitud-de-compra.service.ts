@@ -117,7 +117,7 @@ export class SolicitudDeCompraService implements OnModuleInit{
    async ordenCompraById(id:number) {
     
     if(!id){
-      id = await this.solicitudDeCompraRepository.count() +3;
+      id = await this.solicitudDeCompraRepository.count() +5;
     }
 
     console.log('ID de la solicitud de compra:', id);
@@ -149,6 +149,7 @@ export class SolicitudDeCompraService implements OnModuleInit{
       'itemSolicitados.cantidad',
       'itemSolicitados.caracteristica',
       'itemSolicitados.Observacion',
+      'itemSolicitados.existencia',
     ])
     .where('solicitudCompra.id = :id',{id})
     .getOne();
