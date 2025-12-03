@@ -135,6 +135,7 @@ export class SolicitudDeCompraService implements OnModuleInit{
       'solicitudCompra.Destino',
       
       //'ordenTrabajo.id',
+      'ordenTrabajo.id',
       'ordenTrabajo.NumOrden',
       'ordenTrabajo.DescripcionTrabajo',
       'ordenTrabajo.Area',
@@ -165,11 +166,38 @@ export class SolicitudDeCompraService implements OnModuleInit{
     return `This action returns a #${id} solicitudDeCompra`;
   }
 
-  update(id: number, updateSolicitudDeCompraDto: UpdateSolicitudDeCompraDto) {
-    return `This action updates a #${id} solicitudDeCompra`;
+  async update(id: number, updateSolicitudDeCompraDto: UpdateSolicitudDeCompraDto) {
+
+    
+
+    const updateSoliMaterial = await this.solicitudDeCompraRepository.update(id,{Autoriza:updateSolicitudDeCompraDto.Autoriza,Destino:updateSolicitudDeCompraDto.Destino,numOrdenTrabajo:{id:updateSolicitudDeCompraDto.ordenTrabajoId}});
+
+    if(updateSoliMaterial){
+    return {msj:"Actualizado solicitud de material"}
+    }
+
+    return {msj:"No se pudo actualizar la solicitud de material"};
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} solicitudDeCompra`;
+ async remove(id: number) {
+
+    const buscarItems = await this.itemsSolicitadosRepository.find({where:{ordenCompra:{id:id}}});
+
+    if(buscarItems){
+    for(const item of buscarItems){
+        await this.itemsSolicitadosRepository.delete(item.id);
+    }
+  }else{
+    return {msj:"No se encontraron items relacionados"}
+  }
+
+
+    const deleteSolMaterial = await this.solicitudDeCompraRepository.delete(id);
+
+    if(deleteSolMaterial){
+     return {msj:"Solicitud de material eliminada!"}
+    }
+    return {msj:"Fallo al eliminar la solicitud de material"}
+    
   }
 }
