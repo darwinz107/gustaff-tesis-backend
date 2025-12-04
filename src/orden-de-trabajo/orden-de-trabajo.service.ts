@@ -24,6 +24,7 @@ import { EstadoTrabajoEnum } from './enums/estado-trabajo.enum';
 import { EstadoTrabajo } from './entities/estadoTrabajo';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { SolicitudDeCompra } from 'src/solicitud-de-compra/entities/solicitud-de-compra.entity';
+import { EstadoUso } from './entities/estadoUso';
 
 @Injectable()
 export class OrdenDeTrabajoService implements OnModuleInit{
@@ -35,6 +36,7 @@ export class OrdenDeTrabajoService implements OnModuleInit{
     @InjectRepository(User) private readonly userRepository: Repository<User>,
     @InjectRepository(EstadoTrabajo) private readonly estadoTrabajoRepository: Repository<EstadoTrabajo>, 
     @InjectRepository(SolicitudDeCompra) private readonly solicitudDeCompraRepository: Repository<SolicitudDeCompra>, 
+    @InjectRepository(EstadoUso) private readonly estadoUsoRepository: Repository<EstadoUso>, 
   ) { }
 
   async onModuleInit() {
@@ -46,6 +48,15 @@ export class OrdenDeTrabajoService implements OnModuleInit{
         const newEstado = this.estadoTrabajoRepository.create({estado:estado});
         await this.estadoTrabajoRepository.save(newEstado);
       }
+    }
+
+    const estadosUso = await this.estadoUsoRepository.find();
+    const bool = [false,true]
+    if(estadosUso.length === 0){
+       for(const uso of bool){
+         const crearUso =  this.estadoUsoRepository.create({uso:uso});
+        await this.estadoUsoRepository.save(crearUso);
+       }
     }
   }
 
@@ -138,9 +149,14 @@ const existOrdenTrabajo = await this.solicitudOrdenRepository.findOne({where:{id
     const receptor = await this.userRepository.findOne({ where: { name: createSolicitudOrdenDto.userReceptor }, select: ['id'] });
     const tecnico = await this.userRepository.findOne({ where: { name: createSolicitudOrdenDto.userTecnico }, select: ['id'] });
     const estado = await this.estadoTrabajoRepository.findOne({where:{id:1}});
+    const estadoUso = await this.estadoUsoRepository.findOne({where:{id:0}});
 
    if(!estado){
      throw new NotFoundException("No se encontro un estado");
+   }
+
+   if(!estadoUso){
+     throw new NotFoundException("No se encontro un estado de uso");
    }
 
     const lgtOrdenTrabajo = await this.solicitudOrdenRepository.count();
@@ -165,7 +181,8 @@ const existOrdenTrabajo = await this.solicitudOrdenRepository.findOne({where:{id
         userSolicitante: solicitante,
         userReceptor: receptor,
         userTecnico: tecnico ?? null,
-        estadoTrabajo:estado
+        estadoTrabajo:estado,
+        estadoUso:estadoUso
       };
 
       const crearSolicitud = this.solicitudOrdenRepository.create(nuevaSolicitud);
@@ -352,7 +369,7 @@ const existOrdenTrabajo = await this.solicitudOrdenRepository.findOne({where:{id
     }
 
     if(!filtrarOrdenDeTrabajoDto.fechaInicio){
-     const ordenTrabajo = await this.solicitudOrdenRepository.find({ where: { userSolicitante: { name: Like(`${filtrarOrdenDeTrabajoDto.userSolicitante}%`) } },
+     const ordenTrabajo = await this.solicitudOrdenRepository.find({ where:{ userSolicitante: { name: Like(`${filtrarOrdenDeTrabajoDto.userSolicitante}%`) } , estadoUso:{id:1}},
     select: ['id','NumOrden','Area','Codigo','Maquina','userSolicitante'],relations:['userSolicitante']});
     console.log(ordenTrabajo);
     return ordenTrabajo;

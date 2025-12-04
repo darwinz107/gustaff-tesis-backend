@@ -20,7 +20,7 @@ export class SolicitudDeCompraService implements OnModuleInit{
 ){}
 
  async onModuleInit() {
-     const lgt = [EstadoCompraEnum.PRO,EstadoCompraEnum.PAU,EstadoCompraEnum.LIS,EstadoCompraEnum.ENT];
+     const lgt = [EstadoCompraEnum.PRO,EstadoCompraEnum.PAU,EstadoCompraEnum.PAR,EstadoCompraEnum.ENT];
      
      for(const estado of lgt){
         const findEstado = await this.estadoCompraRepository.findOne({where:{estado:estado}});
@@ -42,13 +42,13 @@ export class SolicitudDeCompraService implements OnModuleInit{
       throw new NotFoundException("No se encontro la orden de trabajo asociada");
     }
 
-    const estadoDefault = await this.estadoCompraRepository.findOne({where:{id:1}});
+    const estadoDefault = await this.estadoCompraRepository.findOne({where:{id:5}});
  if(!estadoDefault){
       throw new NotFoundException("No se encontro esta de compra");
     }
 
 
-    const newNumOrden = 'OC-'+(await this.solicitudDeCompraRepository.count()+1).toString().padStart(5,'0');
+    const newNumOrden = 'SM-'+(await this.solicitudDeCompraRepository.count()+1).toString().padStart(5,'0');
 
     const nuevaSolicitudCompra = this.solicitudDeCompraRepository.create({
       numOrden:newNumOrden,
@@ -59,6 +59,9 @@ export class SolicitudDeCompraService implements OnModuleInit{
     });
 
     await this.solicitudDeCompraRepository.save(nuevaSolicitudCompra);
+
+    ordenTrabajo.estadoUso.id = 2;
+    await this.ordenDeTrabajoRepository.save(ordenTrabajo);
 
     return {msj:"Solicitud de compra creada"}
   } catch (error) {
@@ -88,6 +91,7 @@ export class SolicitudDeCompraService implements OnModuleInit{
     const solicitudesCompra = await this.solicitudDeCompraRepository.createQueryBuilder('solicitudCompra')
     .leftJoin('solicitudCompra.numOrdenTrabajo','ordenTrabajo')
     .leftJoin('ordenTrabajo.userSolicitante','userSolicitante')
+    .leftJoin('ordenTrabajo.estadoUso','estadoUso')
     .leftJoin('solicitudCompra.estadoCompra','estadoCompra')
     .select([
       'solicitudCompra.id',
@@ -104,6 +108,7 @@ export class SolicitudDeCompraService implements OnModuleInit{
       'estadoCompra.id',
       'estadoCompra.estado'
     ])
+    .where("estadoUso.id = :id",{id:0})
     .getMany();
     console.log(solicitudesCompra[0]);
     if(!solicitudesCompra){
@@ -117,7 +122,16 @@ export class SolicitudDeCompraService implements OnModuleInit{
    async ordenCompraById(id:number) {
     
     if(!id){
-      id = await this.solicitudDeCompraRepository.count() +5;
+     const sinId = await this.solicitudDeCompraRepository.createQueryBuilder('solicitudMaterial')
+      .select([
+        'solicitudMaterial.id'
+      ])
+      .orderBy('solicitudMaterial.id','ASC')
+      .getOne();
+
+      if(!sinId){
+        throw new NotFoundException("No existen ninguna orden de compra");
+      }
     }
 
     console.log('ID de la solicitud de compra:', id);

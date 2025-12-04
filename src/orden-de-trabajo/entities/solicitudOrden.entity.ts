@@ -2,6 +2,7 @@ import { SolicitudDeCompra } from "src/solicitud-de-compra/entities/solicitud-de
 import { User } from "src/users/entities/user.entity";
 import { Column, Entity, ManyToOne, OneToOne, PrimaryGeneratedColumn } from "typeorm";
 import { EstadoTrabajo } from "./estadoTrabajo";
+import { EstadoUso } from "./estadoUso";
 
 
 @Entity('orden_trabajo')
@@ -41,5 +42,7 @@ export class SolicitudOrden {
     @OneToOne(()=>SolicitudDeCompra,(solicitudDeCompra)=>solicitudDeCompra.numOrdenTrabajo)
     solicitudTrabajo:SolicitudDeCompra;
     @ManyToOne(()=>EstadoTrabajo,(estadoTrabajo)=>estadoTrabajo.ordenTrabajo)
-    estadoTrabajo:EstadoTrabajo; 
+    estadoTrabajo:EstadoTrabajo;
+    @ManyToOne(()=>EstadoUso,(estadoUso)=>estadoUso.ordenTrabajo)
+    estadoUso:EstadoUso; 
 }

@@ -1,8 +1,7 @@
 
 export enum EstadoCompraEnum{
-    PRO = "En Proceso",
+    PRO = "EN PROCESO",
     PAU = "PAUSADO",
-    LIS = "LISTO PARA ENTREGA",
-    ENT = "ENTREGADO",
-    VEN = "VENCIDO"
+    PAR = "ENTREGA PARCIAL",
+    ENT = "ENTREGADO"
 }
