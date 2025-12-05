@@ -21,6 +21,11 @@ export class OrdenDeTrabajoController {
   return this.ordenDeTrabajoService.getAllOrdenesTrabajo();
  }
 
+  @Get('all-ordenes-sin-uso')
+ getAllOrdenesTrabajoSinUso(){
+  return this.ordenDeTrabajoService.getAllOrdenesTrabajoSinUso();
+ }
+
   @Post('orden-by-solicitante')
  getOrdenTrabajoBySolicitante(@Body() searchbyuser:{solicitante:string}){
   return this.ordenDeTrabajoService.getOrdenTrabajoBySolicitante(searchbyuser.solicitante);

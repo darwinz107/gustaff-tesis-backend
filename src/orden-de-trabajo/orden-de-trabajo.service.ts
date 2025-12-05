@@ -149,7 +149,7 @@ const existOrdenTrabajo = await this.solicitudOrdenRepository.findOne({where:{id
     const receptor = await this.userRepository.findOne({ where: { name: createSolicitudOrdenDto.userReceptor }, select: ['id'] });
     const tecnico = await this.userRepository.findOne({ where: { name: createSolicitudOrdenDto.userTecnico }, select: ['id'] });
     const estado = await this.estadoTrabajoRepository.findOne({where:{id:1}});
-    const estadoUso = await this.estadoUsoRepository.findOne({where:{id:0}});
+    const estadoUso = await this.estadoUsoRepository.findOne({where:{id:1}});
 
    if(!estado){
      throw new NotFoundException("No se encontro un estado");
@@ -379,6 +379,13 @@ const existOrdenTrabajo = await this.solicitudOrdenRepository.findOne({where:{id
     console.log(ordenTrabajo);
     return ordenTrabajo;
     }
+
+  }
+
+  async getAllOrdenesTrabajoSinUso(){
+
+    const ordenesSinUso = await this.solicitudOrdenRepository.find({where:{estadoUso:{id:1}},select:['id','NumOrden','Area','Codigo','Maquina','userSolicitante'],relations:['userSolicitante']});
+    return ordenesSinUso;
 
   }
 

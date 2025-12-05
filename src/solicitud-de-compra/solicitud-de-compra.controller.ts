@@ -16,6 +16,8 @@ export class SolicitudDeCompraController {
   findAllSolicitudesCompra() {
     return this.solicitudDeCompraService.findAllSolicitudesCompra();
   }
+
+  
   @Get('solicitud-compra/:id')
   ordenCompraById(@Param('id') id: string) {
     return this.solicitudDeCompraService.ordenCompraById(+id);

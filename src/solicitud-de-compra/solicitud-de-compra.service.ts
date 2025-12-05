@@ -61,12 +61,16 @@ export class SolicitudDeCompraService implements OnModuleInit{
     await this.solicitudDeCompraRepository.save(nuevaSolicitudCompra);
 
     ordenTrabajo.estadoUso.id = 2;
-    await this.ordenDeTrabajoRepository.save(ordenTrabajo);
-
-    return {msj:"Solicitud de compra creada"}
+ const actulizarTrabajo =   await this.ordenDeTrabajoRepository.save(ordenTrabajo);
+ if(actulizarTrabajo){
+  return {msj:"Solicitud de compra creada",validate:true}
+   
+ }
+return {msj:"Fallo al actualizar el estado de ordenTrabajo.estadoUso.id",validate:false}
+    
   } catch (error) {
      console.log(error);
-     return {msj:"Error al registrar la solicitud de compra"};
+     return {msj:"Error al registrar la solicitud de compra",validate:false};
   }
     
   }
@@ -91,7 +95,7 @@ export class SolicitudDeCompraService implements OnModuleInit{
     const solicitudesCompra = await this.solicitudDeCompraRepository.createQueryBuilder('solicitudCompra')
     .leftJoin('solicitudCompra.numOrdenTrabajo','ordenTrabajo')
     .leftJoin('ordenTrabajo.userSolicitante','userSolicitante')
-    .leftJoin('ordenTrabajo.estadoUso','estadoUso')
+    
     .leftJoin('solicitudCompra.estadoCompra','estadoCompra')
     .select([
       'solicitudCompra.id',
@@ -108,7 +112,7 @@ export class SolicitudDeCompraService implements OnModuleInit{
       'estadoCompra.id',
       'estadoCompra.estado'
     ])
-    .where("estadoUso.id = :id",{id:0})
+    
     .getMany();
     console.log(solicitudesCompra[0]);
     if(!solicitudesCompra){
@@ -118,6 +122,8 @@ export class SolicitudDeCompraService implements OnModuleInit{
     return solicitudesCompra;
   
   }
+
+ 
 
    async ordenCompraById(id:number) {
     
