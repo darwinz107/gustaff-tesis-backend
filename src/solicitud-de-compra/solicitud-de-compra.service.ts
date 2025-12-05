@@ -3,12 +3,14 @@ import { CreateSolicitudDeCompraDto } from './dto/create-solicitud-de-compra.dto
 import { UpdateSolicitudDeCompraDto } from './dto/update-solicitud-de-compra.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { SolicitudDeCompra } from './entities/solicitud-de-compra.entity';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { SolicitudOrden } from 'src/orden-de-trabajo/entities/solicitudOrden.entity';
 
 import { ItemsSolicitados } from 'src/inventario/entities/itemsSolicitados.entity';
 import { EstadoCompra } from './entities/estadoCompra';
 import { EstadoCompraEnum } from './enums/estadoCompra.enum';
+import { Inventario } from 'src/inventario/entities/inventario.entity';
+import { CreateItemsSolicitadosDto } from 'src/inventario/dto/create-items-solicitados.dto';
 
 @Injectable()
 export class SolicitudDeCompraService implements OnModuleInit{
@@ -17,6 +19,7 @@ export class SolicitudDeCompraService implements OnModuleInit{
   @InjectRepository(SolicitudOrden) private readonly ordenDeTrabajoRepository:Repository<SolicitudOrden>,
   @InjectRepository(ItemsSolicitados) private readonly itemsSolicitadosRepository:Repository<ItemsSolicitados>,
   @InjectRepository(EstadoCompra) private readonly estadoCompraRepository:Repository<EstadoCompra>,
+      private dataSource:DataSource,
 ){}
 
  async onModuleInit() {
@@ -32,17 +35,29 @@ export class SolicitudDeCompraService implements OnModuleInit{
   }
 
  async create(createSolicitudDeCompraDto: CreateSolicitudDeCompraDto) {
+
+  const queryRunner = this.dataSource.createQueryRunner();
+   await queryRunner.connect();
+   await queryRunner.startTransaction();
+ try {
   console.log("llego al servicio de solicitud de compra");
   console.log(createSolicitudDeCompraDto.Destino);
 
-  try {
-    const ordenTrabajo = await this.ordenDeTrabajoRepository.findOne({where:{id:createSolicitudDeCompraDto.ordenTrabajoId}});
+ 
+    //const ordenTrabajo = await this.ordenDeTrabajoRepository.findOne({where:{id:createSolicitudDeCompraDto.ordenTrabajoId}});
+
+    const ordenTrabajo = await queryRunner.manager.createQueryBuilder(SolicitudOrden,'solicitudOrden')
+    .where('solicitudOrden.id = :id',{id:createSolicitudDeCompraDto.ordenTrabajoId})
+    .getOne();
 
     if(!ordenTrabajo){
       throw new NotFoundException("No se encontro la orden de trabajo asociada");
     }
 
-    const estadoDefault = await this.estadoCompraRepository.findOne({where:{id:5}});
+    //const estadoDefault = await this.estadoCompraRepository.findOne({where:{id:5}});
+     const estadoDefault = await queryRunner.manager.createQueryBuilder(EstadoCompra,'estadoCompra')
+    .where('estadoCompra.id = :id',{id:5})
+    .getOne();
  if(!estadoDefault){
       throw new NotFoundException("No se encontro esta de compra");
     }
@@ -50,7 +65,7 @@ export class SolicitudDeCompraService implements OnModuleInit{
 
     const newNumOrden = 'SM-'+(await this.solicitudDeCompraRepository.count()+1).toString().padStart(5,'0');
 
-    const nuevaSolicitudCompra = this.solicitudDeCompraRepository.create({
+   /* const nuevaSolicitudCompra = this.solicitudDeCompraRepository.create({
       numOrden:newNumOrden,
       numOrdenTrabajo:ordenTrabajo,
       Autoriza:createSolicitudDeCompraDto.Autoriza,
@@ -58,19 +73,106 @@ export class SolicitudDeCompraService implements OnModuleInit{
       estadoCompra:estadoDefault
     });
 
-    await this.solicitudDeCompraRepository.save(nuevaSolicitudCompra);
+    await this.solicitudDeCompraRepository.save(nuevaSolicitudCompra);*/
 
-    ordenTrabajo.estadoUso.id = 2;
- const actulizarTrabajo =   await this.ordenDeTrabajoRepository.save(ordenTrabajo);
+    const nuevaCompra = {
+      numOrden:newNumOrden,
+      numOrdenTrabajo:ordenTrabajo,
+      Autoriza:createSolicitudDeCompraDto.Autoriza,
+      Destino:createSolicitudDeCompraDto.Destino,
+      estadoCompra:estadoDefault
+    }
+
+    const nuevaSolicitudCompra = await queryRunner.manager.save(SolicitudDeCompra,nuevaCompra);
+
+  /*  const findItem = await this.inventarioRepository.findOne({where:{nombre:stockDto.item}});
+
+     if(findItem){
+
+      const calcStock = (findItem.stock -stockDto.cantidad);
+
+      if(calcStock < 0){
+       const compras = [
+        {cantidad:findItem.stock,estado:"En Stock",validate:true},
+        {cantidad:calcStock*(-1),estado:"Por Comprar",validate:false}
+       ]
+
+       return compras;
+      }
+
+       if(calcStock >= 0){
+       const compras = [
+        {cantidad:stockDto.cantidad,estado:"En Stock",validate:true}
+       ]
+
+       return compras;
+      }
+*/
+
+const solCompra = await queryRunner.manager.createQueryBuilder(SolicitudDeCompra,'solicitudDeCompra')
+.innerJoin('solicitudDeCompra.numOrdenTrabajo','ordenTrabajo')
+.where('ordenTrabajo.id = :ordenTrabajoId',{ordenTrabajoId:createSolicitudDeCompraDto.ordenTrabajoId})
+.getOne();
+
+ if(!solCompra){
+      throw new NotFoundException("No se encontro la solicitud de material asociada a la orden de trabajo");
+    }
+
+let compras:CreateItemsSolicitadosDto[] = [];
+
+for(const item of createSolicitudDeCompraDto.items){
+       const findItem = await queryRunner.manager.createQueryBuilder(Inventario,'inventario')
+       .where('inventario.nombre = :item',{item: item.item})
+       .getOne();
+
+       if(findItem){
+
+      const calcStock = (findItem.stock -item.cantidad);
+
+      if(calcStock < 0){
+        const obj1:CreateItemsSolicitadosDto = {item:item.item,cantidad:findItem.stock,caracteristica:item.caracteristica,Observacion:item.Observacion,existencia:true,ordenCompra:solCompra} 
+        const obj2:CreateItemsSolicitadosDto = {item:item.item,cantidad:calcStock*(-1),caracteristica:item.caracteristica,Observacion:item.Observacion,existencia:false,ordenCompra:solCompra} 
+        compras = [...compras,obj1,obj2]
+      
+      }
+
+       if(calcStock >= 0){
+        const obj1:CreateItemsSolicitadosDto = {item:item.item,cantidad:findItem.stock,caracteristica:item.caracteristica,Observacion:item.Observacion,existencia:true,ordenCompra:solCompra} 
+        compras = [...compras,obj1]
+      
+      }
+
+}else{
+    const obj1:CreateItemsSolicitadosDto = {item:item.item,cantidad:item.cantidad,caracteristica:item.caracteristica,Observacion:item.Observacion,existencia:false,ordenCompra:solCompra} 
+        compras = [...compras,obj1]
+
+}
+}
+
+for(const compra of compras){
+   const saveItemsSolicitados = await queryRunner.manager.save(ItemsSolicitados,compra);
+}
+
+ ordenTrabajo.estadoUso = {id:2} as any;
+
+const cambiarEstadoUsoTrabajo = await queryRunner.manager.save(SolicitudOrden,ordenTrabajo);
+
+   
+/* const actulizarTrabajo =   await this.ordenDeTrabajoRepository.save(ordenTrabajo);
  if(actulizarTrabajo){
   return {msj:"Solicitud de compra creada",validate:true}
    
- }
-return {msj:"Fallo al actualizar el estado de ordenTrabajo.estadoUso.id",validate:false}
+ }*/
+await queryRunner.commitTransaction();
+return {msj:"Solicitud de compra creada",validate:true}
     
   } catch (error) {
+  await  queryRunner.rollbackTransaction();
      console.log(error);
      return {msj:"Error al registrar la solicitud de compra",validate:false};
+  }finally{
+    await  queryRunner.release();
+  
   }
     
   }
@@ -126,7 +228,7 @@ return {msj:"Fallo al actualizar el estado de ordenTrabajo.estadoUso.id",validat
  
 
    async ordenCompraById(id:number) {
-    
+    console.log(id);
     if(!id){
      const sinId = await this.solicitudDeCompraRepository.createQueryBuilder('solicitudMaterial')
       .select([
@@ -138,6 +240,8 @@ return {msj:"Fallo al actualizar el estado de ordenTrabajo.estadoUso.id",validat
       if(!sinId){
         throw new NotFoundException("No existen ninguna orden de compra");
       }
+      console.log(sinId);
+      id = sinId.id;
     }
 
     console.log('ID de la solicitud de compra:', id);

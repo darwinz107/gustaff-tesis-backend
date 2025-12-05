@@ -48,7 +48,7 @@ const findItem = await this.inventarioRepository.findOne({where:{nombre:stockDto
 }
 }
 
-  async createItemsSolicitados(createItemsSolicitadosDto: CreateItemsSolicitadosDto) {
+/*  async createItemsSolicitados(createItemsSolicitadosDto: CreateItemsSolicitadosDto) {
 console.log("llego al servicio de inventario para items solicitados");
 console.log(createItemsSolicitadosDto);
 try {
@@ -110,17 +110,17 @@ try {
         existencia:false
       });
 */
-      await this.itemsSolicitadosRepository.save({item:createItemsSolicitadosDto.item,cantidad:createItemsSolicitadosDto.cantidad,caracteristica:createItemsSolicitadosDto.caracteristica,Observacion:createItemsSolicitadosDto.Observacion,existencia:createItemsSolicitadosDto.existencia,ordenCompra:ordenCompra});
-      return {msj:"Item registrado con existencia en inventario"};
+   /*   await this.itemsSolicitadosRepository.save({item:createItemsSolicitadosDto.item,cantidad:createItemsSolicitadosDto.cantidad,caracteristica:createItemsSolicitadosDto.caracteristica,Observacion:createItemsSolicitadosDto.Observacion,existencia:createItemsSolicitadosDto.existencia,ordenCompra:ordenCompra});
+      return {msj:"Item registrado con existencia en inventario"};*/
    // }
     
  // }
-} catch (error) {
+/*} catch (error) {
     console.log(error);
     return {msj:"Error al registrar el item solicitado"};
 }
   
-}
+}*/
 
   async findAll() {
 

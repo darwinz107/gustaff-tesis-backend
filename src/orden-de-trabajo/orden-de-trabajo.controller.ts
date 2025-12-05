@@ -21,6 +21,11 @@ export class OrdenDeTrabajoController {
   return this.ordenDeTrabajoService.getAllOrdenesTrabajo();
  }
 
+ @Get('all-ordenes-numOrden')
+ allOrdenTrabajoNumOrden(){
+ return this.ordenDeTrabajoService.allOrdenTrabajoNumOrden();
+ }
+
   @Get('all-ordenes-sin-uso')
  getAllOrdenesTrabajoSinUso(){
   return this.ordenDeTrabajoService.getAllOrdenesTrabajoSinUso();

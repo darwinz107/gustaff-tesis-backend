@@ -3,7 +3,7 @@ import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { UpdateOrdenDeTrabajoDto } from './dto/update-orden-de-trabajo.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Area } from '../parametro/entities/area.entity';
-import { In, Like, Repository } from 'typeorm';
+import { DataSource, In, Like, Repository } from 'typeorm';
 import { Codigo } from '../parametro/entities/codigo.entity';
 import { Maquina } from '../parametro/entities/maquina.entity';
 import { CreateAreaDto } from '../admin/dto/create-area.dto';
@@ -37,6 +37,7 @@ export class OrdenDeTrabajoService implements OnModuleInit{
     @InjectRepository(EstadoTrabajo) private readonly estadoTrabajoRepository: Repository<EstadoTrabajo>, 
     @InjectRepository(SolicitudDeCompra) private readonly solicitudDeCompraRepository: Repository<SolicitudDeCompra>, 
     @InjectRepository(EstadoUso) private readonly estadoUsoRepository: Repository<EstadoUso>, 
+    private dataSource:DataSource,
   ) { }
 
   async onModuleInit() {
@@ -144,16 +145,60 @@ const existOrdenTrabajo = await this.solicitudOrdenRepository.findOne({where:{id
   }*/
 
   async registerSolicitudOrden(createSolicitudOrdenDto: CreateSolicitudOrdenDto) {
+
+  const queryRunner = this.dataSource.createQueryRunner();
+   await queryRunner.connect();
+   await queryRunner.startTransaction();
+
+try {
+
     console.log(createSolicitudOrdenDto.userTecnico);
-    const solicitante = await this.userRepository.findOne({ where: { name: createSolicitudOrdenDto.userSolicitante }, select: ['id'] });
-    const receptor = await this.userRepository.findOne({ where: { name: createSolicitudOrdenDto.userReceptor }, select: ['id'] });
+    //const solicitante = await this.userRepository.findOne({ where: { name: createSolicitudOrdenDto.userSolicitante }, select: ['id'] });
+    /*const receptor = await this.userRepository.findOne({ where: { name: createSolicitudOrdenDto.userReceptor }, select: ['id'] });
     const tecnico = await this.userRepository.findOne({ where: { name: createSolicitudOrdenDto.userTecnico }, select: ['id'] });
     const estado = await this.estadoTrabajoRepository.findOne({where:{id:1}});
-    const estadoUso = await this.estadoUsoRepository.findOne({where:{id:1}});
+    const estadoUso = await this.estadoUsoRepository.findOne({where:{id:1}});*/
+
+    const solicitante = await this.dataSource.createQueryBuilder(User,'user')
+    .where('user.name = :name',{name:createSolicitudOrdenDto.userSolicitante})
+    .select(['user.id'])
+    .getOne();
+
+     if(!solicitante){
+     throw new NotFoundException("No se encontro un solicitante");
+   }
+
+   const receptor = await queryRunner.manager.createQueryBuilder(User,'user')
+    .where('user.name = :name',{name:createSolicitudOrdenDto.userReceptor})
+    .select(['user.id'])
+    .getOne();
+
+     if(!receptor){
+     throw new NotFoundException("No se encontro un receptor");
+   }
+
+   const tecnico = await queryRunner.manager.createQueryBuilder(User,'user')
+    .where('user.name = :name',{name:createSolicitudOrdenDto.userTecnico})
+    .select(['user.id'])
+    .getOne();
+
+     if(!tecnico){
+     throw new NotFoundException("No se encontro un tecnico");
+   }
+
+    const estado = await queryRunner.manager.createQueryBuilder(EstadoTrabajo,'estadoTrabajo')
+    .where('estadoTrabajo.id = :id',{id:1})
+    
+    .getOne();
 
    if(!estado){
      throw new NotFoundException("No se encontro un estado");
    }
+
+    const estadoUso = await queryRunner.manager.createQueryBuilder(EstadoUso,'estadoUso')
+    .where('estadoUso.id = :id',{id:1})
+    
+    .getOne();
 
    if(!estadoUso){
      throw new NotFoundException("No se encontro un estado de uso");
@@ -162,7 +207,7 @@ const existOrdenTrabajo = await this.solicitudOrdenRepository.findOne({where:{id
     const lgtOrdenTrabajo = await this.solicitudOrdenRepository.count();
     createSolicitudOrdenDto.NumOrden = 'OT-' + (lgtOrdenTrabajo + 1).toString().padStart(5, '0');
 
-    if (solicitante && receptor) {
+    
 
       const nuevaSolicitud =
       {
@@ -185,11 +230,16 @@ const existOrdenTrabajo = await this.solicitudOrdenRepository.findOne({where:{id
         estadoUso:estadoUso
       };
 
-      const crearSolicitud = this.solicitudOrdenRepository.create(nuevaSolicitud);
-      await this.solicitudOrdenRepository.save(crearSolicitud);
+      const crearSolicitud = await queryRunner.manager.save(SolicitudOrden,nuevaSolicitud);
 
+      
+
+
+
+
+     await queryRunner.commitTransaction();
       return { msj: "Solicitud de orden creada!" };
-    }/*else{
+    /*else{
         const nuevaSolicitud = 
       { 
         fechaInicio:createSolicitudOrdenDto.fechaInicio,
@@ -215,8 +265,16 @@ const existOrdenTrabajo = await this.solicitudOrdenRepository.findOne({where:{id
    */
 
     //await this.solicitudOrdenRepository.save(nuevaSolicitud);
-    return { msj: "No se pudo crear la solicitud" };
-  }
+    
+    
+  
+} catch (error) {
+  return { msj: "No se pudo crear la solicitud" };
+  await queryRunner.rollbackTransaction();
+     }finally{
+    await  queryRunner.release();
+  
+  }}
 
   async getAllOrdenesTrabajo(){
      
@@ -251,6 +309,15 @@ const existOrdenTrabajo = await this.solicitudOrdenRepository.findOne({where:{id
       return ordenes;
     }
     return new NotFoundException("No existen solicitudes");
+  }
+
+  async allOrdenTrabajoNumOrden(){
+
+    const ordenTrabajosNumOrden = await this.solicitudOrdenRepository.find({select:['NumOrden']});
+    if(!ordenTrabajosNumOrden){
+return new NotFoundException("No existen ordenes de trabajo");
+    }
+    return ordenTrabajosNumOrden;
   }
 
   async getOrdenTrabajoBySolicitante(name:string){
@@ -436,13 +503,11 @@ const existOrdenTrabajo = await this.solicitudOrdenRepository.findOne({where:{id
     estadoTrabajo:estado
    });
    
-   if(updateSoli){
+   if(updateSoli.affected != 0){
     return {msj:"Solicitud de orden actualizada!"};
    }else{
-
     return {msj:"No se pudo actualizar la solicitud"};
-   }
-   
+   }  
   }
 
  async remove(id: number) {

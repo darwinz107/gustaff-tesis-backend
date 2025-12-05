@@ -24,10 +24,10 @@ export class InventarioController {
     return this.inventarioService.evaluarStock(stockDto);
   }
 
-  @Post('items-solicitados')
+ /* @Post('items-solicitados')
   createItemsSolicitados(@Body() createItemsSolicitadosDto: CreateItemsSolicitadosDto) {
     return this.inventarioService.createItemsSolicitados(createItemsSolicitadosDto);
-  }
+  }*/
 
   @Get()
   findAll() {
