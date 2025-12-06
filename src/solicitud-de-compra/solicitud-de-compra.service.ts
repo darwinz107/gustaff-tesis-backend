@@ -287,9 +287,7 @@ return {msj:"Solicitud de compra creada",validate:true}
   
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} solicitudDeCompra`;
-  }
+  
 
   async getAllEstadosCompra(){
 
@@ -370,4 +368,15 @@ return {msj:"Solicitud de compra creada",validate:true}
     return {msj:"Fallo al eliminar la solicitud de material"}
     
   }
+
+  async getAllSolicitudes(){
+
+    const solicitudes = await this.solicitudDeCompraRepository.find({where:[{estadoCompra:{id:1}},{estadoCompra:{id:5}}]});
+    if(!solicitudes){
+    throw new NotFoundException("No se encontro solicitudes de material");
+    }
+    return solicitudes;
+  }
+
+
 }

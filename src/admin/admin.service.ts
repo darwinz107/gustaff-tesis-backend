@@ -221,7 +221,7 @@ export class AdminService implements OnModuleInit{
       }  
 
       async update(id: number, updateUserDto: UpdateUserDto) {
-
+    console.log(updateUserDto.cargo);
     const cargo = await this.cargoRepository.findOne({where:{id:updateUserDto.cargo}});    
     if(!cargo){
       return new NotFoundException("cargo");
@@ -237,7 +237,12 @@ export class AdminService implements OnModuleInit{
       cargoId:cargo
     };
 
-    await this.userRepository.update(id,infoUpdate);
+   const res = await this.userRepository.update(id,infoUpdate);
+
+    if(res.affected ===0){
+    return {msj:`No se puedo actualizar la informacion de ${updateUserDto.name}`};
+
+    }
 
     return {msj:`Se actualizo la informacion de ${updateUserDto.name}`};
   } 

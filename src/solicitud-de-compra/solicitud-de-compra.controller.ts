@@ -22,6 +22,8 @@ export class SolicitudDeCompraController {
   ordenCompraById(@Param('id') id: string) {
     return this.solicitudDeCompraService.ordenCompraById(+id);
   }
+
+  
 @Get('estados-compra')
   getAllEstadosCompra(){
     return this.solicitudDeCompraService.getAllEstadosCompra();
@@ -32,10 +34,7 @@ export class SolicitudDeCompraController {
     return this.solicitudDeCompraService.getUltimaSolicitudCompra();
   }*/
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.solicitudDeCompraService.findOne(+id);
-  }
+ 
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateSolicitudDeCompraDto: UpdateSolicitudDeCompraDto) {
@@ -45,5 +44,10 @@ export class SolicitudDeCompraController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.solicitudDeCompraService.remove(+id);
+  }
+
+  @Get('buscar-solicitudes')
+  getAllSolicitudes(){
+    return this.solicitudDeCompraService.getAllSolicitudes();
   }
 }
