@@ -322,7 +322,12 @@ return {msj:"Solicitud de compra creada",validate:true}
     return {msj:"No se encontro una orden de trabajo valida",validate:false}
     }
 
-    const updateSoliMaterial = await this.solicitudDeCompraRepository.update(id,{Autoriza:updateSolicitudDeCompraDto.Autoriza,Destino:updateSolicitudDeCompraDto.Destino,numOrdenTrabajo:ordenTrabajo});
+    const estCompra = await this.estadoCompraRepository.findOne({where:{estado:updateSolicitudDeCompraDto.estadoCompra}});
+    if(!estCompra){
+    throw new NotFoundException("No es encontro un estado de compra");
+    }
+
+    const updateSoliMaterial = await this.solicitudDeCompraRepository.update(id,{Autoriza:updateSolicitudDeCompraDto.Autoriza,Destino:updateSolicitudDeCompraDto.Destino,numOrdenTrabajo:ordenTrabajo,estadoCompra:estCompra});
 
     if(updateSoliMaterial.affected !== 0){
 
