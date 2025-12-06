@@ -22,6 +22,10 @@ export class SolicitudDeCompraController {
   ordenCompraById(@Param('id') id: string) {
     return this.solicitudDeCompraService.ordenCompraById(+id);
   }
+@Get('estados-compra')
+  getAllEstadosCompra(){
+    return this.solicitudDeCompraService.getAllEstadosCompra();
+  }
 
  /* @Get('ultima-solicitud-compra') 
   getUltimaSolicitudCompra() {

@@ -11,6 +11,7 @@ import { EstadoCompra } from './entities/estadoCompra';
 import { EstadoCompraEnum } from './enums/estadoCompra.enum';
 import { Inventario } from 'src/inventario/entities/inventario.entity';
 import { CreateItemsSolicitadosDto } from 'src/inventario/dto/create-items-solicitados.dto';
+import { EstadoUso } from 'src/orden-de-trabajo/entities/estadoUso';
 
 @Injectable()
 export class SolicitudDeCompraService implements OnModuleInit{
@@ -290,14 +291,54 @@ return {msj:"Solicitud de compra creada",validate:true}
     return `This action returns a #${id} solicitudDeCompra`;
   }
 
+  async getAllEstadosCompra(){
+
+    const estadosCompra = await this.estadoCompraRepository.find({select:['id','estado']});
+
+    if(!estadosCompra){
+  throw new NotFoundException("No se encontro estados de compra");
+    }
+
+    return estadosCompra;
+  }
+
   async update(id: number, updateSolicitudDeCompraDto: UpdateSolicitudDeCompraDto) {
 
-    
+    const ordenTrabajo = await this.ordenDeTrabajoRepository.findOne({where:{NumOrden:updateSolicitudDeCompraDto.ordenTrabajoId}});
 
-    const updateSoliMaterial = await this.solicitudDeCompraRepository.update(id,{Autoriza:updateSolicitudDeCompraDto.Autoriza,Destino:updateSolicitudDeCompraDto.Destino,numOrdenTrabajo:{id:updateSolicitudDeCompraDto.ordenTrabajoId}});
+    if(!ordenTrabajo){
+    return {msj:"No se encontro una orden de trabajo valida",validate:false}
+    }
 
-    if(updateSoliMaterial){
-    return {msj:"Actualizado solicitud de material"}
+    const nOrdenTrabajoBefore = await this.solicitudDeCompraRepository.findOne({where:{id:id},relations:['numOrdenTrabajo']});
+
+     if(!nOrdenTrabajoBefore){
+    return {msj:"No se encontro una orden de trabajo anterior",validate:false}
+    }
+
+    const ordenTrabjoOld = await this.ordenDeTrabajoRepository.findOne({where:{id:nOrdenTrabajoBefore.numOrdenTrabajo.id}});
+
+    if(!ordenTrabjoOld){
+    return {msj:"No se encontro una orden de trabajo valida",validate:false}
+    }
+
+    const updateSoliMaterial = await this.solicitudDeCompraRepository.update(id,{Autoriza:updateSolicitudDeCompraDto.Autoriza,Destino:updateSolicitudDeCompraDto.Destino,numOrdenTrabajo:ordenTrabajo});
+
+    if(updateSoliMaterial.affected !== 0){
+
+      const estadoAnterior = new EstadoUso();
+      estadoAnterior.id = 1;
+
+       const estadoNuevo = new EstadoUso();
+      estadoNuevo.id = 2;
+
+   ordenTrabjoOld.estadoUso = estadoAnterior;
+    await this.ordenDeTrabajoRepository.save(ordenTrabjoOld);
+
+    ordenTrabajo.estadoUso = estadoNuevo;
+    await this.ordenDeTrabajoRepository.save(ordenTrabajo);
+
+    return {msj:"Actualizado solicitud de material",validate:true}
     }
 
     return {msj:"No se pudo actualizar la solicitud de material"};
