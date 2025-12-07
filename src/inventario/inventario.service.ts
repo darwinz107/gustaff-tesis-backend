@@ -13,6 +13,7 @@ import { CreateRegistroSalidaDto } from './dto/create-registro-salida.dto';
 import { CreateItemsSalidaDto } from './dto/create-items-salida.dto';
 import { ItemsSalida } from './entities/itemsSalida.entity';
 import { EstadoCompra } from 'src/solicitud-de-compra/entities/estadoCompra';
+import { CreateActaSalidaDto } from './dto/create-acta-salida.dto';
 
 @Injectable()
 export class InventarioService {
@@ -55,7 +56,7 @@ const findItem = await this.inventarioRepository.findOne({where:{nombre:stockDto
 }
 }
 
-async createActaSalida(id:number,entrega:string,observacion:string){
+async createActaSalida(id:number/*,createActaSalidaDto:CreateActaSalidaDto*/){
 
    const queryRunner = this.dataSource.createQueryRunner();
    await queryRunner.connect();
@@ -68,7 +69,7 @@ async createActaSalida(id:number,entrega:string,observacion:string){
    .getOne();
 
    if(!solMaterial){
-   return new NotFoundException("No se encontro una solicitud de material asociada");
+   throw new NotFoundException("No se encontro una solicitud de material asociada");
    }
 
    const itemsSolicitados = await queryRunner.manager.createQueryBuilder(ItemsSolicitados,'itemsSolicitados')
@@ -77,9 +78,9 @@ async createActaSalida(id:number,entrega:string,observacion:string){
    .andWhere('itemsSolicitados.existencia = :ext',{ext:true})
    .getMany();
 
-  /* if(!itemsSolicitados){
-   return new NotFoundException("No se encontro ningun item para salida");
-   }*/
+   if(!itemsSolicitados || itemsSolicitados.length === 0){
+   throw new NotFoundException("No se encontro ningun item para salida");
+   }
 
    const registroSalidaCreated = await queryRunner.manager.createQueryBuilder(RegistroSalida,'registroSalida')
    .innerJoin('registroSalida.numSolicitudCompra','numSolicitudCompra')
@@ -89,13 +90,9 @@ async createActaSalida(id:number,entrega:string,observacion:string){
    
    if(!registroSalidaCreated){
 
-    const registroSalida = await queryRunner.manager.find(RegistroSalida);
+    const registroSalida = await queryRunner.manager.count(RegistroSalida);
 
-   if(!registroSalida){
-return new NotFoundException("Fallo al encontrar registros de salidas");
-   }
-
-   const newNumSalida = 'AS-'+( registroSalida.length+1).toString().padStart(5,'0');
+   const newNumSalida = 'AS-'+( registroSalida+1).toString().padStart(5,'0');
    let totalItems = 0;
    for(const item of itemsSolicitados){
      totalItems = totalItems + item.cantidad;
@@ -115,7 +112,7 @@ return new NotFoundException("Fallo al encontrar registros de salidas");
    .getOne();
 
    if(!registroSalidaNew){
-return new NotFoundException("Fallo al encontrar el registro de salida");
+throw new NotFoundException("Fallo al encontrar el registro de salida");
    }
 
    for(const item of itemsSolicitados){
@@ -129,16 +126,16 @@ return new NotFoundException("Fallo al encontrar el registro de salida");
 
     await queryRunner.manager.save(ItemsSalida,newItemsSalida);
 
-    const newInventario = await queryRunner.manager.findOne(Inventario,{where:{id:item.id}});
+    const newInventario = await queryRunner.manager.findOne(Inventario,{where:{nombre:item.item}});
 
     if(!newInventario){
-    return new NotFoundException("No se encontrol el item en inventario");
+    throw new NotFoundException("No se encontrol el item en inventario");
     }
     
     const newStock = newInventario.stock - item.cantidad;
 
     if(newStock <0 ){
-    return new NotFoundException("Inconsistencia al restar del inventario");
+    throw new NotFoundException("Inconsistencia al restar del inventario");
     }
 
     newInventario.stock = newStock;
@@ -157,14 +154,14 @@ return new NotFoundException("Fallo al encontrar el registro de salida");
    if(validarCambiarEstado.length >0){
      const estadoParcial = await queryRunner.manager.findOne(EstadoCompra,{where:{id:5}});
      if(!estadoParcial){
-return new NotFoundException("No se encontro el estado");
+throw new NotFoundException("No se encontro el estado");
      }
      solMaterial.estadoCompra = estadoParcial;
      await queryRunner.manager.save(solMaterial);
    }else{
     const estadoEntregado = await queryRunner.manager.findOne(EstadoCompra,{where:{id:4}});
      if(!estadoEntregado){
-return new NotFoundException("No se encontro el estado");
+throw new NotFoundException("No se encontro el estado");
      }
      solMaterial.estadoCompra = estadoEntregado;
      await queryRunner.manager.save(solMaterial);
@@ -185,13 +182,13 @@ return new NotFoundException("No se encontro el estado");
      const newInventario = await queryRunner.manager.findOne(Inventario,{where:{id:item.id}});
 
     if(!newInventario){
-    return new NotFoundException("No se encontrol el item en inventario");
+    throw new NotFoundException("No se encontrol el item en inventario");
     }
     
     const newStock = newInventario.stock - item.cantidad;
 
     if(newStock <0 ){
-    return new NotFoundException("Falta de stock para este item");
+    throw new NotFoundException("Falta de stock para este item");
     }
 
     newInventario.stock = newStock;
@@ -202,7 +199,7 @@ return new NotFoundException("No se encontro el estado");
    }
 const estadoEntregado = await queryRunner.manager.findOne(EstadoCompra,{where:{id:4}});
      if(!estadoEntregado){
-return new NotFoundException("No se encontro el estado");
+throw new NotFoundException("No se encontro el estado");
      }
      solMaterial.estadoCompra = estadoEntregado;
      await queryRunner.manager.save(solMaterial);

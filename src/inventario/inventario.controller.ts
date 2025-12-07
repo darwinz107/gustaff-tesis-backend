@@ -4,6 +4,7 @@ import { CreateInventarioDto } from './dto/create-inventario.dto';
 import { UpdateInventarioDto } from './dto/update-inventario.dto';
 import { CreateItemsSolicitadosDto } from './dto/create-items-solicitados.dto';
 import { StockDto } from './dto/stock.dto';
+import { CreateActaSalidaDto } from './dto/create-acta-salida.dto';
 
 @Controller('inventario')
 export class InventarioController {
@@ -22,6 +23,11 @@ export class InventarioController {
   @Post('evaluar-stock')
   evaluarStock(@Body() stockDto: StockDto){
     return this.inventarioService.evaluarStock(stockDto);
+  }
+
+   @Get('acta-salida/:id')
+  createActaSalida(@Param('id') id: string/*, @Body() createActaSalidaDto:CreateActaSalidaDto*/) {
+    return this.inventarioService.createActaSalida(+id/*, createActaSalidaDto*/);
   }
 
  /* @Post('items-solicitados')
