@@ -8,11 +8,11 @@ export class ItemsSalida {
      @PrimaryGeneratedColumn()
      id:number;
      @Column()
-     nombre:string;
+     item:string;
      @Column()
      cantidad:number;
-     @Column()
-     costo:number;
+     /*@Column()
+     costo:number;*/
      @Column()
      destino:string;
      @ManyToOne(()=>RegistroSalida,(registroSalida)=>registroSalida.itemSalida)

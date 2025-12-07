@@ -7,7 +7,7 @@ export class ItemsEntrada {
      @PrimaryGeneratedColumn()
      id:number;
      @Column()
-     nombre:string;
+     item:string;
      @Column()
      stockMin:number;
      @Column()

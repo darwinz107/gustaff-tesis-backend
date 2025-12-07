@@ -14,7 +14,9 @@ export class InventarioService {
 
   constructor(@InjectRepository(Inventario) private readonly inventarioRepository:Repository<Inventario>,
               @InjectRepository(ItemsSolicitados) private readonly itemsSolicitadosRepository:Repository<ItemsSolicitados>,
-              @InjectRepository(SolicitudDeCompra) private readonly solicitudDeComprasRepository:Repository<SolicitudDeCompra>,){}
+              @InjectRepository(SolicitudDeCompra) private readonly solicitudDeComprasRepository:Repository<SolicitudDeCompra>,
+            private dataSource:DataSource,
+            ){}
 
   create(createInventarioDto: CreateInventarioDto) {
     return 'This action adds a new inventario';
@@ -46,6 +48,33 @@ const findItem = await this.inventarioRepository.findOne({where:{nombre:stockDto
       }
 
 }
+}
+
+async createActaSalida(id:number,entrega:string,observacion:string){
+
+   const queryRunner = this.dataSource.createQueryRunner();
+   await queryRunner.connect();
+   await queryRunner.startTransaction();
+
+   try {
+    
+   const solMaterial = await this.solicitudDeComprasRepository.findOne({where:{id:id}});
+
+   if(!solMaterial){
+   return new NotFoundException("No se encontro una solicitud de material asociada");
+   }
+
+   const itemsSolicitados = await 
+
+    await queryRunner.commitTransaction();
+return {msj:"Acta de salida creada",validate:true}
+   } catch (error) {
+    await  queryRunner.rollbackTransaction();
+     console.log(error);
+     return {msj:"Error al registrar la acta de salida",validate:false};
+   }finally{
+await  queryRunner.release();
+   }
 }
 
 /*  async createItemsSolicitados(createItemsSolicitadosDto: CreateItemsSolicitadosDto) {
