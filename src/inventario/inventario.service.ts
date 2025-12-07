@@ -2,12 +2,17 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateInventarioDto } from './dto/create-inventario.dto';
 import { UpdateInventarioDto } from './dto/update-inventario.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Like, Repository } from 'typeorm';
+import { DataSource, Like, Repository } from 'typeorm';
 import { Inventario } from './entities/inventario.entity';
 import { CreateItemsSolicitadosDto } from './dto/create-items-solicitados.dto';
 import { ItemsSolicitados } from './entities/itemsSolicitados.entity';
 import { SolicitudDeCompra } from 'src/solicitud-de-compra/entities/solicitud-de-compra.entity';
 import { StockDto } from './dto/stock.dto';
+import { RegistroSalida } from './entities/registroSalida.entity';
+import { CreateRegistroSalidaDto } from './dto/create-registro-salida.dto';
+import { CreateItemsSalidaDto } from './dto/create-items-salida.dto';
+import { ItemsSalida } from './entities/itemsSalida.entity';
+import { EstadoCompra } from 'src/solicitud-de-compra/entities/estadoCompra';
 
 @Injectable()
 export class InventarioService {
@@ -58,13 +63,150 @@ async createActaSalida(id:number,entrega:string,observacion:string){
 
    try {
     
-   const solMaterial = await this.solicitudDeComprasRepository.findOne({where:{id:id}});
+   const solMaterial = await queryRunner.manager.createQueryBuilder(SolicitudDeCompra,'solicitudDeCompra')
+   .where('solicitudDeCompra.id = :id',{id:id})
+   .getOne();
 
    if(!solMaterial){
    return new NotFoundException("No se encontro una solicitud de material asociada");
    }
 
-   const itemsSolicitados = await 
+   const itemsSolicitados = await queryRunner.manager.createQueryBuilder(ItemsSolicitados,'itemsSolicitados')
+   .innerJoin('itemsSolicitados.ordenCompra','ordenCompra')
+   .where('ordenCompra.id = :id',{id:solMaterial.id})
+   .andWhere('itemsSolicitados.existencia = :ext',{ext:true})
+   .getMany();
+
+  /* if(!itemsSolicitados){
+   return new NotFoundException("No se encontro ningun item para salida");
+   }*/
+
+   const registroSalidaCreated = await queryRunner.manager.createQueryBuilder(RegistroSalida,'registroSalida')
+   .innerJoin('registroSalida.numSolicitudCompra','numSolicitudCompra')
+   .where('numSolicitudCompra.id = :id',{id:solMaterial.id})
+   .getOne();
+
+   
+   if(!registroSalidaCreated){
+
+    const registroSalida = await queryRunner.manager.find(RegistroSalida);
+
+   if(!registroSalida){
+return new NotFoundException("Fallo al encontrar registros de salidas");
+   }
+
+   const newNumSalida = 'AS-'+( registroSalida.length+1).toString().padStart(5,'0');
+   let totalItems = 0;
+   for(const item of itemsSolicitados){
+     totalItems = totalItems + item.cantidad;
+   }
+
+   const newRegistroSalida:CreateRegistroSalidaDto = {
+    numActa:newNumSalida,
+    total:totalItems,
+    numSolicitudCompra:solMaterial
+   }
+
+   await queryRunner.manager.save(RegistroSalida,newRegistroSalida);
+
+   const registroSalidaNew = await queryRunner.manager.createQueryBuilder(RegistroSalida,'registroSalida')
+   .innerJoin('registroSalida.numSolicitudCompra','numSolicitudCompra')
+   .where('numSolicitudCompra.id = :id',{id:solMaterial.id})
+   .getOne();
+
+   if(!registroSalidaNew){
+return new NotFoundException("Fallo al encontrar el registro de salida");
+   }
+
+   for(const item of itemsSolicitados){
+     
+    const newItemsSalida:CreateItemsSalidaDto = {
+       item:item.item,
+       cantidad:item.cantidad,
+       destino:solMaterial.Destino,
+       regSalida:registroSalidaNew
+    }
+
+    await queryRunner.manager.save(ItemsSalida,newItemsSalida);
+
+    const newInventario = await queryRunner.manager.findOne(Inventario,{where:{id:item.id}});
+
+    if(!newInventario){
+    return new NotFoundException("No se encontrol el item en inventario");
+    }
+    
+    const newStock = newInventario.stock - item.cantidad;
+
+    if(newStock <0 ){
+    return new NotFoundException("Inconsistencia al restar del inventario");
+    }
+
+    newInventario.stock = newStock;
+
+    await queryRunner.manager.save(newInventario);
+
+    await queryRunner.manager.delete(ItemsSolicitados,item.id);
+
+   }
+   const validarCambiarEstado = await queryRunner.manager.createQueryBuilder(ItemsSolicitados,'itemsSolicitados')
+   .innerJoin('itemsSolicitados.ordenCompra','ordenCompra')
+   .where('ordenCompra.id = :id',{id:solMaterial.id})
+   .andWhere('itemsSolicitados.existencia = :ext',{ext:false})
+   .getMany();
+
+   if(validarCambiarEstado.length >0){
+     const estadoParcial = await queryRunner.manager.findOne(EstadoCompra,{where:{id:5}});
+     if(!estadoParcial){
+return new NotFoundException("No se encontro el estado");
+     }
+     solMaterial.estadoCompra = estadoParcial;
+     await queryRunner.manager.save(solMaterial);
+   }else{
+    const estadoEntregado = await queryRunner.manager.findOne(EstadoCompra,{where:{id:4}});
+     if(!estadoEntregado){
+return new NotFoundException("No se encontro el estado");
+     }
+     solMaterial.estadoCompra = estadoEntregado;
+     await queryRunner.manager.save(solMaterial);
+   }
+
+   }else{
+    for(const item of itemsSolicitados){
+     
+    const newItemsSalida:CreateItemsSalidaDto = {
+       item:item.item,
+       cantidad:item.cantidad,
+       destino:solMaterial.Destino,
+       regSalida:registroSalidaCreated
+    }
+
+    await queryRunner.manager.save(ItemsSalida,newItemsSalida);
+
+     const newInventario = await queryRunner.manager.findOne(Inventario,{where:{id:item.id}});
+
+    if(!newInventario){
+    return new NotFoundException("No se encontrol el item en inventario");
+    }
+    
+    const newStock = newInventario.stock - item.cantidad;
+
+    if(newStock <0 ){
+    return new NotFoundException("Falta de stock para este item");
+    }
+
+    newInventario.stock = newStock;
+
+    await queryRunner.manager.save(newInventario);
+
+    await queryRunner.manager.delete(ItemsSolicitados,item.id);
+   }
+const estadoEntregado = await queryRunner.manager.findOne(EstadoCompra,{where:{id:4}});
+     if(!estadoEntregado){
+return new NotFoundException("No se encontro el estado");
+     }
+     solMaterial.estadoCompra = estadoEntregado;
+     await queryRunner.manager.save(solMaterial);
+   }
 
     await queryRunner.commitTransaction();
 return {msj:"Acta de salida creada",validate:true}

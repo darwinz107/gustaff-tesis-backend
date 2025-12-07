@@ -9,11 +9,13 @@ export class RegistroSalida {
      @PrimaryGeneratedColumn()
      id:number;
      @Column()
-     numActa:number;
+     numActa:string;
+     
      @ManyToOne(()=>SolicitudDeCompra,(solicitudDeCompra)=>solicitudDeCompra.infoSalida)
-     numSolicitudCompra:SolicitudDeCompra;    
+     numSolicitudCompra:SolicitudDeCompra;   
+     @Column()
+     total:number; 
      @OneToMany(()=>ItemsSalida,(itemsSalida)=>itemsSalida.regSalida)
      itemSalida:ItemsSalida[];
-     @Column()
-     total:number;
+     
 }
