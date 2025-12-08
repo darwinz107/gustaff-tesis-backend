@@ -3,6 +3,7 @@ import { Proovedores } from "./proovedores.entity";
 import { ItemsEntrada } from "./itemsEntrada.entity";
 import { SolicitudDeCompra } from "src/solicitud-de-compra/entities/solicitud-de-compra.entity";
 import { ItemsSalida } from "./itemsSalida.entity";
+import { User } from "src/users/entities/user.entity";
 
 @Entity()
 export class RegistroSalida {
@@ -18,4 +19,9 @@ export class RegistroSalida {
      @OneToMany(()=>ItemsSalida,(itemsSalida)=>itemsSalida.regSalida)
      itemSalida:ItemsSalida[];
      
+     @Column({type:'datetime',default:()=>'CURRENT_TIMESTAMP'})
+    fechaRemision:Date;
+    
+    @ManyToOne(()=>User,(entrega)=>entrega.registroSalida)
+        entrega:User;
 }

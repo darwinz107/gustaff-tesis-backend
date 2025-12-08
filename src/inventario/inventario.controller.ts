@@ -30,6 +30,16 @@ export class InventarioController {
     return this.inventarioService.createActaSalida(+id/*, createActaSalidaDto*/);
   }
 
+  @Get('acta-salida-by/:id')
+  actaDeSalidaByIdCompra(@Param('id') id: string) {
+    return this.inventarioService.actaDeSalidaByIdCompra(+id);
+  }
+
+  @Get('actas-salidas')
+  findAllRegistroSalida() {
+    return this.inventarioService.findAllRegistroSalida();
+  }
+
  /* @Post('items-solicitados')
   createItemsSolicitados(@Body() createItemsSolicitadosDto: CreateItemsSolicitadosDto) {
     return this.inventarioService.createItemsSolicitados(createItemsSolicitadosDto);

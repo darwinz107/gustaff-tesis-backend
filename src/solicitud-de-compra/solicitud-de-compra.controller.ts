@@ -50,4 +50,9 @@ export class SolicitudDeCompraController {
   getAllSolicitudes(){
     return this.solicitudDeCompraService.getAllSolicitudes();
   }
+
+  @Get('buscar-solicitudes-parcial')
+  getAllSolicitudesParciales(){
+    return this.solicitudDeCompraService.getAllSolicitudesParciales();
+  }
 }

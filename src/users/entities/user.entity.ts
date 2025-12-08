@@ -2,6 +2,7 @@ import { SolicitudOrden } from "src/orden-de-trabajo/entities/solicitudOrden.ent
 import { Role } from "src/roles/entities/role.entity";
 import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { Cargo } from "./cargo.entity";
+import { RegistroSalida } from "src/inventario/entities/registroSalida.entity";
 
 @Entity()
 export class User {
@@ -28,4 +29,6 @@ solicitanteId:SolicitudOrden[];
 receptorId:SolicitudOrden[];
 @OneToMany(()=>SolicitudOrden,(solicitudOrden)=>solicitudOrden.userTecnico)
 tecnicoId:SolicitudOrden[];
+@OneToMany(()=>RegistroSalida,(registroSalida)=>registroSalida.entrega)
+registroSalida:RegistroSalida[];
 }

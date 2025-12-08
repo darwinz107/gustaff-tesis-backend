@@ -14,6 +14,7 @@ import { CreateItemsSalidaDto } from './dto/create-items-salida.dto';
 import { ItemsSalida } from './entities/itemsSalida.entity';
 import { EstadoCompra } from 'src/solicitud-de-compra/entities/estadoCompra';
 import { CreateActaSalidaDto } from './dto/create-acta-salida.dto';
+import { EstadoCompraEnum } from 'src/solicitud-de-compra/enums/estadoCompra.enum';
 
 @Injectable()
 export class InventarioService {
@@ -21,6 +22,7 @@ export class InventarioService {
   constructor(@InjectRepository(Inventario) private readonly inventarioRepository:Repository<Inventario>,
               @InjectRepository(ItemsSolicitados) private readonly itemsSolicitadosRepository:Repository<ItemsSolicitados>,
               @InjectRepository(SolicitudDeCompra) private readonly solicitudDeComprasRepository:Repository<SolicitudDeCompra>,
+               @InjectRepository(RegistroSalida) private readonly registroSalidaRepository:Repository<RegistroSalida>,
             private dataSource:DataSource,
             ){}
 
@@ -32,17 +34,27 @@ export class InventarioService {
 
 const findItem = await this.inventarioRepository.findOne({where:{nombre:stockDto.item}});
 
-     if(findItem){
+   if(findItem){
 
       const calcStock = (findItem.stock -stockDto.cantidad);
 
       if(calcStock < 0){
-       const compras = [
+
+        if(findItem.stock === 0){
+ const compras = [
+        
+        {cantidad:calcStock*(-1),estado:"Por Comprar",validate:false}
+       ]
+
+       return compras;
+        }else{
+           const compras = [
         {cantidad:findItem.stock,estado:"En Stock",validate:true},
         {cantidad:calcStock*(-1),estado:"Por Comprar",validate:false}
        ]
 
        return compras;
+        }
       }
 
        if(calcStock >= 0){
@@ -152,14 +164,14 @@ throw new NotFoundException("Fallo al encontrar el registro de salida");
    .getMany();
 
    if(validarCambiarEstado.length >0){
-     const estadoParcial = await queryRunner.manager.findOne(EstadoCompra,{where:{id:5}});
+     const estadoParcial = await queryRunner.manager.findOne(EstadoCompra,{where:{estado:EstadoCompraEnum.PAR}});
      if(!estadoParcial){
 throw new NotFoundException("No se encontro el estado");
      }
      solMaterial.estadoCompra = estadoParcial;
      await queryRunner.manager.save(solMaterial);
    }else{
-    const estadoEntregado = await queryRunner.manager.findOne(EstadoCompra,{where:{id:4}});
+    const estadoEntregado = await queryRunner.manager.findOne(EstadoCompra,{where:{estado:EstadoCompraEnum.ENT}});
      if(!estadoEntregado){
 throw new NotFoundException("No se encontro el estado");
      }
@@ -179,7 +191,7 @@ throw new NotFoundException("No se encontro el estado");
 
     await queryRunner.manager.save(ItemsSalida,newItemsSalida);
 
-     const newInventario = await queryRunner.manager.findOne(Inventario,{where:{id:item.id}});
+     const newInventario = await queryRunner.manager.findOne(Inventario,{where:{nombre:item.item}});
 
     if(!newInventario){
     throw new NotFoundException("No se encontrol el item en inventario");
@@ -197,7 +209,7 @@ throw new NotFoundException("No se encontro el estado");
 
     await queryRunner.manager.delete(ItemsSolicitados,item.id);
    }
-const estadoEntregado = await queryRunner.manager.findOne(EstadoCompra,{where:{id:4}});
+const estadoEntregado = await queryRunner.manager.findOne(EstadoCompra,{where:{estado:EstadoCompraEnum.ENT}});
      if(!estadoEntregado){
 throw new NotFoundException("No se encontro el estado");
      }
@@ -293,7 +305,7 @@ try {
   async findAll() {
 
     const inventarios = await this.inventarioRepository.find({select:['id','nombre','stock']});
-    if(!inventarios){
+    if(inventarios === null|| inventarios === undefined){
       return new NotFoundException("No se encontro inventarios");
     }
     return inventarios;
@@ -308,6 +320,68 @@ try {
     const inventario = await this.inventarioRepository.find({where:{nombre:Like(`${item}%`)},select:['id','nombre','stock']});
 
     return inventario;
+  }
+
+  async actaDeSalidaByIdCompra(id:number) {
+   
+  console.log('ID de la acta de salida:', id);
+
+    const registroDeSalida = await this.registroSalidaRepository.createQueryBuilder('registroSalida')
+    .leftJoin('registroSalida.numSolicitudCompra','numSolicitudCompra')
+    .leftJoin('registroSalida.itemSalida','itemSalida')
+    .leftJoin('numSolicitudCompra.numOrdenTrabajo','numOrdenTrabajo')
+    .leftJoin('numOrdenTrabajo.userSolicitante','userSolicitante')
+    .leftJoin('registroSalida.entrega','entrega')
+    .select([
+
+      'registroSalida.numActa',
+      'registroSalida.fechaRemision',
+      'userSolicitante.id',
+      'userSolicitante.name',
+      'entrega.name',
+      'numSolicitudCompra.id',
+      'numOrdenTrabajo.id',
+      'numSolicitudCompra.Destino',
+      
+      'itemSalida.item',
+      'itemSalida.cantidad',  
+      'itemSalida.Observacion',
+      
+    ])
+    .where('numSolicitudCompra.id = :id',{id})
+    .getOne();
+    if(!registroDeSalida){
+      throw new NotFoundException("No se encontro registro de salidas");
+    }
+    return registroDeSalida;
+  }
+
+  async findAllRegistroSalida() {
+
+     const registroDeSalida = await this.registroSalidaRepository.createQueryBuilder('registroSalida')
+    .leftJoin('registroSalida.numSolicitudCompra','numSolicitudCompra')
+    
+    .leftJoin('numSolicitudCompra.numOrdenTrabajo','numOrdenTrabajo')
+    .leftJoin('numOrdenTrabajo.userSolicitante','userSolicitante')
+    .leftJoin('registroSalida.entrega','entrega')
+    .select([
+
+      'registroSalida.numActa',
+      'registroSalida.fechaRemision',
+      
+      'userSolicitante.name',
+      'entrega.name',
+      'numSolicitudCompra.id',
+      'numOrdenTrabajo.id',
+      'numSolicitudCompra.Destino'
+      
+    ])
+    
+    .getMany();
+    if(!registroDeSalida){
+      throw new NotFoundException("No se encontro registro de salidas");
+    }
+    return registroDeSalida;
   }
 
   update(id: number, updateInventarioDto: UpdateInventarioDto) {

@@ -15,6 +15,9 @@ export class ItemsSalida {
      costo:number;*/
      @Column()
      destino:string;
+     @Column({nullable:true})
+    Observacion:string;
      @ManyToOne(()=>RegistroSalida,(registroSalida)=>registroSalida.itemSalida)
      regSalida:RegistroSalida;
+     
 }

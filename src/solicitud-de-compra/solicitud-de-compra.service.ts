@@ -24,7 +24,7 @@ export class SolicitudDeCompraService implements OnModuleInit{
 ){}
 
  async onModuleInit() {
-     const lgt = [EstadoCompraEnum.PRO,EstadoCompraEnum.PAU,EstadoCompraEnum.PAR,EstadoCompraEnum.ENT];
+     const lgt = [EstadoCompraEnum.PRO,EstadoCompraEnum.PAU,EstadoCompraEnum.PAR,EstadoCompraEnum.LIS,EstadoCompraEnum.ENT];
      
      for(const estado of lgt){
         const findEstado = await this.estadoCompraRepository.findOne({where:{estado:estado}});
@@ -57,7 +57,7 @@ export class SolicitudDeCompraService implements OnModuleInit{
 
     //const estadoDefault = await this.estadoCompraRepository.findOne({where:{id:5}});
      const estadoDefault = await queryRunner.manager.createQueryBuilder(EstadoCompra,'estadoCompra')
-    .where('estadoCompra.id = :id',{id:5})
+    .where('estadoCompra.estado = :estado',{estado:EstadoCompraEnum.PRO})
     .getOne();
  if(!estadoDefault){
       throw new NotFoundException("No se encontro esta de compra");
@@ -371,7 +371,16 @@ return {msj:"Solicitud de compra creada",validate:true}
 
   async getAllSolicitudes(){
 
-    const solicitudes = await this.solicitudDeCompraRepository.find({where:[{estadoCompra:{id:1}},{estadoCompra:{id:5}}]});
+    const solicitudes = await this.solicitudDeCompraRepository.find({where:[{estadoCompra:{estado:EstadoCompraEnum.PRO}},{estadoCompra:{estado:EstadoCompraEnum.LIS}}]});
+    if(!solicitudes){
+    throw new NotFoundException("No se encontro solicitudes de material");
+    }
+    return solicitudes;
+  }
+
+   async getAllSolicitudesParciales(){
+
+    const solicitudes = await this.solicitudDeCompraRepository.find({where:[{estadoCompra:{estado:EstadoCompraEnum.PAR}}]});
     if(!solicitudes){
     throw new NotFoundException("No se encontro solicitudes de material");
     }
