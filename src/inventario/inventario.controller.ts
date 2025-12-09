@@ -40,6 +40,11 @@ export class InventarioController {
     return this.inventarioService.findAllRegistroSalida();
   }
 
+  @Get('info-entrada/:id')
+  asignarInfoActaEntrada(@Param('id') id:string) {
+    return this.inventarioService.asignarInfoActaEntrada(+id);
+  }
+
  /* @Post('items-solicitados')
   createItemsSolicitados(@Body() createItemsSolicitadosDto: CreateItemsSolicitadosDto) {
     return this.inventarioService.createItemsSolicitados(createItemsSolicitadosDto);

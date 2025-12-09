@@ -68,6 +68,68 @@ const findItem = await this.inventarioRepository.findOne({where:{nombre:stockDto
 }
 }
 
+async asignarInfoActaEntrada (id:number){
+
+  const registroEntrada = await this.itemsSolicitadosRepository.createQueryBuilder("itemsSolicitados")
+  .leftJoin("itemsSolicitados.ordenCompra","ordenCompra")
+  .leftJoin("ordenCompra.estadoCompra","estadoCompra")
+  
+  .select(
+    [  "itemsSolicitados.id",
+      "itemsSolicitados.item",
+      "itemsSolicitados.cantidad",
+      "itemsSolicitados.caracteristica",
+      "itemsSolicitados.Observacion",
+    ])
+  .where("ordenCompra.id =:id",{id:id})
+  .andWhere("estadoCompra.estado =:estado",{estado:EstadoCompraEnum.PAR})
+  .getMany();
+
+if(!registroEntrada){
+   throw new NotFoundException("No se encontro una solicitud de material asociada con items solicitados");
+   }
+
+let compras:{}[] =[];
+
+  for(const item of registroEntrada){
+     
+    const findItem = await this.inventarioRepository.findOne({where:{nombre:item.item}});
+
+    if(findItem){
+     compras = [...compras,{nombre:findItem.nombre,costo:findItem.costo,Observacion:item.Observacion}]
+    }else{
+      compras = [...compras,{nombre:item.item,costo:null,Observacion:item.Observacion}]
+    }
+  }
+
+  const registroEntradaInfo = await this.solicitudDeComprasRepository.createQueryBuilder("solicitudDeCompra")
+  
+  .leftJoin("solicitudDeCompra.estadoCompra","estadoCompra")
+  .leftJoin("solicitudDeCompra.numOrdenTrabajo","numOrdenTrabajo")
+  .select(
+    ["solicitudDeCompra.id",
+      "solicitudDeCompra.numOrden",
+      
+      "numOrdenTrabajo.NumOrden"
+    ])
+  .where("solicitudDeCompra.id =:id",{id:id})
+  .andWhere("estadoCompra.estado =:estado",{estado:EstadoCompraEnum.PAR})
+  .getOne();
+
+if(!registroEntradaInfo){
+   throw new NotFoundException("No se encontro una solicitud de material asociada");
+   }
+
+  const infoParaActaEntrada = {
+    ...registroEntradaInfo,
+    itemsSolicitados:[
+      ...compras
+    ]
+  }
+
+  return infoParaActaEntrada;
+}
+
 async createActaSalida(id:number/*,createActaSalidaDto:CreateActaSalidaDto*/){
 
    const queryRunner = this.dataSource.createQueryRunner();
