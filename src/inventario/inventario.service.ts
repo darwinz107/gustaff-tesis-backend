@@ -96,9 +96,9 @@ let compras:{}[] =[];
     const findItem = await this.inventarioRepository.findOne({where:{nombre:item.item}});
 
     if(findItem){
-     compras = [...compras,{nombre:findItem.nombre,costo:findItem.costo,Observacion:item.Observacion}]
+     compras = [...compras,{nombre:findItem.nombre,cantidad:item.cantidad,costo:findItem.costo,Observacion:item.Observacion}]
     }else{
-      compras = [...compras,{nombre:item.item,costo:null,Observacion:item.Observacion}]
+      compras = [...compras,{nombre:item.item,cantidad:item.cantidad,costo:null,Observacion:item.Observacion}]
     }
   }
 
@@ -129,6 +129,13 @@ if(!registroEntradaInfo){
 
   return infoParaActaEntrada;
 }
+
+async createActaEntrada(id:number/*,createActaSalidaDto:CreateActaSalidaDto*/){
+
+
+}
+
+
 
 async createActaSalida(id:number/*,createActaSalidaDto:CreateActaSalidaDto*/){
 
