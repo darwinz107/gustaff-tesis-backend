@@ -41,6 +41,11 @@ export class InventarioController {
     return this.inventarioService.actaDeSalidaByIdCompra(+id);
   }
 
+  @Get('acta-entrada-by/:id')
+  actaDeEntradaByIdCompra(@Param('id') id: string) {
+    return this.inventarioService.actaDeEntradaByIdCompra(+id);
+  }
+
   @Get('actas-salidas')
   findAllRegistroSalida() {
     return this.inventarioService.findAllRegistroSalida();

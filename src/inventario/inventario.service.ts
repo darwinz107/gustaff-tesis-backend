@@ -637,17 +637,19 @@ try {
     .leftJoin('numOrdenTrabajo.userSolicitante','userSolicitante')
     .leftJoin('registroEntrada.proovedor','proovedor')
     .leftJoin('registroEntrada.itemEntrada','itemEntrada')
+    .leftJoin('itemEntrada.item','inventario')
     .select([
 
       'registroEntrada.numActa',
       'registroEntrada.fechaRemision',
+      'registroEntrada.factura',
       'registroEntrada.total',
       'userSolicitante.name',
       'proovedor.nombre',
       'numSolicitudCompra.id',
       'numOrdenTrabajo.id',
       'numSolicitudCompra.Destino',
-      'itemEntrada.item',
+      'inventario.nombre',
       'itemEntrada.cantidad',
       'itemEntrada.costo',
       'itemEntrada.descuento',
@@ -661,6 +663,44 @@ try {
       throw new NotFoundException("No se encontro registro de entrada");
     }
     return registroDeEntrada;
+  }
+
+  async actaDeEntradaByIdCompra(id:number) {
+
+     const registroDeEntrada = await this.registroEntradaRepository.createQueryBuilder('registroEntrada')
+    .leftJoin('registroEntrada.numSolicitudCompra','numSolicitudCompra')
+    
+    .leftJoin('numSolicitudCompra.numOrdenTrabajo','numOrdenTrabajo')
+    .leftJoin('numOrdenTrabajo.userSolicitante','userSolicitante')
+    .leftJoin('registroEntrada.proovedor','proovedor')
+    .leftJoin('registroEntrada.itemEntrada','itemEntrada')
+    .leftJoin('itemEntrada.item','inventario')
+    .select([
+
+      'registroEntrada.numActa',
+      'registroEntrada.fechaRemision',
+      'registroEntrada.factura',
+      'registroEntrada.total',
+      'userSolicitante.name',
+      'proovedor.nombre',
+      'numSolicitudCompra.id',
+      'numOrdenTrabajo.id',
+      'numSolicitudCompra.Destino',
+      'inventario.nombre',
+      'itemEntrada.cantidad',
+      'itemEntrada.costo',
+      'itemEntrada.descuento',
+      'itemEntrada.iva',
+      'itemEntrada.subtotal',
+      'itemEntrada.total',
+    ])
+    .where('numSolicitudCompra.id = :id',{id})
+    .getOne();
+    if(!registroDeEntrada){
+      throw new NotFoundException("No se encontro registro de entrada");
+    }
+    return registroDeEntrada;
+
   }
 
   update(id: number, updateInventarioDto: UpdateInventarioDto) {
