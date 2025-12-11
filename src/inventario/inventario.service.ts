@@ -19,6 +19,7 @@ import { CreateActaEntradaDto } from './dto/create-acta-entrada.dto';
 import { RegistroEntrada } from './entities/registroEntrada.entity';
 import { Proovedores } from './entities/proovedores.entity';
 import { ItemsEntrada } from './entities/itemsEntrada.entity';
+import { User } from 'src/users/entities/user.entity';
 
 @Injectable()
 export class InventarioService {
@@ -312,7 +313,7 @@ await  queryRunner.release();
 
 }
 
-async createActaSalida(id:number/*,createActaSalidaDto:CreateActaSalidaDto*/){
+async createActaSalida(id:number,createActaSalidaDto:CreateActaSalidaDto){
 
    const queryRunner = this.dataSource.createQueryRunner();
    await queryRunner.connect();
@@ -338,6 +339,12 @@ async createActaSalida(id:number/*,createActaSalidaDto:CreateActaSalidaDto*/){
    throw new NotFoundException("No se encontro ningun item para salida");
    }
 
+   const findEntrega = await queryRunner.manager.findOne(User,{where:{id:createActaSalidaDto.entregaId}});
+
+   if(!findEntrega){
+   throw new NotFoundException("No se encontro el usuario de entrega");
+   }
+
    const registroSalidaCreated = await queryRunner.manager.createQueryBuilder(RegistroSalida,'registroSalida')
    .innerJoin('registroSalida.numSolicitudCompra','numSolicitudCompra')
    .where('numSolicitudCompra.id = :id',{id:solMaterial.id})
@@ -357,7 +364,9 @@ async createActaSalida(id:number/*,createActaSalidaDto:CreateActaSalidaDto*/){
    const newRegistroSalida:CreateRegistroSalidaDto = {
     numActa:newNumSalida,
     total:totalItems,
-    numSolicitudCompra:solMaterial
+    numSolicitudCompra:solMaterial,
+    entrega:findEntrega,
+    observacion:createActaSalidaDto.observacion
    }
 
    await queryRunner.manager.save(RegistroSalida,newRegistroSalida);
@@ -398,7 +407,7 @@ throw new NotFoundException("Fallo al encontrar el registro de salida");
 
     await queryRunner.manager.save(newInventario);
 
-    await queryRunner.manager.delete(ItemsSolicitados,item.id);
+   // await queryRunner.manager.delete(ItemsSolicitados,item.id);
 
    }
    const validarCambiarEstado = await queryRunner.manager.createQueryBuilder(ItemsSolicitados,'itemsSolicitados')
@@ -451,7 +460,7 @@ throw new NotFoundException("No se encontro el estado");
 
     await queryRunner.manager.save(newInventario);
 
-    await queryRunner.manager.delete(ItemsSolicitados,item.id);
+   // await queryRunner.manager.delete(ItemsSolicitados,item.id);
    }
 const estadoEntregado = await queryRunner.manager.findOne(EstadoCompra,{where:{estado:EstadoCompraEnum.ENT}});
      if(!estadoEntregado){

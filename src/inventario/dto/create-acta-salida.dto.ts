@@ -1,9 +1,10 @@
-import { IsOptional } from "class-validator";
+import { IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator";
 
 export class CreateActaSalidaDto {
+    @IsNotEmpty()
+    @IsNumber()
+    entregaId:number;
     @IsOptional()
-    entrega:string;
-    @IsOptional()
+    @IsString()
     observacion:string;
-
 }

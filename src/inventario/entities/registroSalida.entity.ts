@@ -21,6 +21,9 @@ export class RegistroSalida {
      
      @Column({type:'datetime',default:()=>'CURRENT_TIMESTAMP'})
     fechaRemision:Date;
+
+    @Column()
+     observacion:string;
     
     @ManyToOne(()=>User,(entrega)=>entrega.registroSalida)
         entrega:User;

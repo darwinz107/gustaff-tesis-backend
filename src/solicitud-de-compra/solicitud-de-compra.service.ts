@@ -283,6 +283,46 @@ return {msj:"Solicitud de compra creada",validate:true}
       throw new NotFoundException("No se encontro solicitudes de compra");
     }
 
+    if(solicitudesCompra.estadoCompra.estado === EstadoCompraEnum.ENT){
+ 
+        const solicitudesCompra = await this.solicitudDeCompraRepository.createQueryBuilder('solicitudCompra')
+    .leftJoin('solicitudCompra.numOrdenTrabajo','ordenTrabajo')
+    .leftJoin('ordenTrabajo.userSolicitante','userSolicitante')
+    .leftJoin('solicitudCompra.estadoCompra','estadoCompra')
+    .leftJoin('solicitudCompra.itemSolicitados','itemSolicitados')
+    .select([
+      'solicitudCompra.id',
+      'solicitudCompra.numOrden',
+      'solicitudCompra.fechaRemision',
+      'solicitudCompra.Autoriza',
+      'solicitudCompra.Destino',
+      
+      //'ordenTrabajo.id',
+      'ordenTrabajo.id',
+      'ordenTrabajo.NumOrden',
+      'ordenTrabajo.DescripcionTrabajo',
+      'ordenTrabajo.Area',
+      'ordenTrabajo.Codigo',
+      'ordenTrabajo.Maquina',
+      //'userSolicitante.id',
+      'userSolicitante.name',
+      'estadoCompra.id',
+      'estadoCompra.estado',
+      'itemSolicitados.id',
+      'itemSolicitados.item',
+      'itemSolicitados.cantidad',
+      'itemSolicitados.caracteristica',
+      'itemSolicitados.Observacion',
+      'itemSolicitados.existencia',
+    ])
+    .where('solicitudCompra.id = :id',{id})
+    .getOne();
+    if(!solicitudesCompra){
+      throw new NotFoundException("No se encontro solicitudes de compra");
+    }
+
+    }
+
     return solicitudesCompra;
   
   }
