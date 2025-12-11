@@ -11,14 +11,15 @@ export class RegistroEntrada {
      numActa:string;
      @Column()
      factura:string;
+      @Column({type:'datetime',default:()=>'CURRENT_TIMESTAMP'})
+         fechaRemision:Date;
      @ManyToOne(()=>SolicitudDeCompra,(solicitudDeCompra)=>solicitudDeCompra.infoEntrada)
           numSolicitudCompra:SolicitudDeCompra;   
      @ManyToOne(()=>Proovedores,(proovedores)=>proovedores.registroEntrada)
      proovedor:Proovedores;
      @OneToMany(()=>ItemsEntrada,(itemsEntrada)=>itemsEntrada.registroEntrada)
      itemEntrada:ItemsEntrada[];
-     @Column()
-     solicita:string;
+     
      @Column()
      total:number;
 }

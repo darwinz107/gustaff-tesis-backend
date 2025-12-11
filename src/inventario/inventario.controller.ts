@@ -46,6 +46,11 @@ export class InventarioController {
     return this.inventarioService.findAllRegistroSalida();
   }
 
+  @Get('actas-entradas')
+  findAllRegistroEntrada() {
+    return this.inventarioService.findAllRegistroEntrada();
+  }
+
   @Get('info-entrada/:id')
   asignarInfoActaEntrada(@Param('id') id:string) {
     return this.inventarioService.asignarInfoActaEntrada(+id);

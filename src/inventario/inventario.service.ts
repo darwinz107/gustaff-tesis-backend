@@ -27,6 +27,7 @@ export class InventarioService {
               @InjectRepository(ItemsSolicitados) private readonly itemsSolicitadosRepository:Repository<ItemsSolicitados>,
               @InjectRepository(SolicitudDeCompra) private readonly solicitudDeComprasRepository:Repository<SolicitudDeCompra>,
                @InjectRepository(RegistroSalida) private readonly registroSalidaRepository:Repository<RegistroSalida>,
+               @InjectRepository(RegistroEntrada) private readonly registroEntradaRepository:Repository<RegistroEntrada>,
             private dataSource:DataSource,
             ){}
 
@@ -627,33 +628,40 @@ try {
     return registroDeSalida;
   }
 
-  /*  async findAllRegistroEntrada() {
+    async findAllRegistroEntrada() {
 
-     const registroDeEntrada = await this.registroSalidaRepository.createQueryBuilder('registroSalida')
-    .leftJoin('registroSalida.numSolicitudCompra','numSolicitudCompra')
+     const registroDeEntrada = await this.registroEntradaRepository.createQueryBuilder('registroEntrada')
+    .leftJoin('registroEntrada.numSolicitudCompra','numSolicitudCompra')
     
     .leftJoin('numSolicitudCompra.numOrdenTrabajo','numOrdenTrabajo')
     .leftJoin('numOrdenTrabajo.userSolicitante','userSolicitante')
-    .leftJoin('registroSalida.entrega','entrega')
+    .leftJoin('registroEntrada.proovedor','proovedor')
+    .leftJoin('registroEntrada.itemEntrada','itemEntrada')
     .select([
 
-      'registroSalida.numActa',
-      'registroSalida.fechaRemision',
-      
+      'registroEntrada.numActa',
+      'registroEntrada.fechaRemision',
+      'registroEntrada.total',
       'userSolicitante.name',
-      'entrega.name',
+      'proovedor.nombre',
       'numSolicitudCompra.id',
       'numOrdenTrabajo.id',
-      'numSolicitudCompra.Destino'
-      
+      'numSolicitudCompra.Destino',
+      'itemEntrada.item',
+      'itemEntrada.cantidad',
+      'itemEntrada.costo',
+      'itemEntrada.descuento',
+      'itemEntrada.iva',
+      'itemEntrada.subtotal',
+      'itemEntrada.total',
     ])
     
     .getMany();
     if(!registroDeEntrada){
-      throw new NotFoundException("No se encontro registro de salidas");
+      throw new NotFoundException("No se encontro registro de entrada");
     }
     return registroDeEntrada;
-  }*/
+  }
 
   update(id: number, updateInventarioDto: UpdateInventarioDto) {
     return `This action updates a #${id} inventario`;
