@@ -1,4 +1,5 @@
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { ItemsEntrada } from "./itemsEntrada.entity";
 
 
 @Entity()
@@ -11,7 +12,15 @@ export class Inventario {
      stock:number;
      @Column()
      costo:number;
+     @Column()
+     bodega: string;
+     @Column()
+    seccion: string;
+    @Column()
+    percha: string;
      @Column({type:'boolean'})
      estado:boolean;
+     @OneToMany(()=>ItemsEntrada,(itemsEntrada)=>itemsEntrada.item)
+          itemEntrada:ItemsEntrada[];
      
 }

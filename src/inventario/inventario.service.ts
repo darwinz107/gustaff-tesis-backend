@@ -15,6 +15,10 @@ import { ItemsSalida } from './entities/itemsSalida.entity';
 import { EstadoCompra } from 'src/solicitud-de-compra/entities/estadoCompra';
 import { CreateActaSalidaDto } from './dto/create-acta-salida.dto';
 import { EstadoCompraEnum } from 'src/solicitud-de-compra/enums/estadoCompra.enum';
+import { CreateActaEntradaDto } from './dto/create-acta-entrada.dto';
+import { RegistroEntrada } from './entities/registroEntrada.entity';
+import { Proovedores } from './entities/proovedores.entity';
+import { ItemsEntrada } from './entities/itemsEntrada.entity';
 
 @Injectable()
 export class InventarioService {
@@ -95,10 +99,14 @@ let compras:{}[] =[];
      
     const findItem = await this.inventarioRepository.findOne({where:{nombre:item.item}});
 
+    if(findItem == null || findItem == undefined){
+   throw new NotFoundException("No se encontro una solicitud de material asociada con items solicitados");
+   }
+
     if(findItem){
-     compras = [...compras,{nombre:findItem.nombre,cantidad:item.cantidad,costo:findItem.costo,Observacion:item.Observacion}]
+     compras = [...compras,{id:findItem.id,nombre:findItem.nombre,cantidad:item.cantidad,costo:findItem.costo,Observacion:item.Observacion}]
     }else{
-      compras = [...compras,{nombre:item.item,cantidad:item.cantidad,costo:null,Observacion:item.Observacion}]
+      compras = [...compras,{id:null,nombre:item.item,cantidad:item.cantidad,costo:null,Observacion:item.Observacion}]
     }
   }
 
@@ -130,12 +138,178 @@ if(!registroEntradaInfo){
   return infoParaActaEntrada;
 }
 
-async createActaEntrada(id:number/*,createActaSalidaDto:CreateActaSalidaDto*/){
+async createActaEntrada(id:number,createActaEntradaDto:CreateActaEntradaDto){
+
+     const queryRunner = this.dataSource.createQueryRunner();
+   await queryRunner.connect();
+   await queryRunner.startTransaction();
+
+   try {
+
+   console.log(id);
+     const solMaterial = await queryRunner.manager.createQueryBuilder(SolicitudDeCompra,'solicitudDeCompra')
+     .leftJoin("solicitudDeCompra.numOrdenTrabajo","numOrdenTrabajo")
+     .leftJoin("numOrdenTrabajo.userSolicitante","userSolicitante")
+     .leftJoin("solicitudDeCompra.estadoCompra","estadoCompra")
+     .select(["solicitudDeCompra.id",
+      "numOrdenTrabajo.id",
+"userSolicitante.name",
+ "estadoCompra.estado"
+     ])
+   .where('solicitudDeCompra.id = :id',{id:id})
+   .andWhere('estadoCompra.estado = :estado',{estado:EstadoCompraEnum.PAR})
+   .getOne();
+
+   if(!solMaterial){
+   throw new NotFoundException("No se encontro una solicitud de material asociada");
+   }
 
 
+   const registroEntrada = await queryRunner.manager.count(RegistroEntrada);
+
+   const newNumEntrada = 'AE-'+( registroEntrada+1).toString().padStart(5,'0');
+
+   const findProovedor = await queryRunner.manager.findOne(Proovedores,{where:{id:createActaEntradaDto?.proovedor}});
+
+   if(!findProovedor){
+   throw new NotFoundException("No se encontro el proovedor ingresado");
+   }
+
+   const newRegistroEntrada = {
+    
+    factura:createActaEntradaDto?.numFactura,
+    numActa:newNumEntrada,
+    solicita:solMaterial?.numOrdenTrabajo?.userSolicitante.name,
+    proovedor:findProovedor,
+    total:createActaEntradaDto?.total,
+    numSolicitudCompra:solMaterial
+   }
+
+   await queryRunner.manager.save(RegistroEntrada,newRegistroEntrada);
+
+     const findRegistroEntrada = await queryRunner.manager.createQueryBuilder(RegistroEntrada,'registroEntrada')
+     .leftJoin("registroEntrada.numSolicitudCompra","solicitudDeCompra")
+    
+     .select([
+      "registroEntrada.id",
+      "solicitudDeCompra.id"
+     ])
+   .where('solicitudDeCompra.id = :id',{id:id})
+   .getOne();
+
+   if(!findRegistroEntrada){
+   throw new NotFoundException("No se encontro una solicitud de material asociada");
+   }
+
+   for(const item of createActaEntradaDto.itemsSolicitados){
+   
+    const findItem = await queryRunner.manager.findOne(Inventario,{where:{nombre:item.nombre}});
+    if(!findItem){
+
+      const newInventario ={
+       nombre:item.nombre,
+       stock:item.cantidad,
+       costo:item.costo,
+       bodega:item.bodega,
+       seccion:item.seccion,
+       percha:item.percha
+      }
+    await queryRunner.manager.save(Inventario,newInventario);
+
+    const findNewItem = await queryRunner.manager.findOne(Inventario,{where:{nombre:item.nombre}});
+    if(!findNewItem){
+   throw new NotFoundException("No se encontro item en inventario");
+   }
+
+   const newItemEntrada = {
+   stockMin:item.stockMin,
+   cantidad:item.cantidad,
+   costo:item.costo,
+   registroEntrada:findRegistroEntrada,
+   item:findNewItem,
+   descuento:item.descuento,
+   iva:item.iva,
+   subtotal:item.subtotal,
+   total:item.total
+  }
+
+  await queryRunner.manager.save(ItemsEntrada,newItemEntrada);
+
+  // await queryRunner.manager.delete(ItemsSolicitados,{item:item.nombre});
+
+  const itemsSol = await queryRunner.manager.findOne(ItemsSolicitados,{where:{item:item.nombre, existencia:false, ordenCompra:{id:id}}});
+    if(!itemsSol){
+   throw new NotFoundException("No se encontro item solicitado");
+   }
+   itemsSol.existencia = true;
+   await queryRunner.manager.save(ItemsSolicitados,itemsSol);
+
+   }
+else{
+
+        const updatedStock = findItem.stock + item.cantidad;
+
+    findItem.stock = updatedStock;
+    findItem.costo = item.costo; 
+    findItem.bodega = item.bodega ?? findItem.bodega;
+    findItem.seccion = item.seccion ?? findItem.seccion;
+    findItem.percha = item.percha ?? findItem.percha;
+
+    await queryRunner.manager.save(Inventario, findItem);
+
+     const newItemEntrada = {
+   stockMin:item.stockMin,
+   cantidad:item.cantidad,
+   costo:item.costo,
+   registroEntrada:findRegistroEntrada,
+   item:findItem,
+   descuento:item.descuento,
+   iva:item.iva,
+   subtotal:item.subtotal,
+   total:item.total
+  }
+
+  await queryRunner.manager.save(ItemsEntrada,newItemEntrada);
+
+  // await queryRunner.manager.delete(ItemsSolicitados,{item:item.nombre});
+
+  const itemsSol = await queryRunner.manager.findOne(ItemsSolicitados,{where:{item:item.nombre, existencia:false, ordenCompra:{id:id}}});
+    if(!itemsSol){
+   throw new NotFoundException("No se encontro item solicitado");
+   }
+   itemsSol.existencia = true;
+   await queryRunner.manager.save(ItemsSolicitados,itemsSol);
+}
+   
+   }
+
+   const validarCambiarEstado = await queryRunner.manager.createQueryBuilder(ItemsSolicitados,'itemsSolicitados')
+   .innerJoin('itemsSolicitados.ordenCompra','ordenCompra')
+   .where('ordenCompra.id = :id',{id:solMaterial.id})
+   .andWhere('itemsSolicitados.existencia = :ext',{ext:false})
+   .getMany();
+
+   if(validarCambiarEstado.length ===0){
+     const estadoParcial = await queryRunner.manager.findOne(EstadoCompra,{where:{estado:EstadoCompraEnum.LIS}});
+     if(!estadoParcial){
+throw new NotFoundException("No se encontro el estado");
+     }
+     solMaterial.estadoCompra = estadoParcial;
+     await queryRunner.manager.save(solMaterial);
+   }
+       
+    
+      await queryRunner.commitTransaction();
+return {msj:"Acta de entrada creada",validate:true}
+   } catch (error) {
+    await  queryRunner.rollbackTransaction();
+     console.log(error);
+     return {msj:"Error al registrar la acta de entrada",validate:false};
+   }finally{
+await  queryRunner.release();
 }
 
-
+}
 
 async createActaSalida(id:number/*,createActaSalidaDto:CreateActaSalidaDto*/){
 
@@ -452,6 +626,34 @@ try {
     }
     return registroDeSalida;
   }
+
+  /*  async findAllRegistroEntrada() {
+
+     const registroDeEntrada = await this.registroSalidaRepository.createQueryBuilder('registroSalida')
+    .leftJoin('registroSalida.numSolicitudCompra','numSolicitudCompra')
+    
+    .leftJoin('numSolicitudCompra.numOrdenTrabajo','numOrdenTrabajo')
+    .leftJoin('numOrdenTrabajo.userSolicitante','userSolicitante')
+    .leftJoin('registroSalida.entrega','entrega')
+    .select([
+
+      'registroSalida.numActa',
+      'registroSalida.fechaRemision',
+      
+      'userSolicitante.name',
+      'entrega.name',
+      'numSolicitudCompra.id',
+      'numOrdenTrabajo.id',
+      'numSolicitudCompra.Destino'
+      
+    ])
+    
+    .getMany();
+    if(!registroDeEntrada){
+      throw new NotFoundException("No se encontro registro de salidas");
+    }
+    return registroDeEntrada;
+  }*/
 
   update(id: number, updateInventarioDto: UpdateInventarioDto) {
     return `This action updates a #${id} inventario`;

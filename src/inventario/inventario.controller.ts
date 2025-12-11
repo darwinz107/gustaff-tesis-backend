@@ -5,6 +5,7 @@ import { UpdateInventarioDto } from './dto/update-inventario.dto';
 import { CreateItemsSolicitadosDto } from './dto/create-items-solicitados.dto';
 import { StockDto } from './dto/stock.dto';
 import { CreateActaSalidaDto } from './dto/create-acta-salida.dto';
+import { CreateActaEntradaDto } from './dto/create-acta-entrada.dto';
 
 @Controller('inventario')
 export class InventarioController {
@@ -28,6 +29,11 @@ export class InventarioController {
    @Get('acta-salida/:id')
   createActaSalida(@Param('id') id: string/*, @Body() createActaSalidaDto:CreateActaSalidaDto*/) {
     return this.inventarioService.createActaSalida(+id/*, createActaSalidaDto*/);
+  }
+
+   @Post('acta-entrada/:id')
+  createActaEntrada(@Param('id') id: string,@Body() createActaEntradaDto:CreateActaEntradaDto) {
+    return this.inventarioService.createActaEntrada(+id,createActaEntradaDto);
   }
 
   @Get('acta-salida-by/:id')

@@ -4,6 +4,7 @@ import { SolicitudOrden } from "src/orden-de-trabajo/entities/solicitudOrden.ent
 import { User } from "src/users/entities/user.entity";
 import { Column, Entity, JoinColumn, ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn } from "typeorm";
 import { EstadoCompra } from "./estadoCompra";
+import { RegistroEntrada } from "src/inventario/entities/registroEntrada.entity";
 
 @Entity()
 export class SolicitudDeCompra {
@@ -25,6 +26,8 @@ export class SolicitudDeCompra {
     itemSolicitados:ItemsSolicitados[]
     @OneToMany(()=>RegistroSalida,(registroSalida)=>registroSalida.numSolicitudCompra)
     infoSalida:RegistroSalida[]
+    @OneToMany(()=>RegistroEntrada,(registroEntrada)=>registroEntrada.numSolicitudCompra)
+    infoEntrada:RegistroEntrada[]
     @ManyToOne(()=>EstadoCompra,(estadoCompra)=>estadoCompra.solicitudCompra)
     estadoCompra:EstadoCompra;
 }
