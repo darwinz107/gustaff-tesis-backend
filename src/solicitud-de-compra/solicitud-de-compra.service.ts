@@ -56,6 +56,7 @@ export class SolicitudDeCompraService implements OnModuleInit{
     }
 
     //const estadoDefault = await this.estadoCompraRepository.findOne({where:{id:5}});
+    
      const estadoDefault = await queryRunner.manager.createQueryBuilder(EstadoCompra,'estadoCompra')
     .where('estadoCompra.estado = :estado',{estado:EstadoCompraEnum.PRO})
     .getOne();
@@ -63,8 +64,14 @@ export class SolicitudDeCompraService implements OnModuleInit{
       throw new NotFoundException("No se encontro esta de compra");
     }
 
+    const lgtSM = await queryRunner.manager.find(SolicitudDeCompra,{order:{id:"DESC"},take:1,select:['id']});
+          if(!lgtSM){
+            console.log("No se pudo crear el numSolicitudM");
+         throw new NotFoundException("No se pudo crear el numOrden");
+       }
+       const lgtFinal = lgtSM.length > 0 ? lgtSM[0].id:0;
 
-    const newNumOrden = 'SM-'+(await this.solicitudDeCompraRepository.count()+1).toString().padStart(5,'0');
+    const newNumOrden = 'SM-'+(lgtFinal+1).toString().padStart(5,'0');
 
    /* const nuevaSolicitudCompra = this.solicitudDeCompraRepository.create({
       numOrden:newNumOrden,
@@ -154,9 +161,9 @@ for(const compra of compras){
    const saveItemsSolicitados = await queryRunner.manager.save(ItemsSolicitados,compra);
 }
 
- ordenTrabajo.estadoUso = {id:2} as any;
+ /*ordenTrabajo.estadoUso = {id:2} as any;
 
-const cambiarEstadoUsoTrabajo = await queryRunner.manager.save(SolicitudOrden,ordenTrabajo);
+const cambiarEstadoUsoTrabajo = await queryRunner.manager.save(SolicitudOrden,ordenTrabajo);*/
 
    
 /* const actulizarTrabajo =   await this.ordenDeTrabajoRepository.save(ordenTrabajo);
@@ -230,7 +237,7 @@ return {msj:"Solicitud de compra creada",validate:true}
 
    async ordenCompraById(id:number) {
     console.log(id);
-    if(!id){
+   /* if(!id){
      const sinId = await this.solicitudDeCompraRepository.createQueryBuilder('solicitudMaterial')
       .select([
         'solicitudMaterial.id'
@@ -243,7 +250,7 @@ return {msj:"Solicitud de compra creada",validate:true}
       }
       console.log(sinId);
       id = sinId.id;
-    }
+    }*/
 
     console.log('ID de la solicitud de compra:', id);
 
@@ -411,11 +418,15 @@ return {msj:"Solicitud de compra creada",validate:true}
 
   async getAllSolicitudes(){
 
-    const solicitudes = await this.solicitudDeCompraRepository.find({where:[{estadoCompra:{estado:EstadoCompraEnum.PRO}},{estadoCompra:{estado:EstadoCompraEnum.LIS}}]});
-    if(!solicitudes){
+    const solicitudes = await this.solicitudDeCompraRepository.find({where:[{estadoCompra:{estado:EstadoCompraEnum.PRO}},{estadoCompra:{estado:EstadoCompraEnum.LIS}}],relations:['itemSolicitados']});
+    if(solicitudes.length ===0){
     throw new NotFoundException("No se encontro solicitudes de material");
     }
-    return solicitudes;
+
+    const solCompletas = solicitudes.filter(sol =>
+      sol.itemSolicitados.some(item => item.existencia )
+    );
+    return solCompletas;
   }
 
    async getAllSolicitudesParciales(){

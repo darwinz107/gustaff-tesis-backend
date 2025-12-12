@@ -68,9 +68,11 @@ const findItem = await this.inventarioRepository.findOne({where:{nombre:stockDto
         {cantidad:stockDto.cantidad,estado:"En Stock",validate:true}
        ]
 
-       return compras;
+       return {compras,validate:true};
       }
 
+}else{
+  return{findItem,validate:false}
 }
 }
 

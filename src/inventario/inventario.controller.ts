@@ -26,7 +26,7 @@ export class InventarioController {
     return this.inventarioService.evaluarStock(stockDto);
   }
 
-   @Get('acta-salida/:id')
+   @Post('acta-salida/:id')
   createActaSalida(@Param('id') id: string, @Body() createActaSalidaDto:CreateActaSalidaDto) {
     return this.inventarioService.createActaSalida(+id, createActaSalidaDto);
   }
