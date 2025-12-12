@@ -138,10 +138,16 @@ for(const item of createSolicitudDeCompraDto.items){
       const calcStock = (findItem.stock -item.cantidad);
 
       if(calcStock < 0){
-        const obj1:CreateItemsSolicitadosDto = {item:item.item,cantidad:findItem.stock,caracteristica:item.caracteristica,Observacion:item.Observacion,existencia:true,ordenCompra:solCompra} 
+         if(findItem.stock === 0){
+
+          const obj2:CreateItemsSolicitadosDto = {item:item.item,cantidad:calcStock*(-1),caracteristica:item.caracteristica,Observacion:item.Observacion,existencia:false,ordenCompra:solCompra};
+           compras = [...compras,obj2]
+         }else{
+          const obj1:CreateItemsSolicitadosDto = {item:item.item,cantidad:findItem.stock,caracteristica:item.caracteristica,Observacion:item.Observacion,existencia:true,ordenCompra:solCompra} 
         const obj2:CreateItemsSolicitadosDto = {item:item.item,cantidad:calcStock*(-1),caracteristica:item.caracteristica,Observacion:item.Observacion,existencia:false,ordenCompra:solCompra} 
         compras = [...compras,obj1,obj2]
-      
+         }
+        
       }
 
        if(calcStock >= 0){
@@ -153,7 +159,6 @@ for(const item of createSolicitudDeCompraDto.items){
 }else{
     const obj1:CreateItemsSolicitadosDto = {item:item.item,cantidad:item.cantidad,caracteristica:item.caracteristica,Observacion:item.Observacion,existencia:false,ordenCompra:solCompra} 
         compras = [...compras,obj1]
-
 }
 }
 
@@ -161,9 +166,9 @@ for(const compra of compras){
    const saveItemsSolicitados = await queryRunner.manager.save(ItemsSolicitados,compra);
 }
 
- /*ordenTrabajo.estadoUso = {id:2} as any;
+ ordenTrabajo.estadoUso = {id:2} as any;
 
-const cambiarEstadoUsoTrabajo = await queryRunner.manager.save(SolicitudOrden,ordenTrabajo);*/
+const cambiarEstadoUsoTrabajo = await queryRunner.manager.save(SolicitudOrden,ordenTrabajo);
 
    
 /* const actulizarTrabajo =   await this.ordenDeTrabajoRepository.save(ordenTrabajo);
@@ -214,7 +219,7 @@ return {msj:"Solicitud de compra creada",validate:true}
       'solicitudCompra.Autoriza',
       'solicitudCompra.Destino',
       
-      //'ordenTrabajo.id',
+      'ordenTrabajo.id',
       'ordenTrabajo.NumOrden',
       'ordenTrabajo.DescripcionTrabajo',
       //'userSolicitante.id',
@@ -289,7 +294,7 @@ return {msj:"Solicitud de compra creada",validate:true}
     if(!solicitudesCompra){
       throw new NotFoundException("No se encontro solicitudes de compra");
     }
-
+/*
     if(solicitudesCompra.estadoCompra.estado === EstadoCompraEnum.ENT){
  
         const solicitudesCompra = await this.solicitudDeCompraRepository.createQueryBuilder('solicitudCompra')
@@ -328,7 +333,106 @@ return {msj:"Solicitud de compra creada",validate:true}
       throw new NotFoundException("No se encontro solicitudes de compra");
     }
 
+    }*/
+
+    return solicitudesCompra;
+  
+  }
+
+   async ordenCompraByOrdenTrabajoId(id:number) {
+    console.log(id);
+   /* if(!id){
+     const sinId = await this.solicitudDeCompraRepository.createQueryBuilder('solicitudMaterial')
+      .select([
+        'solicitudMaterial.id'
+      ])
+      .orderBy('solicitudMaterial.id','ASC')
+      .getOne();
+
+      if(!sinId){
+        throw new NotFoundException("No existen ninguna orden de compra");
+      }
+      console.log(sinId);
+      id = sinId.id;
+    }*/
+
+    console.log('ID de la solicitud de compra:', id);
+
+    const solicitudesCompra = await this.solicitudDeCompraRepository.createQueryBuilder('solicitudCompra')
+    .leftJoin('solicitudCompra.numOrdenTrabajo','ordenTrabajo')
+    .leftJoin('ordenTrabajo.userSolicitante','userSolicitante')
+    .leftJoin('solicitudCompra.estadoCompra','estadoCompra')
+    .leftJoin('solicitudCompra.itemSolicitados','itemSolicitados')
+    .select([
+      'solicitudCompra.id',
+      'solicitudCompra.numOrden',
+      'solicitudCompra.fechaRemision',
+      'solicitudCompra.Autoriza',
+      'solicitudCompra.Destino',
+      
+      //'ordenTrabajo.id',
+      'ordenTrabajo.id',
+      'ordenTrabajo.NumOrden',
+      'ordenTrabajo.DescripcionTrabajo',
+      'ordenTrabajo.Area',
+      'ordenTrabajo.Codigo',
+      'ordenTrabajo.Maquina',
+      //'userSolicitante.id',
+      'userSolicitante.name',
+      'estadoCompra.id',
+      'estadoCompra.estado',
+      'itemSolicitados.id',
+      'itemSolicitados.item',
+      'itemSolicitados.cantidad',
+      'itemSolicitados.caracteristica',
+      'itemSolicitados.Observacion',
+      'itemSolicitados.existencia',
+    ])
+    .where('ordenTrabajo.id = :id',{id})
+    .getOne();
+    if(!solicitudesCompra){
+      throw new NotFoundException("No se encontro solicitudes de compra");
     }
+
+ /*   if(solicitudesCompra.estadoCompra.estado === EstadoCompraEnum.ENT){
+ 
+        const solicitudesCompra = await this.solicitudDeCompraRepository.createQueryBuilder('solicitudCompra')
+    .leftJoin('solicitudCompra.numOrdenTrabajo','ordenTrabajo')
+    .leftJoin('ordenTrabajo.userSolicitante','userSolicitante')
+    .leftJoin('solicitudCompra.estadoCompra','estadoCompra')
+    .leftJoin('solicitudCompra.itemSolicitados','itemSolicitados')
+    .select([
+      'solicitudCompra.id',
+      'solicitudCompra.numOrden',
+      'solicitudCompra.fechaRemision',
+      'solicitudCompra.Autoriza',
+      'solicitudCompra.Destino',
+      
+      //'ordenTrabajo.id',
+      'ordenTrabajo.id',
+      'ordenTrabajo.NumOrden',
+      'ordenTrabajo.DescripcionTrabajo',
+      'ordenTrabajo.Area',
+      'ordenTrabajo.Codigo',
+      'ordenTrabajo.Maquina',
+      //'userSolicitante.id',
+      'userSolicitante.name',
+      'estadoCompra.id',
+      'estadoCompra.estado',
+      'itemSolicitados.id',
+      'itemSolicitados.item',
+      'itemSolicitados.cantidad',
+      'itemSolicitados.caracteristica',
+      'itemSolicitados.Observacion',
+      'itemSolicitados.existencia',
+    ])
+    .where('ordenTrabajo.id = :id',{id})
+    .getOne();
+    if(!solicitudesCompra){
+      throw new NotFoundException("No se encontro solicitudes de compra");
+  }}
+*/
+    
 
     return solicitudesCompra;
   
@@ -424,17 +528,21 @@ return {msj:"Solicitud de compra creada",validate:true}
     }
 
     const solCompletas = solicitudes.filter(sol =>
-      sol.itemSolicitados.some(item => item.existencia )
+      sol.itemSolicitados.every(item => item.existencia ===true)
     );
     return solCompletas;
   }
 
    async getAllSolicitudesParciales(){
 
-    const solicitudes = await this.solicitudDeCompraRepository.find({where:[{estadoCompra:{estado:EstadoCompraEnum.PAR}}]});
-    if(!solicitudes){
+    const solicitudes = await this.solicitudDeCompraRepository.find({where:[{estadoCompra:{estado:EstadoCompraEnum.PAR}},{estadoCompra:{estado:EstadoCompraEnum.PRO}}],relations:['itemSolicitados']});
+    if(solicitudes.length ===0){
     throw new NotFoundException("No se encontro solicitudes de material");
     }
+
+     const solCompletas = solicitudes.filter(sol =>
+      sol.itemSolicitados.every(item => item.existencia ===false)
+    );
     return solicitudes;
   }
 

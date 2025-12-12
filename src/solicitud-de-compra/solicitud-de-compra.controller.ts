@@ -23,6 +23,11 @@ export class SolicitudDeCompraController {
     return this.solicitudDeCompraService.ordenCompraById(+id);
   }
 
+  @Get('solicitud-compra-pdf/:id')
+  ordenCompraByOrdenTrabajoId(@Param('id') id: string) {
+    return this.solicitudDeCompraService.ordenCompraByOrdenTrabajoId(+id);
+  }
+
   
 @Get('estados-compra')
   getAllEstadosCompra(){

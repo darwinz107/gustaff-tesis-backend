@@ -2,6 +2,7 @@ import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { Proovedores } from "./proovedores.entity";
 import { RegistroEntrada } from "./registroEntrada.entity";
 import { RegistroSalida } from "./registroSalida.entity";
+import { Inventario } from "./inventario.entity";
 
 @Entity()
 export class ItemsSalida {
@@ -19,5 +20,7 @@ export class ItemsSalida {
     Observacion:string;
      @ManyToOne(()=>RegistroSalida,(registroSalida)=>registroSalida.itemSalida)
      regSalida:RegistroSalida;
+     @ManyToOne(()=>Inventario,(inventario)=>inventario.itemsSalida)
+     inventario:Inventario;
      
 }
