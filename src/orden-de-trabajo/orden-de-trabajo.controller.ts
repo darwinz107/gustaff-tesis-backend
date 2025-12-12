@@ -1,62 +1,57 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
 import { OrdenDeTrabajoService } from './orden-de-trabajo.service';
-import { CreateOrdenDeTrabajoDto } from './dto/create-orden-de-trabajo.dto';
+
 import { UpdateOrdenDeTrabajoDto } from './dto/update-orden-de-trabajo.dto';
 import { create } from 'domain';
-import { CreateAreaDto } from './dto/create-area.dto';
-import { CreateMaquinaDto } from './dto/create-maquina.dto';
-import { AreaDto } from './dto/area.dto';
-import { MaquinaDto } from './dto/maquina.dto';
-import { CreateCategoriaDto } from './dto/create-categoria.dto';
+import { CreateAreaDto } from '../admin/dto/create-area.dto';
+import { CreateMaquinaDto } from '../admin/dto/create-maquina.dto';
+import { AreaDto } from '../admin/dto/area.dto';
+import { MaquinaDto } from '../admin/dto/maquina.dto';
+import { CreateCategoriaDto } from '../admin/dto/create-categoria.dto';
 import { CreateSolicitudOrdenDto } from './dto/create-solicitud-orden.dto';
-import { CreateTipoTrabajoDto } from './dto/create-tipo-trabajo.dto';
+import { CreateTipoTrabajoDto } from '../admin/dto/create-tipo-trabajo.dto';
+import { FiltrarOrdenDeTrabajoDto } from './dto/filtrar-orden-de-trabajo.dto';
 
 @Controller('orden-de-trabajo')
 export class OrdenDeTrabajoController {
   constructor(private readonly ordenDeTrabajoService: OrdenDeTrabajoService) {}
 
-  @Post("create/area")
-  createArea(@Body() createAreaDto:CreateAreaDto) {
-    return this.ordenDeTrabajoService.crearArea(createAreaDto);
-  }
+ @Get('all-ordenes')
+ getAllOrdenesTrabajo(){
+  return this.ordenDeTrabajoService.getAllOrdenesTrabajo();
+ }
 
-  @Post("create/maquina")
-  createMaquina(@Body() createMaquinaDto:CreateMaquinaDto){
-    return this.ordenDeTrabajoService.createMaquina(createMaquinaDto);
-  }
+ @Get('all-ordenes-numOrden')
+ allOrdenTrabajoNumOrden(){
+ return this.ordenDeTrabajoService.allOrdenTrabajoNumOrden();
+ }
 
-  @Get()
-  findAll() {
-    return this.ordenDeTrabajoService.findAll();
-  }
+  @Get('all-ordenes-sin-uso')
+ getAllOrdenesTrabajoSinUso(){
+  return this.ordenDeTrabajoService.getAllOrdenesTrabajoSinUso();
+ }
 
-  @Post('all/codigos')
-  findAllCodbyArea(@Body() areaDto:AreaDto) {
-    return this.ordenDeTrabajoService.findAllCodbyArea(areaDto);
-  }
+  @Post('orden-by-solicitante')
+ getOrdenTrabajoBySolicitante(@Body() searchbyuser:{solicitante:string}){
+  return this.ordenDeTrabajoService.getOrdenTrabajoBySolicitante(searchbyuser.solicitante);
+ }
 
-  @Post('all/maquinas')
-  findAllMaquinasByCod(@Body() maquinaDto:MaquinaDto) {
-    return this.ordenDeTrabajoService.findAllMaquinasByCod(maquinaDto);
+ @Get('orden-by-id/:id')
+  getOrdenTrabajoById(@Param('id') id:string){
+    return this.ordenDeTrabajoService.getOrdenTrabajoById(+id);
   }
-
-  @Post('create/categoria')
-  createCategoria(@Body() createCategoriaDto:CreateCategoriaDto){
-    return this.ordenDeTrabajoService.createCategoria(createCategoriaDto);
-  }
-  
-  @Get('categorias/all')
-  findAllCategorias(){
-    return this.ordenDeTrabajoService.findAllCategorias();
-  }
-
 
   @Post('create/solicitud-orden')
   registerSolicituOrden(@Body() createSolicitudOrdenDto:CreateSolicitudOrdenDto){
     return this.ordenDeTrabajoService.registerSolicitudOrden(createSolicitudOrdenDto);
   }
 
-  @Post('create/tipo-trabajo')
+  @Post('filtrar/solicitud-orden')
+  filtrarOrdenDeTrabajo(@Body() filtrarOrdenDeTrabajoDto:FiltrarOrdenDeTrabajoDto){
+    return this.ordenDeTrabajoService.filtrarOrdenDeTrabajo(filtrarOrdenDeTrabajoDto);
+  }
+
+  /*@Post('create/tipo-trabajo')
   registerTipoTrabajo(@Body() createTipoTrabajoDto:CreateTipoTrabajoDto){
     return this.ordenDeTrabajoService.registerTipoTrabajo(createTipoTrabajoDto);
   }
@@ -64,11 +59,16 @@ export class OrdenDeTrabajoController {
   @Get('all/tipo-trabajo/:categoria')
   getAllTipoTrabajoByCategoria(@Param('categoria') categoria:string){
     return this.ordenDeTrabajoService.getAllTipoTrabajoByCategoria(categoria);
+  }*/
+
+  @Get("last/solicitud/:id")
+  getSolicitudReciente(@Param('id') id:string){
+    return this.ordenDeTrabajoService.getSolicitudReciente(+id);
   }
 
-  @Get("last/solicitud")
-  getSolicitudReciente(){
-    return this.ordenDeTrabajoService.getSolicitudReciente();
+  @Get("estados")
+  getEstadosTrabajo(){
+    return this.ordenDeTrabajoService.getEstadosTrabajo();
   }
    
   @Get(':id')

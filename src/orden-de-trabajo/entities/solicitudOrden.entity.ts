@@ -1,11 +1,16 @@
+import { SolicitudDeCompra } from "src/solicitud-de-compra/entities/solicitud-de-compra.entity";
 import { User } from "src/users/entities/user.entity";
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, ManyToOne, OneToOne, PrimaryGeneratedColumn } from "typeorm";
+import { EstadoTrabajo } from "./estadoTrabajo";
+import { EstadoUso } from "./estadoUso";
 
 
-@Entity('solicitud_orden')
+@Entity('orden_trabajo')
 export class SolicitudOrden {
     @PrimaryGeneratedColumn()
     id:number;
+    @Column()
+    NumOrden:string;
     @Column({type:'date'})
     fechaInicio:Date;
     @Column({type:'date'})
@@ -34,4 +39,10 @@ export class SolicitudOrden {
     userReceptor:User;
     @ManyToOne(()=>User,(user)=>user.tecnicoId,{nullable:true})
     userTecnico:User|null; 
+    @OneToOne(()=>SolicitudDeCompra,(solicitudDeCompra)=>solicitudDeCompra.numOrdenTrabajo)
+    solicitudTrabajo:SolicitudDeCompra;
+    @ManyToOne(()=>EstadoTrabajo,(estadoTrabajo)=>estadoTrabajo.ordenTrabajo)
+    estadoTrabajo:EstadoTrabajo;
+    @ManyToOne(()=>EstadoUso,(estadoUso)=>estadoUso.ordenTrabajo)
+    estadoUso:EstadoUso; 
 }

@@ -5,6 +5,15 @@ import { UpdateAuthDto } from './dto/update-auth.dto';
 import { Response } from 'express';
 import { Rol } from './rol/rol.decorator';
 import { AuthGuard } from './auth/auth.guard';
+import { AreaDto } from '../admin/dto/area.dto';
+import { CreateAreaDto } from '../admin/dto/create-area.dto';
+import { CreateCategoriaDto } from '../admin/dto/create-categoria.dto';
+import { CreateMaquinaDto } from '../admin/dto/create-maquina.dto';
+import { MaquinaDto } from '../admin/dto/maquina.dto';
+import { CreateTipoTrabajoDto } from '../admin/dto/create-tipo-trabajo.dto';
+import { CreateCargoDto } from '../admin/dto/create-cargo.dto';
+import { AuthUser1Guard } from './auth/auth.user1.guard';
+import { AuthUser2Guard } from './auth/auth.user2.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -13,11 +22,6 @@ export class AuthController {
   @Post('login')
   create(@Body() createAuthDto: CreateAuthDto,@Res({passthrough:true}) response:Response) {
     return this.authService.createToken(createAuthDto,response);
-  }
-
-  @Get()
-  findAll() {
-    return this.authService.findAll();
   }
 
   @Get(':id')
@@ -42,10 +46,25 @@ export class AuthController {
     return {isRol:true};
   }
 
+  @Rol(['user1'])
+  @UseGuards(AuthUser1Guard)
+  @Get('validate/user1')
+  validateRol1(){
+    return {isRol:true};
+  }
+
+  @Rol(['user2'])
+  @UseGuards(AuthUser2Guard)
+  @Get('validate/user2')
+  validateRol2(){
+    return {isRol:true};
+  }
+
   @Get('logout/token')
   logout(@Res() response:Response){
     return this.authService.logout(response);
   }  
+  
   
 
 }

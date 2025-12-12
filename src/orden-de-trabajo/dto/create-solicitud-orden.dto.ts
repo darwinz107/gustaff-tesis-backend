@@ -1,8 +1,10 @@
 import { Type } from "class-transformer";
-import { IsDate, IsEmpty, IsNotEmpty, IsNumber, IsString } from "class-validator";
+import { IsBoolean, IsDate, IsEmpty, IsNotEmpty, IsNumber, IsString } from "class-validator";
 
 
 export class CreateSolicitudOrdenDto {
+    @IsEmpty()
+    NumOrden:string;
     @Type(()=> Date)
     @IsDate()
     @IsNotEmpty()
@@ -46,6 +48,6 @@ export class CreateSolicitudOrdenDto {
     userReceptor:string;
     @IsString()
     @IsEmpty()
-    
-    userTecnico:string;  
+    userTecnico:string;
+
 }

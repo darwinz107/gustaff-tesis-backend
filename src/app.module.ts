@@ -8,9 +8,16 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { RolesModule } from './roles/roles.module';
 import { JwtModule } from '@nestjs/jwt';
 import { OrdenDeTrabajoModule } from './orden-de-trabajo/orden-de-trabajo.module';
+import { SolicitudDeCompraModule } from './solicitud-de-compra/solicitud-de-compra.module';
+import { InventarioModule } from './inventario/inventario.module';
+import { ParametroModule } from './parametro/parametro.module';
+import { AdminModule } from './admin/admin.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
-  imports: [ConfigModule.forRoot({
+  imports: [
+    ScheduleModule.forRoot(),
+    ConfigModule.forRoot({
     isGlobal:true
   }),JwtModule.register({
     global:true,
@@ -26,7 +33,7 @@ import { OrdenDeTrabajoModule } from './orden-de-trabajo/orden-de-trabajo.module
       entities: [],
       autoLoadEntities:true,
       synchronize: true,
-  }),UsersModule, AuthModule,RolesModule, OrdenDeTrabajoModule],
+  }),UsersModule, AuthModule,RolesModule, OrdenDeTrabajoModule, SolicitudDeCompraModule, InventarioModule, ParametroModule, AdminModule],
   controllers: [AppController],
   providers: [AppService],
 })

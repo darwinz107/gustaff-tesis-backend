@@ -7,9 +7,6 @@ export class Area {
     id:number;
     @Column()
     nombre:string;
-    @Column()
-    cod:string;
-     
     @OneToMany(()=>Codigo,(codigo)=>codigo.area)
     codigo:Codigo[]
 }

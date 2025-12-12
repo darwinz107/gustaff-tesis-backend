@@ -7,6 +7,5 @@ export class TipoTrabajo{
    id:number;
    @Column()
    tipo:string;
-   @ManyToOne(()=>Categoria,(categoria)=>categoria.tipoTrabajo)
-   categoriaId:Categoria;
+   
 }
