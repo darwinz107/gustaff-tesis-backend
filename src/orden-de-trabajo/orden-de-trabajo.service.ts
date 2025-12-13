@@ -89,12 +89,18 @@ export class OrdenDeTrabajoService implements OnModuleInit{
        throw new ExceptionsHandler();
         }
 const fechaActual = new Date();
+      fechaActual.setHours(23,59,59);
     for(const orden of ordenesTrabajo){
-
+      const fechaFinal = new Date(orden.fechaFinal);
+      const fechaInicio = new Date(orden.fechaInicio);
+const horaFinal = new Date(orden.HoraFinal);
+const horaInicio = new Date(orden.HoraInicio);
 const existOrdenTrabajo = await this.solicitudOrdenRepository.findOne({where:{id:orden.id}});
       if(existOrdenTrabajo){
-       const fechaFinal = new Date(orden.fechaFinal);
-       const fechaInicio = new Date(orden.fechaInicio);
+       
+       fechaFinal.setHours(horaFinal.getHours(),horaFinal.getMinutes(),horaFinal.getSeconds());
+       
+       fechaInicio.setHours(horaInicio.getHours(),horaInicio.getMinutes(),horaInicio.getSeconds());
       if(fechaActual > fechaFinal){
         orden.estadoTrabajo = estadoVencido;
         await this.solicitudOrdenRepository.save(orden);
