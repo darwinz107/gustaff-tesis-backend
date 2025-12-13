@@ -68,9 +68,11 @@ const findItem = await this.inventarioRepository.findOne({where:{nombre:stockDto
         {cantidad:stockDto.cantidad,estado:"En Stock",validate:true}
        ]
 
-       return compras;
+       return {compras,validate:true};
       }
 
+}else{
+  return{findItem,validate:false}
 }
 }
 
@@ -88,10 +90,12 @@ async asignarInfoActaEntrada (id:number){
       "itemsSolicitados.Observacion",
     ])
   .where("ordenCompra.id =:id",{id:id})
-  .andWhere("estadoCompra.estado =:estado",{estado:EstadoCompraEnum.PAR})
+  .orWhere("estadoCompra.estado =:estado",{estado:EstadoCompraEnum.PAR})
+  .orWhere("estadoCompra.estado =:estado",{estado:EstadoCompraEnum.PRO})
   .getMany();
 
 if(!registroEntrada){
+  console.log("No se encontro una solicitud de material asociada con items solicitados");
    throw new NotFoundException("No se encontro una solicitud de material asociada con items solicitados");
    }
 
@@ -101,9 +105,10 @@ let compras:{}[] =[];
      
     const findItem = await this.inventarioRepository.findOne({where:{nombre:item.item}});
 
-    if(findItem == null || findItem == undefined){
+   /* if(findItem == null || findItem == undefined){
+      console.log("No se encontro una solicitud de material asociada con items solicitados 2");
    throw new NotFoundException("No se encontro una solicitud de material asociada con items solicitados");
-   }
+   }*/
 
     if(findItem){
      compras = [...compras,{id:findItem.id,nombre:findItem.nombre,cantidad:item.cantidad,costo:findItem.costo,Observacion:item.Observacion}]
@@ -123,10 +128,13 @@ let compras:{}[] =[];
       "numOrdenTrabajo.NumOrden"
     ])
   .where("solicitudDeCompra.id =:id",{id:id})
-  .andWhere("estadoCompra.estado =:estado",{estado:EstadoCompraEnum.PAR})
+  .orWhere("estadoCompra.estado =:estado",{estado:EstadoCompraEnum.PAR})
+  .orWhere("estadoCompra.estado =:estado",{estado:EstadoCompraEnum.PRO})
   .getOne();
 
 if(!registroEntradaInfo){
+  console.log(id);
+  console.log("No se encontro una solicitud de material asociada");
    throw new NotFoundException("No se encontro una solicitud de material asociada");
    }
 
@@ -159,7 +167,8 @@ async createActaEntrada(id:number,createActaEntradaDto:CreateActaEntradaDto){
  "estadoCompra.estado"
      ])
    .where('solicitudDeCompra.id = :id',{id:id})
-   .andWhere('estadoCompra.estado = :estado',{estado:EstadoCompraEnum.PAR})
+  /* .orWhere('estadoCompra.estado = :estado',{estado:EstadoCompraEnum.PAR})
+   .orWhere('estadoCompra.estado = :estado',{estado:EstadoCompraEnum.PRO})*/
    .getOne();
 
    if(!solMaterial){
@@ -381,22 +390,25 @@ throw new NotFoundException("Fallo al encontrar el registro de salida");
    }
 
    for(const item of itemsSolicitados){
-     
+     const newInventario = await queryRunner.manager.findOne(Inventario,{where:{nombre:item.item}});
+      if(!newInventario){
+    throw new NotFoundException("No se encontro el item en inventario");
+    }
+    
     const newItemsSalida:CreateItemsSalidaDto = {
        item:item.item,
        cantidad:item.cantidad,
        destino:solMaterial.Destino,
-       regSalida:registroSalidaNew
+       regSalida:registroSalidaNew,
+       observacion:item.Observacion,
+       inventario:newInventario
     }
 
     await queryRunner.manager.save(ItemsSalida,newItemsSalida);
 
-    const newInventario = await queryRunner.manager.findOne(Inventario,{where:{nombre:item.item}});
-
-    if(!newInventario){
-    throw new NotFoundException("No se encontrol el item en inventario");
-    }
     
+
+   
     const newStock = newInventario.stock - item.cantidad;
 
     if(newStock <0 ){
@@ -434,21 +446,28 @@ throw new NotFoundException("No se encontro el estado");
 
    }else{
     for(const item of itemsSolicitados){
+
+       const newInventario = await queryRunner.manager.findOne(Inventario,{where:{nombre:item.item}});
+      if(!newInventario){
+    throw new NotFoundException("No se encontro el item en inventario");
+    }
      
     const newItemsSalida:CreateItemsSalidaDto = {
        item:item.item,
        cantidad:item.cantidad,
        destino:solMaterial.Destino,
-       regSalida:registroSalidaCreated
+       regSalida:registroSalidaCreated,
+       observacion:item.Observacion,
+       inventario:newInventario
     }
 
     await queryRunner.manager.save(ItemsSalida,newItemsSalida);
 
-     const newInventario = await queryRunner.manager.findOne(Inventario,{where:{nombre:item.item}});
+  /*   const newInventario = await queryRunner.manager.findOne(Inventario,{where:{nombre:item.item}});
 
     if(!newInventario){
     throw new NotFoundException("No se encontrol el item en inventario");
-    }
+    }*/
     
     const newStock = newInventario.stock - item.cantidad;
 
@@ -585,6 +604,7 @@ try {
     .leftJoin('numSolicitudCompra.numOrdenTrabajo','numOrdenTrabajo')
     .leftJoin('numOrdenTrabajo.userSolicitante','userSolicitante')
     .leftJoin('registroSalida.entrega','entrega')
+    .leftJoin('itemSalida.inventario','inventario')
     .select([
 
       'registroSalida.numActa',
@@ -595,11 +615,12 @@ try {
       'numSolicitudCompra.id',
       'numOrdenTrabajo.id',
       'numSolicitudCompra.Destino',
-      
       'itemSalida.item',
       'itemSalida.cantidad',  
       'itemSalida.Observacion',
-      
+         'inventario.id',
+         'inventario.nombre',
+      'inventario.costo',
     ])
     .where('numSolicitudCompra.id = :id',{id})
     .getOne();

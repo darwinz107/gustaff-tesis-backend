@@ -89,12 +89,18 @@ export class OrdenDeTrabajoService implements OnModuleInit{
        throw new ExceptionsHandler();
         }
 const fechaActual = new Date();
+      fechaActual.setHours(23,59,59);
     for(const orden of ordenesTrabajo){
-
+      const fechaFinal = new Date(orden.fechaFinal);
+      const fechaInicio = new Date(orden.fechaInicio);
+const horaFinal = new Date(orden.HoraFinal);
+const horaInicio = new Date(orden.HoraInicio);
 const existOrdenTrabajo = await this.solicitudOrdenRepository.findOne({where:{id:orden.id}});
       if(existOrdenTrabajo){
-       const fechaFinal = new Date(orden.fechaFinal);
-       const fechaInicio = new Date(orden.fechaInicio);
+       
+       fechaFinal.setHours(horaFinal.getHours(),horaFinal.getMinutes(),horaFinal.getSeconds());
+       
+       fechaInicio.setHours(horaInicio.getHours(),horaInicio.getMinutes(),horaInicio.getSeconds());
       if(fechaActual > fechaFinal){
         orden.estadoTrabajo = estadoVencido;
         await this.solicitudOrdenRepository.save(orden);
@@ -159,7 +165,7 @@ try {
     const estado = await this.estadoTrabajoRepository.findOne({where:{id:1}});
     const estadoUso = await this.estadoUsoRepository.findOne({where:{id:1}});*/
 
-    const solicitante = await this.dataSource.createQueryBuilder(User,'user')
+    const solicitante = await queryRunner.manager.createQueryBuilder(User,'user')
     .where('user.name = :name',{name:createSolicitudOrdenDto.userSolicitante})
     .select(['user.id'])
     .getOne();
@@ -204,10 +210,13 @@ try {
      throw new NotFoundException("No se encontro un estado de uso");
    }
 
-    const lgtOrdenTrabajo = await this.solicitudOrdenRepository.count();
-    createSolicitudOrdenDto.NumOrden = 'OT-' + (lgtOrdenTrabajo + 1).toString().padStart(5, '0');
-
-    
+    const lgtOrdenTrabajo = await queryRunner.manager.find(SolicitudOrden,{order:{id:"DESC"},take:1,select:['id']});
+      if(!lgtOrdenTrabajo){
+        console.log("No se pudo crear el numOrden");
+     throw new NotFoundException("No se pudo crear el numOrden");
+   }
+   const lgtFinal = lgtOrdenTrabajo.length > 0 ? lgtOrdenTrabajo[0].id:0;
+    createSolicitudOrdenDto.NumOrden = 'OT-' + (lgtFinal + 1).toString().padStart(5, '0');
 
       const nuevaSolicitud =
       {
@@ -230,15 +239,10 @@ try {
         estadoUso:estadoUso
       };
 
-      const crearSolicitud = await queryRunner.manager.save(SolicitudOrden,nuevaSolicitud);
-
-      
-
-
-
+       await queryRunner.manager.save(SolicitudOrden,nuevaSolicitud);
 
      await queryRunner.commitTransaction();
-      return { msj: "Solicitud de orden creada!" };
+      return { msj: "Solicitud de orden creada!",validate:true };
     /*else{
         const nuevaSolicitud = 
       { 
@@ -269,11 +273,10 @@ try {
     
   
 } catch (error) {
-  return { msj: "No se pudo crear la solicitud" };
   await queryRunner.rollbackTransaction();
+  return { msj: `No se pudo crear la solicitud: ${error}`,validate:false };
      }finally{
     await  queryRunner.release();
-  
   }}
 
   async getAllOrdenesTrabajo(){
@@ -379,6 +382,7 @@ return new NotFoundException("No existen ordenes de trabajo");
         'userSolicitante.name',
         'userReceptor.name',
         'userTecnico.name',
+        'estado.id',
         'estado.estado'
       ])
      .where(`solicitud.id = :id`, { id: id })
@@ -395,7 +399,12 @@ return new NotFoundException("No existen ordenes de trabajo");
 
     console.log(id);
     if(!id){
-      id = await this.solicitudOrdenRepository.count();
+      const lastOrdTrabajo = await this.solicitudOrdenRepository.find({order:{id:"DESC"},take:1,select:["id"]});
+      if(lastOrdTrabajo.length === 0){
+       id = 1
+      }else{
+        id = lastOrdTrabajo[0].id;
+      }
     }
 
     const solicitud = await this.solicitudOrdenRepository.createQueryBuilder('solicitud')

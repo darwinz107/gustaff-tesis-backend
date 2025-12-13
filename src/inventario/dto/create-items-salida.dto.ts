@@ -1,3 +1,4 @@
+import { Inventario } from "../entities/inventario.entity";
 import { RegistroSalida } from "../entities/registroSalida.entity";
 
 export class CreateItemsSalidaDto {
@@ -7,4 +8,6 @@ export class CreateItemsSalidaDto {
     cantidad:number;
     destino:string;
     regSalida:RegistroSalida;
+    observacion:string;
+    inventario:Inventario;
 }
