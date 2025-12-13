@@ -122,7 +122,7 @@ export class AdminService implements OnModuleInit{
     
         const maquinalgt = await this.maquinaRepository.find();
     
-        const newCod =  `GU-${createMaquinaDto.area.slice(0,2)}-${maquinalgt.length+1}`;
+        const newCod =  `GU-${createMaquinaDto.maquina.slice(0,3)}-${maquinalgt.length+1}`;
     
         const nuevoCodigo =  this.codigoRepository.create({ cod: newCod, area: { id: searchArea.id } });
         await this.codigoRepository.save(nuevoCodigo);
