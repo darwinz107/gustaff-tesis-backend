@@ -10,7 +10,7 @@ id:number;
 name:string;
 @ManyToOne(()=>Role,(role)=>role.cargo)
 @JoinColumn({name:"rolId"})
-rolId:Role;
+rolId:Role|null;
 
 @OneToMany(()=>User,(user)=>user.cargoId)
 relacionUser:User[];

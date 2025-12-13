@@ -576,7 +576,7 @@ try {
 
   async findAll() {
 
-    const inventarios = await this.inventarioRepository.find({select:['id','nombre','stock']});
+    const inventarios = await this.inventarioRepository.find();
     if(inventarios === null|| inventarios === undefined){
       return new NotFoundException("No se encontro inventarios");
     }

@@ -199,7 +199,11 @@ export class AdminService implements OnModuleInit{
       }
     
       async createCargo(createCargoDto:CreateCargoDto){
-      
+      if(!createCargoDto.rol){
+        const newCargo =  this.cargoRepository.create({name:createCargoDto.cargo,rolId:null});
+      await this.cargoRepository.save(newCargo);
+      return {msj:"Nuevo cargo registrado!"}
+      }
       const newCargo =  this.cargoRepository.create({name:createCargoDto.cargo,rolId:{id:createCargoDto.rol}});
       await this.cargoRepository.save(newCargo);
   
