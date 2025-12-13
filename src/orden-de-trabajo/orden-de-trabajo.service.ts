@@ -236,7 +236,7 @@ try {
        await queryRunner.manager.save(SolicitudOrden,nuevaSolicitud);
 
      await queryRunner.commitTransaction();
-      return { msj: "Solicitud de orden creada!" };
+      return { msj: "Solicitud de orden creada!",validate:true };
     /*else{
         const nuevaSolicitud = 
       { 
@@ -268,7 +268,7 @@ try {
   
 } catch (error) {
   await queryRunner.rollbackTransaction();
-  return { msj: `No se pudo crear la solicitud: ${error}` };
+  return { msj: `No se pudo crear la solicitud: ${error}`,validate:false };
      }finally{
     await  queryRunner.release();
   }}
@@ -393,7 +393,12 @@ return new NotFoundException("No existen ordenes de trabajo");
 
     console.log(id);
     if(!id){
-      id = await this.solicitudOrdenRepository.count();
+      const lastOrdTrabajo = await this.solicitudOrdenRepository.find({order:{id:"DESC"},take:1,select:["id"]});
+      if(lastOrdTrabajo.length === 0){
+       id = 1
+      }else{
+        id = lastOrdTrabajo[0].id;
+      }
     }
 
     const solicitud = await this.solicitudOrdenRepository.createQueryBuilder('solicitud')
