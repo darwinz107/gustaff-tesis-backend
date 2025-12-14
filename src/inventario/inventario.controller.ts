@@ -71,9 +71,9 @@ export class InventarioController {
     return this.inventarioService.findAll();
   }
 
-   @Get('proovedores')
-  findProovedorByNombre(@Body() nombre:string) {
-    return this.inventarioService.findProovedorByNombre(nombre);
+   @Post('proovedores')
+  findProovedorByNombre(@Body() proovedor:{nombre:string}) {
+    return this.inventarioService.findProovedorByNombre(proovedor.nombre);
   }
 
   @Get(':id')

@@ -735,10 +735,10 @@ try {
   }
 
   async findProovedorByNombre(nombre:string) {
+    
     const proovedores = await this.proovedoresRepository.find({where:{nombre:Like(`${nombre}%`)},select:["nombre"]});
-    if(proovedores === null || proovedores || undefined){
-     throw new NotFoundException("No se encontro los proovedores");
-    }
+   
+    
     return proovedores;
   }
 
