@@ -29,6 +29,7 @@ export class InventarioService {
               @InjectRepository(SolicitudDeCompra) private readonly solicitudDeComprasRepository:Repository<SolicitudDeCompra>,
                @InjectRepository(RegistroSalida) private readonly registroSalidaRepository:Repository<RegistroSalida>,
                @InjectRepository(RegistroEntrada) private readonly registroEntradaRepository:Repository<RegistroEntrada>,
+               @InjectRepository(Proovedores) private readonly proovedoresRepository:Repository<Proovedores>,
             private dataSource:DataSource,
             ){}
 
@@ -731,6 +732,14 @@ try {
     }
     return registroDeEntrada;
 
+  }
+
+  async findProovedorByNombre(nombre:string) {
+    const proovedores = await this.proovedoresRepository.find({where:{nombre:Like(`${nombre}%`)},select:["nombre"]});
+    if(proovedores === null || proovedores || undefined){
+     throw new NotFoundException("No se encontro los proovedores");
+    }
+    return proovedores;
   }
 
   update(id: number, updateInventarioDto: UpdateInventarioDto) {

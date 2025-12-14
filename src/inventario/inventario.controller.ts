@@ -71,6 +71,11 @@ export class InventarioController {
     return this.inventarioService.findAll();
   }
 
+   @Get('proovedores')
+  findProovedorByNombre(@Body() nombre:string) {
+    return this.inventarioService.findProovedorByNombre(nombre);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.inventarioService.findOne(+id);

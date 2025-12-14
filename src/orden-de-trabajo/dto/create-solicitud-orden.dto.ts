@@ -15,10 +15,10 @@ export class CreateSolicitudOrdenDto {
     fechaFinal:Date;
     
     @IsNotEmpty()
-    HoraInicio:Date;
+    HoraInicio:string;
     
     @IsNotEmpty()
-    HoraFinal:Date
+    HoraFinal:string
     @IsNotEmpty()
     @IsString()
     Area:string;
