@@ -25,7 +25,7 @@ import { EstadoTrabajo } from './entities/estadoTrabajo';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { SolicitudDeCompra } from 'src/solicitud-de-compra/entities/solicitud-de-compra.entity';
 import { EstadoUso } from './entities/estadoUso';
-import * as moment from 'moment-timezone';
+
 
 @Injectable()
 export class OrdenDeTrabajoService implements OnModuleInit{

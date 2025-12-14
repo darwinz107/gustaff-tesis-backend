@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateInventarioDto } from './dto/create-inventario.dto';
 import { UpdateInventarioDto } from './dto/update-inventario.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -20,6 +20,7 @@ import { RegistroEntrada } from './entities/registroEntrada.entity';
 import { Proovedores } from './entities/proovedores.entity';
 import { ItemsEntrada } from './entities/itemsEntrada.entity';
 import { User } from 'src/users/entities/user.entity';
+import { CreateProovedorDto } from './dto/create-proovedor.dto';
 
 @Injectable()
 export class InventarioService {
@@ -740,6 +741,25 @@ try {
    
     
     return proovedores;
+  }
+
+  async createProovedor(createProovedorDto:CreateProovedorDto){
+ 
+const existe = await this.proovedoresRepository.findOne({
+    where: { ruc: createProovedorDto.ruc },
+  });
+
+  if (existe) {
+    throw new BadRequestException('El RUC ya está registrado');
+  }
+
+    const createProov = this.proovedoresRepository.create(createProovedorDto);
+    
+    return{
+      ok:true,
+      message:"Proovedor registrado!"
+    }
+
   }
 
   update(id: number, updateInventarioDto: UpdateInventarioDto) {
