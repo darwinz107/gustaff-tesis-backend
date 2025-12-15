@@ -737,7 +737,7 @@ try {
 
   async findProovedorByNombre(nombre:string) {
     
-    const proovedores = await this.proovedoresRepository.find({where:{nombre:Like(`${nombre}%`)},select:["nombre"]});
+    const proovedores = await this.proovedoresRepository.find({where:{nombreComercial : Like(`${nombre}%`)},select:["nombreComercial"]});
    
     
     return proovedores;
@@ -754,7 +754,7 @@ const existe = await this.proovedoresRepository.findOne({
   }
 
     const createProov = this.proovedoresRepository.create(createProovedorDto);
-    
+    await this.proovedoresRepository.save(createProov);
     return{
       ok:true,
       message:"Proovedor registrado!"

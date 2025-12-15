@@ -22,6 +22,12 @@ import { CreateMaquinaDto } from './dto/create-maquina.dto';
 import { CreateTipoTrabajoDto } from './dto/create-tipo-trabajo.dto';
 import { MaquinaDto } from './dto/maquina.dto';
 import { UpdateUserDto } from 'src/users/dto/update-user.dto';
+import { Bodega } from 'src/parametro/entities/bodega';
+import { Seccion } from 'src/parametro/entities/seccion';
+import { Percha } from 'src/parametro/entities/percha';
+import { CreateBodegaDto } from './dto/create-bodega.dto';
+import { CreateSeccionDto } from './dto/create-seccion.dto';
+import { CreatePerchaDto } from './dto/create-percha.dto';
 
 
 @Injectable()
@@ -35,7 +41,12 @@ export class AdminService implements OnModuleInit{
     @InjectRepository(TipoTrabajo) private readonly tipoTrabajoRepository:Repository<TipoTrabajo>, 
     @InjectRepository(Cargo) private readonly cargoRepository:Repository<Cargo>, 
     @InjectRepository(Role) private readonly roleRepository:Repository<Role>, 
-
+     @InjectRepository(Bodega)
+    private readonly bodegaRepository: Repository<Bodega>,
+    @InjectRepository(Seccion)
+    private readonly seccionRepository: Repository<Seccion>,
+    @InjectRepository(Percha)
+    private readonly perchaRepository: Repository<Percha>,
   ){}
     async onModuleInit() {
       const searchUsers = await this.userRepository.find();
@@ -255,6 +266,89 @@ export class AdminService implements OnModuleInit{
     const allTipoTrabajo = await this.tipoTrabajoRepository.find({select:['tipo']});
     return allTipoTrabajo;
   }
+
+   async createBodega(createBodegaDto: CreateBodegaDto): Promise<{ok:boolean,message:string}> {
+    
+    const bodega = this.bodegaRepository.create({ bodega:createBodegaDto.bodega });
+      await this.bodegaRepository.save(bodega);
+
+  return {
+    ok: true,
+    message: 'Bodega creada correctamente',
+  };
+  }
+
+  async createSeccion(createSeccionDto: CreateSeccionDto): Promise<{ok:boolean,message:string}> {
+   
+    const bodega = await this.bodegaRepository.findOne({ where: { id: createSeccionDto.bodegaId } });
+    if (!bodega) throw new NotFoundException('Bodega no encontrada');
+
+    const seccion = this.seccionRepository.create({
+      seccion :createSeccionDto.seccion,
+       bodega, 
+    });
+      await this.seccionRepository.save(seccion);
+
+  return {
+    ok: true,
+    message: 'Sección creada correctamente',
+  };
+  }
+
+  async createPercha(createPerchaDto: CreatePerchaDto): Promise<{ok:boolean,message:string}> {
+    const { percha, seccionId } = createPerchaDto;
+
+    const seccion = await this.seccionRepository.findOne({ where: { id: seccionId } });
+    if (!seccion) throw new NotFoundException('Sección no encontrada');
+
+   
+
+      const crearPercha = this.perchaRepository.create({
+    percha: createPerchaDto.percha,
+    seccion,
+  });
+
+ await this.perchaRepository.save(crearPercha);
+  return {
+    ok: true,
+    message: 'Percha creada correctamente',
+  };
+  }
+
+  async findAllSecciones(): Promise<{ id: number; seccion: string }[]> {
+  return await this.seccionRepository.find({
+    select: ['id', 'seccion'],
+    order: { seccion: 'ASC' },
+  });
+}
+
+async findAllBodegas(): Promise<{ id: number; bodega: string }[]> {
+  return await this.bodegaRepository.find({
+    select: ['id', 'bodega'],
+    order: { bodega: 'ASC' },
+  });
+}
+
+/*async findSeccionesByBodega(
+  bodegaId: number
+): Promise<{ id: number; seccion: string }[]> {
+  return await this.seccionRepository.find({
+    where: { bodega: { id: bodegaId } },
+    select: ['id', 'seccion'],
+    order: { seccion: 'ASC' },
+  });
+}
+
+async findPerchasBySeccion(
+  seccionId: number
+): Promise<{ id: number; percha: string }[]> {
+  return await this.perchaRepository.find({
+    where: { seccion: { id: seccionId } },
+    select: ['id', 'percha'],
+    order: { percha: 'ASC' },
+  });
+}*/
+
 
   findOne(id: number) {
     return `This action returns a #${id} admin`;

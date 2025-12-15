@@ -14,8 +14,6 @@ export class CreateProovedorDto {
   @Length(13, 13, { message: 'El RUC debe tener exactamente 13 dígitos' })
   ruc: string;
 
-  
-
   @IsEmail()
   email: string;
 
