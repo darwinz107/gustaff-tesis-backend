@@ -22,7 +22,7 @@ import { ScheduleModule } from '@nestjs/schedule';
   }),JwtModule.register({
     global:true,
     secret:process.env.SECRET || "messi",
-    signOptions:{expiresIn:'1h'}
+    signOptions:{expiresIn:'10h'}
   }),TypeOrmModule.forRoot({
      type: 'mysql',
       host: 'localhost',

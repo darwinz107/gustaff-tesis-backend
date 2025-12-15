@@ -329,30 +329,8 @@ async findAllBodegas(): Promise<{ id: number; bodega: string }[]> {
   });
 }
 
-/*async findSeccionesByBodega(
-  bodegaId: number
-): Promise<{ id: number; seccion: string }[]> {
-  return await this.seccionRepository.find({
-    where: { bodega: { id: bodegaId } },
-    select: ['id', 'seccion'],
-    order: { seccion: 'ASC' },
-  });
-}
-
-async findPerchasBySeccion(
-  seccionId: number
-): Promise<{ id: number; percha: string }[]> {
-  return await this.perchaRepository.find({
-    where: { seccion: { id: seccionId } },
-    select: ['id', 'percha'],
-    order: { percha: 'ASC' },
-  });
-}*/
 
 
-  findOne(id: number) {
-    return `This action returns a #${id} admin`;
-  }
 
  
 

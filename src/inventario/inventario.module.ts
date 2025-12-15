@@ -10,11 +10,15 @@ import { ItemsSolicitados } from './entities/itemsSolicitados.entity';
 import { RegistroEntrada } from './entities/registroEntrada.entity';
 import { ItemsEntrada } from './entities/itemsEntrada.entity';
 import { SolicitudDeCompraModule } from 'src/solicitud-de-compra/solicitud-de-compra.module';
+import { AdminModule } from 'src/admin/admin.module';
+import { Bodega } from 'src/parametro/entities/bodega';
+import { Seccion } from 'src/parametro/entities/seccion';
+import { Percha } from 'src/parametro/entities/percha';
 
 @Module({
-  imports:[TypeOrmModule.forFeature([Inventario,Proovedores,ItemsSolicitados,RegistroSalida,ItemsSalida,RegistroEntrada,ItemsEntrada]),SolicitudDeCompraModule],
+  imports:[TypeOrmModule.forFeature([Inventario,Proovedores,ItemsSolicitados,RegistroSalida,ItemsSalida,RegistroEntrada,ItemsEntrada,Bodega,Seccion,Percha]),SolicitudDeCompraModule,AdminModule],
   controllers: [InventarioController],
   providers: [InventarioService],
-  exports:[TypeOrmModule.forFeature([ItemsSolicitados])]
+  exports:[]
 })
 export class InventarioModule {}

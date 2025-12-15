@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer';
 import { IsInt, IsNotEmpty, IsPositive, IsString, MaxLength } from 'class-validator';
 
 export class CreatePerchaDto {
@@ -7,6 +8,7 @@ export class CreatePerchaDto {
   @MaxLength(100, { message: 'El nombre no puede exceder 100 caracteres' })
   percha: string;
 
+  @Type(()=>Number)
   @IsInt({ message: 'El id de la sección debe ser un número entero' })
   @IsPositive({ message: 'El id de la sección debe ser positivo' })
   seccionId: number;

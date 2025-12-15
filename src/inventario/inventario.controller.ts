@@ -82,10 +82,25 @@ export class InventarioController {
     return this.inventarioService.findProovedorByNombre(proovedor.nombre);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.inventarioService.findOne(+id);
+  @Get('bodegas')
+    async getAllBodegas() {
+      const bodegas = await this.inventarioService.precargarBodegas();
+      return bodegas;
+    }
+
+  @Get('secciones/:bodegaId')
+  async getSeccionesByBodega(@Param('bodegaId') bodegaId: number) {
+    const secciones = await this.inventarioService.findSeccionesByBodega(bodegaId);
+    return secciones;
   }
+
+  
+  @Get('perchas/:seccionId')
+  async getPerchasBySeccion(@Param('seccionId') seccionId: number) {
+    const perchas = await this.inventarioService.findPerchasBySeccion(seccionId);
+    return perchas;
+  }
+
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateInventarioDto: UpdateInventarioDto) {

@@ -79,10 +79,7 @@ export class AdminController {
       return this.adminService.allCargos();
     }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.adminService.findOne(+id);
-  }
+ 
 
   @Get('all/tipo-trabajo')
   findAllTipoTrabajo(){
@@ -116,7 +113,7 @@ export class AdminController {
     return this.adminService.createPercha(createPerchaDto);
   }
 
-    @Get('secciones')
+    @Get('secciones/all')
   async getAllSecciones() {
     const secciones = await this.adminService.findAllSecciones();
     return secciones;
@@ -130,16 +127,5 @@ export class AdminController {
   }
   
   
- /* @Get('secciones/:bodegaId')
-  async getSeccionesByBodega(@Param('bodegaId') bodegaId: number) {
-    const secciones = await this.adminService.findSeccionesByBodega(bodegaId);
-    return secciones;
-  }
 
-  
-  @Get('perchas/:seccionId')
-  async getPerchasBySeccion(@Param('seccionId') seccionId: number) {
-    const perchas = await this.adminService.findPerchasBySeccion(seccionId);
-    return perchas;
-  }*/
 }

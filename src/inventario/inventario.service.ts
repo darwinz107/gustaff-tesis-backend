@@ -21,6 +21,10 @@ import { Proovedores } from './entities/proovedores.entity';
 import { ItemsEntrada } from './entities/itemsEntrada.entity';
 import { User } from 'src/users/entities/user.entity';
 import { CreateProovedorDto } from './dto/create-proovedor.dto';
+import { AdminService } from 'src/admin/admin.service';
+import { Seccion } from 'src/parametro/entities/seccion';
+import { Percha } from 'src/parametro/entities/percha';
+import { Bodega } from 'src/parametro/entities/bodega';
 
 @Injectable()
 export class InventarioService {
@@ -31,6 +35,11 @@ export class InventarioService {
                @InjectRepository(RegistroSalida) private readonly registroSalidaRepository:Repository<RegistroSalida>,
                @InjectRepository(RegistroEntrada) private readonly registroEntradaRepository:Repository<RegistroEntrada>,
                @InjectRepository(Proovedores) private readonly proovedoresRepository:Repository<Proovedores>,
+               @InjectRepository(Bodega) private readonly bodegaRepository:Repository<Bodega>,
+               @InjectRepository(Seccion) private readonly seccionRepository:Repository<Seccion>,
+               @InjectRepository(Percha) private readonly perchaRepository:Repository<Percha>,
+                   private readonly adminService: AdminService,
+    
             private dataSource:DataSource,
             ){}
 
@@ -585,9 +594,7 @@ try {
     return inventarios;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} inventario`;
-  }
+
 
  async filtrarInventario(item: string) {
 
@@ -761,6 +768,29 @@ const existe = await this.proovedoresRepository.findOne({
     }
 
   }
+
+async findSeccionesByBodega(
+  bodegaId: number
+): Promise<{ id: number; seccion: string }[]> {
+  return await this.seccionRepository.find({
+    where: { bodega: { id: bodegaId } },
+    select: ['id', 'seccion'],
+    order: { seccion: 'ASC' },
+  });
+}
+
+async findPerchasBySeccion(
+  seccionId: number
+): Promise<{ id: number; percha: string }[]> {
+  return await this.perchaRepository.find({
+    where: { seccion: { id: seccionId } },
+    select: ['id', 'percha'],
+    order: { percha: 'ASC' },
+  });
+}
+async precargarBodegas(){
+   return await this.adminService.findAllBodegas();
+}
 
   update(id: number, updateInventarioDto: UpdateInventarioDto) {
     return `This action updates a #${id} inventario`;
