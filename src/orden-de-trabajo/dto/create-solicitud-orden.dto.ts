@@ -28,7 +28,7 @@ export class CreateSolicitudOrdenDto {
     @IsNotEmpty()
     @IsString()
     Maquina:string;
-    @IsEmpty()
+    @IsNotEmpty()
     @IsString()
     EspecificacionMaquina:string;
     @IsNotEmpty()
@@ -37,7 +37,7 @@ export class CreateSolicitudOrdenDto {
     @IsNotEmpty()
     @IsString()
     TipoTrabajo:string;
-    @IsEmpty()
+    @IsNotEmpty()
     @IsString()
     DescripcionTrabajo:string;
     @IsString()
@@ -47,7 +47,7 @@ export class CreateSolicitudOrdenDto {
     @IsNotEmpty()
     userReceptor:string;
     @IsString()
-    @IsEmpty()
+    @IsNotEmpty()
     userTecnico:string;
 
 }

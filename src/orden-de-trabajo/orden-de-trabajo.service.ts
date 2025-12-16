@@ -152,7 +152,7 @@ const existOrdenTrabajo = await this.solicitudOrdenRepository.findOne({where:{id
   }*/
 
   async registerSolicitudOrden(createSolicitudOrdenDto: CreateSolicitudOrdenDto) {
-
+  console.log(createSolicitudOrdenDto);
   const queryRunner = this.dataSource.createQueryRunner();
    await queryRunner.connect();
    await queryRunner.startTransaction();
