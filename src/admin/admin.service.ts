@@ -174,7 +174,8 @@ export class AdminService implements OnModuleInit{
     
         const codid = await this.codigoRepository.findOne({ where: { cod: maquinaDto.codigo } });
         if (!codid) {
-          return { msj: "No existe ese codigo" }
+         
+         return []
         }
     
         console.log(maquinaDto.codigo, codid);
