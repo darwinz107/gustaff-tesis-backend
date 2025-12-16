@@ -287,6 +287,7 @@ try {
       .innerJoin('solicitud.userReceptor', 'userReceptor')
       .leftJoin('solicitud.userTecnico', 'userTecnico')
       .innerJoin('solicitud.estadoTrabajo','estado')
+      .innerJoin('solicitud.estadoUso','estadoUso')
       .select([
         'solicitud.id',
         'solicitud.NumOrden',
@@ -303,7 +304,8 @@ try {
         'userSolicitante.name',
         'userReceptor.name',
         'userTecnico.name',
-        'estado.estado'
+        'estado.estado',
+        "estadoUso.uso"
       ])
      
       .getMany();
