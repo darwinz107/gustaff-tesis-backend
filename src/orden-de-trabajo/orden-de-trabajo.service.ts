@@ -308,7 +308,7 @@ try {
      
       .getMany();
 
-    if (ordenes) {
+    if (ordenes !==undefined) {
       console.log(ordenes);
       return ordenes;
     }

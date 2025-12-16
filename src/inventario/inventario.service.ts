@@ -99,10 +99,12 @@ async asignarInfoActaEntrada (id:number){
       "itemsSolicitados.cantidad",
       "itemsSolicitados.caracteristica",
       "itemsSolicitados.Observacion",
+      "itemsSolicitados.existencia"
     ])
   .where("ordenCompra.id =:id",{id:id})
-  .orWhere("estadoCompra.estado =:estado",{estado:EstadoCompraEnum.PAR})
-  .orWhere("estadoCompra.estado =:estado",{estado:EstadoCompraEnum.PRO})
+  //.andWhere("estadoCompra.estado =:estado",{estado:EstadoCompraEnum.PAR})
+ // .orWhere("estadoCompra.estado =:estado",{estado:EstadoCompraEnum.PRO})
+  .andWhere("itemsSolicitados.existencia =:existencia",{existencia:false})
   .getMany();
 
 if(!registroEntrada){
@@ -122,9 +124,9 @@ let compras:{}[] =[];
    }*/
 
     if(findItem){
-     compras = [...compras,{id:findItem.id,nombre:findItem.nombre,cantidad:item.cantidad,costo:findItem.costo,Observacion:item.Observacion}]
+     compras = [...compras,{id:findItem.id,nombre:findItem.nombre,cantidad:item.cantidad,costo:findItem.costo,Observacion:item.Observacion,existencia:item.existencia}]
     }else{
-      compras = [...compras,{id:null,nombre:item.item,cantidad:item.cantidad,costo:null,Observacion:item.Observacion}]
+      compras = [...compras,{id:null,nombre:item.item,cantidad:item.cantidad,costo:null,Observacion:item.Observacion,existencia:item.existencia}]
     }
   }
 
@@ -161,6 +163,8 @@ if(!registroEntradaInfo){
 
 async createActaEntrada(id:number,createActaEntradaDto:CreateActaEntradaDto){
 
+  console.log(createActaEntradaDto);
+
      const queryRunner = this.dataSource.createQueryRunner();
    await queryRunner.connect();
    await queryRunner.startTransaction();
@@ -191,7 +195,7 @@ async createActaEntrada(id:number,createActaEntradaDto:CreateActaEntradaDto){
 
    const newNumEntrada = 'AE-'+( registroEntrada+1).toString().padStart(5,'0');
 
-   const findProovedor = await queryRunner.manager.findOne(Proovedores,{where:{id:createActaEntradaDto?.proovedor}});
+   const findProovedor = await queryRunner.manager.findOne(Proovedores,{where:{nombreComercial:createActaEntradaDto?.proovedor}});
 
    if(!findProovedor){
    throw new NotFoundException("No se encontro el proovedor ingresado");
@@ -199,7 +203,7 @@ async createActaEntrada(id:number,createActaEntradaDto:CreateActaEntradaDto){
 
    const newRegistroEntrada = {
     
-    factura:createActaEntradaDto?.numFactura,
+    factura:createActaEntradaDto?.factura,
     numActa:newNumEntrada,
     solicita:solMaterial?.numOrdenTrabajo?.userSolicitante.name,
     proovedor:findProovedor,
@@ -224,7 +228,23 @@ async createActaEntrada(id:number,createActaEntradaDto:CreateActaEntradaDto){
    }
 
    for(const item of createActaEntradaDto.itemsSolicitados){
-   
+     
+     const bodega = await queryRunner.manager.findOne(Bodega,{where:{id:item.bodegaId}});
+    if(!bodega){
+   throw new NotFoundException("No se encontro una bodega valida");
+   }
+
+    const seccion = await queryRunner.manager.findOne(Seccion,{where:{id:item.seccionId}});
+    if(!seccion){
+   throw new NotFoundException("No se encontro una seccion valida");
+   }
+
+    const percha = await queryRunner.manager.findOne(Percha,{where:{id:item.perchaId}});
+    if(!percha){
+   throw new NotFoundException("No se encontro una percha valida");
+   }
+
+
     const findItem = await queryRunner.manager.findOne(Inventario,{where:{nombre:item.nombre}});
     if(!findItem){
 
@@ -232,9 +252,9 @@ async createActaEntrada(id:number,createActaEntradaDto:CreateActaEntradaDto){
        nombre:item.nombre,
        stock:item.cantidad,
        costo:item.costo,
-       bodega:item.bodega,
-       seccion:item.seccion,
-       percha:item.percha
+       bodega:bodega,
+       seccion:seccion,
+       percha:percha
       }
     await queryRunner.manager.save(Inventario,newInventario);
 
@@ -273,9 +293,9 @@ else{
 
     findItem.stock = updatedStock;
     findItem.costo = item.costo; 
-    findItem.bodega = item.bodega ?? findItem.bodega;
-    findItem.seccion = item.seccion ?? findItem.seccion;
-    findItem.percha = item.percha ?? findItem.percha;
+    findItem.bodega = bodega ?? findItem.bodega;
+    findItem.seccion = seccion ?? findItem.seccion;
+    findItem.percha = percha ?? findItem.percha;
 
     await queryRunner.manager.save(Inventario, findItem);
 
@@ -744,7 +764,7 @@ try {
 
   async findProovedorByNombre(nombre:string) {
     
-    const proovedores = await this.proovedoresRepository.find({where:{nombreComercial : Like(`${nombre}%`)},select:["nombreComercial"]});
+    const proovedores = await this.proovedoresRepository.find({where:{nombreComercial : Like(`${nombre}%`)},select:["id","nombreComercial"]});
    
     
     return proovedores;
