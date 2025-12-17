@@ -1,5 +1,5 @@
 import { Type } from "class-transformer";
-import { IsArray, IsBoolean, IsEmpty, IsNotEmpty, IsNumber, IsString, ValidateNested } from "class-validator";
+import { IsArray, IsBoolean, IsEmpty, IsNotEmpty, IsNumber, IsOptional, IsString, ValidateNested } from "class-validator";
 import { CreateItemsSolicitadosDto } from "src/inventario/dto/create-items-solicitados.dto";
 
 export class CreateSolicitudDeCompraDto {
@@ -10,7 +10,7 @@ export class CreateSolicitudDeCompraDto {
     @IsNotEmpty()
     @IsNumber()
     ordenTrabajoId:number;
-    @IsEmpty()
+    @IsOptional()
     @IsString()
     Destino:string;
     @IsArray()

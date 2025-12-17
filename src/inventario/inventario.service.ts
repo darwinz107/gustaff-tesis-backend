@@ -58,19 +58,20 @@ const findItem = await this.inventarioRepository.findOne({where:{nombre:stockDto
       if(calcStock < 0){
 
         if(findItem.stock === 0){
+          console.log(findItem.stock);
  const compras = [
         
         {cantidad:calcStock*(-1),estado:"Por Comprar",validate:false}
        ]
 
-       return compras;
+       return {compras,validate:true};
         }else{
            const compras = [
         {cantidad:findItem.stock,estado:"En Stock",validate:true},
         {cantidad:calcStock*(-1),estado:"Por Comprar",validate:false}
        ]
 
-       return compras;
+       return {compras,validate:true};
         }
       }
 
