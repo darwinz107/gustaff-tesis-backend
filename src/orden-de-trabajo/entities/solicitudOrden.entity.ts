@@ -9,6 +9,8 @@ import { EstadoUso } from "./estadoUso";
 export class SolicitudOrden {
     @PrimaryGeneratedColumn()
     id:number;
+    @Column({type:'datetime',default:()=>'CURRENT_TIMESTAMP'})
+    fechaRemision:Date;
     @Column()
     NumOrden:string;
     @Column({type:'date'})

@@ -25,6 +25,7 @@ import { AdminService } from 'src/admin/admin.service';
 import { Seccion } from 'src/parametro/entities/seccion';
 import { Percha } from 'src/parametro/entities/percha';
 import { Bodega } from 'src/parametro/entities/bodega';
+import { MailService } from 'src/mail/mail.service';
 
 @Injectable()
 export class InventarioService {
@@ -38,6 +39,7 @@ export class InventarioService {
                @InjectRepository(Bodega) private readonly bodegaRepository:Repository<Bodega>,
                @InjectRepository(Seccion) private readonly seccionRepository:Repository<Seccion>,
                @InjectRepository(Percha) private readonly perchaRepository:Repository<Percha>,
+               private readonly mailService:MailService,
                    private readonly adminService: AdminService,
     
             private dataSource:DataSource,
@@ -178,6 +180,7 @@ async createActaEntrada(id:number,createActaEntradaDto:CreateActaEntradaDto){
      .leftJoin("numOrdenTrabajo.userSolicitante","userSolicitante")
      .leftJoin("solicitudDeCompra.estadoCompra","estadoCompra")
      .select(["solicitudDeCompra.id",
+      "solicitudDeCompra.numOrden",
       "numOrdenTrabajo.id",
 "userSolicitante.name",
  "estadoCompra.estado"
@@ -343,6 +346,8 @@ throw new NotFoundException("No se encontro el estado");
        
     
       await queryRunner.commitTransaction();
+      await this.mailService.sendEstadoChangeNotification(solMaterial.numOrden, solMaterial.estadoCompra.estado, `Se ha realizado la compra de los items solicitados con falta de stock o nuevos`);
+
 return {msj:"Acta de entrada creada",validate:true}
    } catch (error) {
     await  queryRunner.rollbackTransaction();
@@ -519,6 +524,24 @@ throw new NotFoundException("No se encontro el estado");
      }
      solMaterial.estadoCompra = estadoEntregado;
      await queryRunner.manager.save(solMaterial);
+   }
+
+      const verificarEstadoSolMaterial = await queryRunner.manager.createQueryBuilder(SolicitudDeCompra,'solicitudDeCompra')
+   .leftJoinAndSelect('solicitudDeCompra.estadoCompra','estadoCompra')   
+   .leftJoinAndSelect('solicitudDeCompra.numOrdenTrabajo','ordenTrabajo')  
+   .where('solicitudDeCompra.id = :id',{id:id})
+   .getOne();
+
+   if(!verificarEstadoSolMaterial){
+   throw new NotFoundException("No se encontro una solicitud de material asociada");
+   }
+
+   if(verificarEstadoSolMaterial.estadoCompra.estado === EstadoCompraEnum.PAR){
+    await this.mailService.sendEstadoChangeNotification(solMaterial.numOrden, verificarEstadoSolMaterial.estadoCompra.estado, `Se ha realizado una acta de salida parcial por lo que aun hace falta material para la completa realizacion del trabajo #${verificarEstadoSolMaterial.numOrdenTrabajo.NumOrden}`);
+   }
+
+    if(verificarEstadoSolMaterial.estadoCompra.estado === EstadoCompraEnum.ENT){
+    await this.mailService.sendEstadoChangeNotification(solMaterial.numOrden, verificarEstadoSolMaterial.estadoCompra.estado, `Se ha realizado la completa entrega de los items solicitados para la realizacion del trabajo #${verificarEstadoSolMaterial.numOrdenTrabajo.NumOrden}`);
    }
 
     await queryRunner.commitTransaction();
@@ -726,7 +749,7 @@ try {
   }
 
   async actaDeEntradaByIdCompra(id:number) {
-
+     console.log(id);
      const registroDeEntrada = await this.registroEntradaRepository.createQueryBuilder('registroEntrada')
     .leftJoin('registroEntrada.numSolicitudCompra','numSolicitudCompra')
     

@@ -14,9 +14,10 @@ import { AdminModule } from 'src/admin/admin.module';
 import { Bodega } from 'src/parametro/entities/bodega';
 import { Seccion } from 'src/parametro/entities/seccion';
 import { Percha } from 'src/parametro/entities/percha';
+import { MailModule } from 'src/mail/mail.module';
 
 @Module({
-  imports:[TypeOrmModule.forFeature([Inventario,Proovedores,ItemsSolicitados,RegistroSalida,ItemsSalida,RegistroEntrada,ItemsEntrada,Bodega,Seccion,Percha]),SolicitudDeCompraModule,AdminModule],
+  imports:[TypeOrmModule.forFeature([Inventario,Proovedores,ItemsSolicitados,RegistroSalida,ItemsSalida,RegistroEntrada,ItemsEntrada,Bodega,Seccion,Percha]),SolicitudDeCompraModule,AdminModule,MailModule],
   controllers: [InventarioController],
   providers: [InventarioService],
   exports:[]

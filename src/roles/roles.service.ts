@@ -24,6 +24,11 @@ export class RolesService implements OnModuleInit{
        await this.roleRepository.save(createRol);
       }
     };
+    console.log({
+  SMTP_USER: process.env.SMTP_USER,
+  SMTP_PASS: process.env.SMTP_PASS ,
+});
+
   }
 
   create(createRoleDto: CreateRoleDto) {
