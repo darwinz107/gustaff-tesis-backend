@@ -230,12 +230,9 @@ return {msj:"Solicitud de compra creada",validate:true}
     
     .getMany();
     console.log(solicitudesCompra[0]);
-    if(!solicitudesCompra){
-      throw new NotFoundException("No se encontro solicitudes de compra");
-    }
-
-    return solicitudesCompra;
-  
+ 
+      return solicitudesCompra;
+     
   }
 
  
@@ -291,7 +288,7 @@ return {msj:"Solicitud de compra creada",validate:true}
     ])
     .where('solicitudCompra.id = :id',{id})
     .getOne();
-    if(!solicitudesCompra){
+    if(solicitudesCompra === undefined){
       throw new NotFoundException("No se encontro solicitudes de compra");
     }
 /*
@@ -524,7 +521,7 @@ return {msj:"Solicitud de compra creada",validate:true}
 
     const solicitudes = await this.solicitudDeCompraRepository.find({where:[{estadoCompra:{estado:EstadoCompraEnum.PRO}},{estadoCompra:{estado:EstadoCompraEnum.LIS}}],relations:['itemSolicitados']});
     if(solicitudes.length ===0){
-    throw new NotFoundException("No se encontro solicitudes de material");
+    return []
     }
 
     const solCompletas = solicitudes.filter(sol =>
@@ -537,7 +534,7 @@ return {msj:"Solicitud de compra creada",validate:true}
 
     const solicitudes = await this.solicitudDeCompraRepository.find({where:[{estadoCompra:{estado:EstadoCompraEnum.PAR}},{estadoCompra:{estado:EstadoCompraEnum.PRO}}],relations:['itemSolicitados']});
     if(solicitudes.length ===0){
-    throw new NotFoundException("No se encontro solicitudes de material");
+    return []
     }
 
      const solCompletas = solicitudes.filter(sol =>

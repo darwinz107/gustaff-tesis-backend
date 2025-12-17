@@ -16,9 +16,9 @@ export class SolicitudOrden {
     @Column({type:'date'})
     fechaFinal:Date;
     @Column({type:'time'})
-    HoraInicio:Date;
+    HoraInicio:string;
     @Column({type:'time'})
-    HoraFinal:Date;
+    HoraFinal:string;
     @Column()
     Area:string;
     @Column()

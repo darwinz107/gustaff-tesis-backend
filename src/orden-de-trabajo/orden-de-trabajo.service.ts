@@ -26,6 +26,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { SolicitudDeCompra } from 'src/solicitud-de-compra/entities/solicitud-de-compra.entity';
 import { EstadoUso } from './entities/estadoUso';
 
+
 @Injectable()
 export class OrdenDeTrabajoService implements OnModuleInit{
 
@@ -75,51 +76,51 @@ export class OrdenDeTrabajoService implements OnModuleInit{
         const estadoVencido = await this.estadoTrabajoRepository.findOne({where:{id:3}});
         const estadoPendiente = await this.estadoTrabajoRepository.findOne({where:{id:4}});
 
-         if(!estadoEnProceso){
-          console.log('Estado en proceso no encontrado');
-       throw new ExceptionsHandler();
-        }
-
-        if(!estadoVencido){
-          console.log('Estado vencido no encontrado');
-       throw new ExceptionsHandler();
-        }
-        if(!estadoPendiente){
-          console.log('Estado pendiente no encontrado');
-       throw new ExceptionsHandler();
-        }
-const fechaActual = new Date();
-      fechaActual.setHours(23,59,59);
-    for(const orden of ordenesTrabajo){
-      const fechaFinal = new Date(orden.fechaFinal);
-      const fechaInicio = new Date(orden.fechaInicio);
-const horaFinal = new Date(orden.HoraFinal);
-const horaInicio = new Date(orden.HoraInicio);
-const existOrdenTrabajo = await this.solicitudOrdenRepository.findOne({where:{id:orden.id}});
-      if(existOrdenTrabajo){
-       
-       fechaFinal.setHours(horaFinal.getHours(),horaFinal.getMinutes(),horaFinal.getSeconds());
-       
-       fechaInicio.setHours(horaInicio.getHours(),horaInicio.getMinutes(),horaInicio.getSeconds());
-      if(fechaActual > fechaFinal){
-        orden.estadoTrabajo = estadoVencido;
-        await this.solicitudOrdenRepository.save(orden);
-            console.log('Verificación de vencidos ejecutada...');
-
-      }
-    if(fechaActual <= fechaFinal && fechaActual >= fechaInicio){
-     orden.estadoTrabajo = estadoEnProceso;
-        await this.solicitudOrdenRepository.save(orden);
-    }
-
-    if(fechaActual < fechaInicio){
-      orden.estadoTrabajo = estadoPendiente;
-      await this.solicitudOrdenRepository.save(orden);
-    }
-    
-    }else{
+           if (!estadoEnProceso || !estadoVencido || !estadoPendiente) {
+      console.error('Faltan estados en DB');
       return;
     }
+      const fechaActual = new Date();
+     
+    for(const orden of ordenesTrabajo){
+
+        if (!orden.fechaFinal || !orden.fechaInicio || !orden.HoraFinal || !orden.HoraInicio) {
+          console.warn(`Orden ${orden.id} con datos incompletos, se salta`);
+          continue;
+        }
+
+      const [hh,mm,ss] = orden.HoraFinal.split(":").map(Number);
+      const [y,m,d] = orden.fechaFinal.toString().split("-").map(Number);
+      //console.log("fechaftostring:",orden.fechaFinal.toString());
+      const fechaFinal = new Date(y,m-1,d,hh,mm,ss);
+
+      const [hh2,mm2,ss2] = orden.HoraInicio.split(":").map(Number);
+      const [y2,m2,d2] = orden.fechaInicio.toString().split("-").map(Number);
+
+      const fechaInicio = new Date(y2,m2-1,d2,hh2,mm2,ss2);
+      /*const hfString = orden.HoraFinal.toTimeString();
+      console.log(hfString);*/
+
+const existOrdenTrabajo = await this.solicitudOrdenRepository.findOne({where:{id:orden.id}});
+    if (existOrdenTrabajo) {
+  if (fechaActual.getTime() > fechaFinal.getTime()) {
+   /*console.log("fechaActual",fechaActual);
+   console.log("fechaFinal",fechaFinal);*/
+    
+    orden.estadoTrabajo = estadoVencido;
+     console.log('Verificación de vencidos ejecutada...');
+  } else if (fechaActual.getTime() <= fechaFinal.getTime() && fechaActual.getTime() >= fechaInicio.getTime()) {
+    orden.estadoTrabajo = estadoEnProceso;
+     console.log('Verificación de en procesos ejecutada...');
+  } else if (fechaActual.getTime() < fechaInicio.getTime()) {
+    orden.estadoTrabajo = estadoPendiente;
+  }
+  await this.solicitudOrdenRepository.save(orden);
+ 
+} else {
+  return;
+}
+
 
     }
     } catch (error) {
@@ -151,7 +152,7 @@ const existOrdenTrabajo = await this.solicitudOrdenRepository.findOne({where:{id
   }*/
 
   async registerSolicitudOrden(createSolicitudOrdenDto: CreateSolicitudOrdenDto) {
-
+  console.log(createSolicitudOrdenDto);
   const queryRunner = this.dataSource.createQueryRunner();
    await queryRunner.connect();
    await queryRunner.startTransaction();
@@ -286,6 +287,7 @@ try {
       .innerJoin('solicitud.userReceptor', 'userReceptor')
       .leftJoin('solicitud.userTecnico', 'userTecnico')
       .innerJoin('solicitud.estadoTrabajo','estado')
+      .innerJoin('solicitud.estadoUso','estadoUso')
       .select([
         'solicitud.id',
         'solicitud.NumOrden',
@@ -302,12 +304,13 @@ try {
         'userSolicitante.name',
         'userReceptor.name',
         'userTecnico.name',
-        'estado.estado'
+        'estado.estado',
+        "estadoUso.uso"
       ])
      
       .getMany();
 
-    if (ordenes) {
+    if (ordenes !==undefined) {
       console.log(ordenes);
       return ordenes;
     }

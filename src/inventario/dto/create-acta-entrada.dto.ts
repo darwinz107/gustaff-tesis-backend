@@ -1,22 +1,73 @@
-export class CreateActaEntradaDto {
-  proovedor: number;
+import {
+  IsArray,
+  IsBoolean,
+  IsInt,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  ValidateNested,
+} from 'class-validator';
+import { Type } from 'class-transformer';
 
-  numFactura: string;
+export class CreateActaEntradaDto {
+  proovedor: string;
+
+  factura: string;
 total:number;
-  itemsSolicitados: {
-    //id:number|null;
-    nombre: string;
-    cantidad: number;
-    stockMin: number;
-    costo: number;
-    descuento: number;
-    iva: boolean;
-    subtotal: number;
-    total: number;
-    bodega: string;
-    seccion: string;
-    percha: string;
-    Observacion: string;
-    
-  }[];
+
+ @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ItemSolicitado)
+  itemsSolicitados: ItemSolicitado[];
 }
+
+class ItemSolicitado {
+
+  @IsString()
+  nombre: string;
+
+  @IsInt()
+  @Type(() => Number)
+  cantidad: number;
+
+  @IsInt()
+  @Type(() => Number)
+  stockMin: number;
+
+  @IsNumber()
+  @Type(() => Number)
+  costo: number;
+
+  @IsNumber()
+  @Type(() => Number)
+  descuento: number;
+
+  @IsBoolean()
+  iva: boolean;
+
+  @IsNumber()
+  @Type(() => Number)
+  subtotal: number;
+
+  @IsNumber()
+  @Type(() => Number)
+  total: number;
+
+  @IsInt()
+  @Type(() => Number)
+  bodegaId: number;
+
+  @IsInt()
+  @Type(() => Number)
+  seccionId: number;
+
+  @IsInt()
+  @Type(() => Number)
+  perchaId: number;
+
+  @IsOptional()
+  @IsString()
+  Observacion: string;
+}
+

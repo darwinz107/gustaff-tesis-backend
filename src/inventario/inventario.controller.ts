@@ -6,6 +6,7 @@ import { CreateItemsSolicitadosDto } from './dto/create-items-solicitados.dto';
 import { StockDto } from './dto/stock.dto';
 import { CreateActaSalidaDto } from './dto/create-acta-salida.dto';
 import { CreateActaEntradaDto } from './dto/create-acta-entrada.dto';
+import { CreateProovedorDto } from './dto/create-proovedor.dto';
 
 @Controller('inventario')
 export class InventarioController {
@@ -24,6 +25,11 @@ export class InventarioController {
   @Post('evaluar-stock')
   evaluarStock(@Body() stockDto: StockDto){
     return this.inventarioService.evaluarStock(stockDto);
+  }
+
+  @Post('crear-proovedor')
+  createProovedor(@Body() createProovedorDto: CreateProovedorDto){
+    return this.inventarioService.createProovedor(createProovedorDto);
   }
 
    @Post('acta-salida/:id')
@@ -71,10 +77,30 @@ export class InventarioController {
     return this.inventarioService.findAll();
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.inventarioService.findOne(+id);
+   @Post('proovedores')
+  findProovedorByNombre(@Body() proovedor:{nombre:string}) {
+    return this.inventarioService.findProovedorByNombre(proovedor.nombre);
   }
+
+  @Get('bodegas')
+    async getAllBodegas() {
+      const bodegas = await this.inventarioService.precargarBodegas();
+      return bodegas;
+    }
+
+  @Get('secciones/:bodegaId')
+  async getSeccionesByBodega(@Param('bodegaId') bodegaId: number) {
+    const secciones = await this.inventarioService.findSeccionesByBodega(bodegaId);
+    return secciones;
+  }
+
+  
+  @Get('perchas/:seccionId')
+  async getPerchasBySeccion(@Param('seccionId') seccionId: number) {
+    const perchas = await this.inventarioService.findPerchasBySeccion(seccionId);
+    return perchas;
+  }
+
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateInventarioDto: UpdateInventarioDto) {

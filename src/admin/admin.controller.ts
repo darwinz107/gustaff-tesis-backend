@@ -11,6 +11,9 @@ import { CreateTipoTrabajoDto } from './dto/create-tipo-trabajo.dto';
 import { MaquinaDto } from './dto/maquina.dto';
 import { CreateUserDto } from 'src/users/dto/create-user.dto';
 import { UpdateUserDto } from 'src/users/dto/update-user.dto';
+import { CreateBodegaDto } from './dto/create-bodega.dto';
+import { CreateSeccionDto } from './dto/create-seccion.dto';
+import { CreatePerchaDto } from './dto/create-percha.dto';
 
 @Controller('admin')
 export class AdminController {
@@ -76,10 +79,7 @@ export class AdminController {
       return this.adminService.allCargos();
     }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.adminService.findOne(+id);
-  }
+ 
 
   @Get('all/tipo-trabajo')
   findAllTipoTrabajo(){
@@ -95,4 +95,37 @@ export class AdminController {
   remove(@Param('id') id: string) {
     return this.adminService.remove(+id);
   }
+
+  @Post('bodega')
+  createBodega(@Body() createBodegaDto: CreateBodegaDto) {
+    return this.adminService.createBodega(createBodegaDto);
+  }
+
+  
+  @Post('seccion')
+  createSeccion(@Body() createSeccionDto: CreateSeccionDto) {
+    return this.adminService.createSeccion(createSeccionDto);
+  }
+
+  
+  @Post('percha')
+  createPercha(@Body() createPerchaDto: CreatePerchaDto) {
+    return this.adminService.createPercha(createPerchaDto);
+  }
+
+    @Get('secciones/all')
+  async getAllSecciones() {
+    const secciones = await this.adminService.findAllSecciones();
+    return secciones;
+  }
+
+  
+  @Get('bodegas')
+  async getAllBodegas() {
+    const bodegas = await this.adminService.findAllBodegas();
+    return bodegas;
+  }
+  
+  
+
 }

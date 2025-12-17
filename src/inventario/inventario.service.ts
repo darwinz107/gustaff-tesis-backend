@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateInventarioDto } from './dto/create-inventario.dto';
 import { UpdateInventarioDto } from './dto/update-inventario.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -20,6 +20,11 @@ import { RegistroEntrada } from './entities/registroEntrada.entity';
 import { Proovedores } from './entities/proovedores.entity';
 import { ItemsEntrada } from './entities/itemsEntrada.entity';
 import { User } from 'src/users/entities/user.entity';
+import { CreateProovedorDto } from './dto/create-proovedor.dto';
+import { AdminService } from 'src/admin/admin.service';
+import { Seccion } from 'src/parametro/entities/seccion';
+import { Percha } from 'src/parametro/entities/percha';
+import { Bodega } from 'src/parametro/entities/bodega';
 
 @Injectable()
 export class InventarioService {
@@ -29,6 +34,12 @@ export class InventarioService {
               @InjectRepository(SolicitudDeCompra) private readonly solicitudDeComprasRepository:Repository<SolicitudDeCompra>,
                @InjectRepository(RegistroSalida) private readonly registroSalidaRepository:Repository<RegistroSalida>,
                @InjectRepository(RegistroEntrada) private readonly registroEntradaRepository:Repository<RegistroEntrada>,
+               @InjectRepository(Proovedores) private readonly proovedoresRepository:Repository<Proovedores>,
+               @InjectRepository(Bodega) private readonly bodegaRepository:Repository<Bodega>,
+               @InjectRepository(Seccion) private readonly seccionRepository:Repository<Seccion>,
+               @InjectRepository(Percha) private readonly perchaRepository:Repository<Percha>,
+                   private readonly adminService: AdminService,
+    
             private dataSource:DataSource,
             ){}
 
@@ -47,19 +58,20 @@ const findItem = await this.inventarioRepository.findOne({where:{nombre:stockDto
       if(calcStock < 0){
 
         if(findItem.stock === 0){
+          console.log(findItem.stock);
  const compras = [
         
         {cantidad:calcStock*(-1),estado:"Por Comprar",validate:false}
        ]
 
-       return compras;
+       return {compras,validate:true};
         }else{
            const compras = [
         {cantidad:findItem.stock,estado:"En Stock",validate:true},
         {cantidad:calcStock*(-1),estado:"Por Comprar",validate:false}
        ]
 
-       return compras;
+       return {compras,validate:true};
         }
       }
 
@@ -88,10 +100,12 @@ async asignarInfoActaEntrada (id:number){
       "itemsSolicitados.cantidad",
       "itemsSolicitados.caracteristica",
       "itemsSolicitados.Observacion",
+      "itemsSolicitados.existencia"
     ])
   .where("ordenCompra.id =:id",{id:id})
-  .orWhere("estadoCompra.estado =:estado",{estado:EstadoCompraEnum.PAR})
-  .orWhere("estadoCompra.estado =:estado",{estado:EstadoCompraEnum.PRO})
+  //.andWhere("estadoCompra.estado =:estado",{estado:EstadoCompraEnum.PAR})
+ // .orWhere("estadoCompra.estado =:estado",{estado:EstadoCompraEnum.PRO})
+  .andWhere("itemsSolicitados.existencia =:existencia",{existencia:false})
   .getMany();
 
 if(!registroEntrada){
@@ -111,9 +125,9 @@ let compras:{}[] =[];
    }*/
 
     if(findItem){
-     compras = [...compras,{id:findItem.id,nombre:findItem.nombre,cantidad:item.cantidad,costo:findItem.costo,Observacion:item.Observacion}]
+     compras = [...compras,{id:findItem.id,nombre:findItem.nombre,cantidad:item.cantidad,costo:findItem.costo,Observacion:item.Observacion,existencia:item.existencia}]
     }else{
-      compras = [...compras,{id:null,nombre:item.item,cantidad:item.cantidad,costo:null,Observacion:item.Observacion}]
+      compras = [...compras,{id:null,nombre:item.item,cantidad:item.cantidad,costo:null,Observacion:item.Observacion,existencia:item.existencia}]
     }
   }
 
@@ -150,6 +164,8 @@ if(!registroEntradaInfo){
 
 async createActaEntrada(id:number,createActaEntradaDto:CreateActaEntradaDto){
 
+  console.log(createActaEntradaDto);
+
      const queryRunner = this.dataSource.createQueryRunner();
    await queryRunner.connect();
    await queryRunner.startTransaction();
@@ -180,7 +196,7 @@ async createActaEntrada(id:number,createActaEntradaDto:CreateActaEntradaDto){
 
    const newNumEntrada = 'AE-'+( registroEntrada+1).toString().padStart(5,'0');
 
-   const findProovedor = await queryRunner.manager.findOne(Proovedores,{where:{id:createActaEntradaDto?.proovedor}});
+   const findProovedor = await queryRunner.manager.findOne(Proovedores,{where:{nombreComercial:createActaEntradaDto?.proovedor}});
 
    if(!findProovedor){
    throw new NotFoundException("No se encontro el proovedor ingresado");
@@ -188,7 +204,7 @@ async createActaEntrada(id:number,createActaEntradaDto:CreateActaEntradaDto){
 
    const newRegistroEntrada = {
     
-    factura:createActaEntradaDto?.numFactura,
+    factura:createActaEntradaDto?.factura,
     numActa:newNumEntrada,
     solicita:solMaterial?.numOrdenTrabajo?.userSolicitante.name,
     proovedor:findProovedor,
@@ -213,7 +229,23 @@ async createActaEntrada(id:number,createActaEntradaDto:CreateActaEntradaDto){
    }
 
    for(const item of createActaEntradaDto.itemsSolicitados){
-   
+     
+     const bodega = await queryRunner.manager.findOne(Bodega,{where:{id:item.bodegaId}});
+    if(!bodega){
+   throw new NotFoundException("No se encontro una bodega valida");
+   }
+
+    const seccion = await queryRunner.manager.findOne(Seccion,{where:{id:item.seccionId}});
+    if(!seccion){
+   throw new NotFoundException("No se encontro una seccion valida");
+   }
+
+    const percha = await queryRunner.manager.findOne(Percha,{where:{id:item.perchaId}});
+    if(!percha){
+   throw new NotFoundException("No se encontro una percha valida");
+   }
+
+
     const findItem = await queryRunner.manager.findOne(Inventario,{where:{nombre:item.nombre}});
     if(!findItem){
 
@@ -221,9 +253,9 @@ async createActaEntrada(id:number,createActaEntradaDto:CreateActaEntradaDto){
        nombre:item.nombre,
        stock:item.cantidad,
        costo:item.costo,
-       bodega:item.bodega,
-       seccion:item.seccion,
-       percha:item.percha
+       bodega:bodega,
+       seccion:seccion,
+       percha:percha
       }
     await queryRunner.manager.save(Inventario,newInventario);
 
@@ -262,9 +294,9 @@ else{
 
     findItem.stock = updatedStock;
     findItem.costo = item.costo; 
-    findItem.bodega = item.bodega ?? findItem.bodega;
-    findItem.seccion = item.seccion ?? findItem.seccion;
-    findItem.percha = item.percha ?? findItem.percha;
+    findItem.bodega = bodega ?? findItem.bodega;
+    findItem.seccion = seccion ?? findItem.seccion;
+    findItem.percha = percha ?? findItem.percha;
 
     await queryRunner.manager.save(Inventario, findItem);
 
@@ -576,16 +608,14 @@ try {
 
   async findAll() {
 
-    const inventarios = await this.inventarioRepository.find({select:['id','nombre','stock']});
+    const inventarios = await this.inventarioRepository.find();
     if(inventarios === null|| inventarios === undefined){
       return new NotFoundException("No se encontro inventarios");
     }
     return inventarios;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} inventario`;
-  }
+
 
  async filtrarInventario(item: string) {
 
@@ -732,6 +762,56 @@ try {
     return registroDeEntrada;
 
   }
+
+  async findProovedorByNombre(nombre:string) {
+    
+    const proovedores = await this.proovedoresRepository.find({where:{nombreComercial : Like(`${nombre}%`)},select:["id","nombreComercial"]});
+   
+    
+    return proovedores;
+  }
+
+  async createProovedor(createProovedorDto:CreateProovedorDto){
+ 
+const existe = await this.proovedoresRepository.findOne({
+    where: { ruc: createProovedorDto.ruc },
+  });
+
+  if (existe) {
+    throw new BadRequestException('El RUC ya está registrado');
+  }
+
+    const createProov = this.proovedoresRepository.create(createProovedorDto);
+    await this.proovedoresRepository.save(createProov);
+    return{
+      ok:true,
+      message:"Proovedor registrado!"
+    }
+
+  }
+
+async findSeccionesByBodega(
+  bodegaId: number
+): Promise<{ id: number; seccion: string }[]> {
+  return await this.seccionRepository.find({
+    where: { bodega: { id: bodegaId } },
+    select: ['id', 'seccion'],
+    order: { seccion: 'ASC' },
+  });
+}
+
+async findPerchasBySeccion(
+  seccionId: number
+): Promise<{ id: number; percha: string }[]> {
+  return await this.perchaRepository.find({
+    where: { seccion: { id: seccionId } },
+    select: ['id', 'percha'],
+    order: { percha: 'ASC' },
+  });
+}
+async precargarBodegas(){
+   return await this.adminService.findAllBodegas();
+}
 
   update(id: number, updateInventarioDto: UpdateInventarioDto) {
     return `This action updates a #${id} inventario`;

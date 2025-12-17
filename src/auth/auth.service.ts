@@ -66,7 +66,7 @@ export class AuthService{
       httpOnly:true,
       secure:true,
       sameSite:'none',
-      maxAge:3600*1000
+      maxAge:10*60*60*1000
     });
 
     return {msj:"Bienvenido",access:true};

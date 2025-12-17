@@ -22,6 +22,12 @@ import { CreateMaquinaDto } from './dto/create-maquina.dto';
 import { CreateTipoTrabajoDto } from './dto/create-tipo-trabajo.dto';
 import { MaquinaDto } from './dto/maquina.dto';
 import { UpdateUserDto } from 'src/users/dto/update-user.dto';
+import { Bodega } from 'src/parametro/entities/bodega';
+import { Seccion } from 'src/parametro/entities/seccion';
+import { Percha } from 'src/parametro/entities/percha';
+import { CreateBodegaDto } from './dto/create-bodega.dto';
+import { CreateSeccionDto } from './dto/create-seccion.dto';
+import { CreatePerchaDto } from './dto/create-percha.dto';
 
 
 @Injectable()
@@ -35,7 +41,12 @@ export class AdminService implements OnModuleInit{
     @InjectRepository(TipoTrabajo) private readonly tipoTrabajoRepository:Repository<TipoTrabajo>, 
     @InjectRepository(Cargo) private readonly cargoRepository:Repository<Cargo>, 
     @InjectRepository(Role) private readonly roleRepository:Repository<Role>, 
-
+     @InjectRepository(Bodega)
+    private readonly bodegaRepository: Repository<Bodega>,
+    @InjectRepository(Seccion)
+    private readonly seccionRepository: Repository<Seccion>,
+    @InjectRepository(Percha)
+    private readonly perchaRepository: Repository<Percha>,
   ){}
     async onModuleInit() {
       const searchUsers = await this.userRepository.find();
@@ -122,7 +133,7 @@ export class AdminService implements OnModuleInit{
     
         const maquinalgt = await this.maquinaRepository.find();
     
-        const newCod =  `GU-${createMaquinaDto.area.slice(0,2)}-${maquinalgt.length+1}`;
+        const newCod =  `GU-${createMaquinaDto.maquina.slice(0,3)}-${maquinalgt.length+1}`;
     
         const nuevoCodigo =  this.codigoRepository.create({ cod: newCod, area: { id: searchArea.id } });
         await this.codigoRepository.save(nuevoCodigo);
@@ -163,7 +174,8 @@ export class AdminService implements OnModuleInit{
     
         const codid = await this.codigoRepository.findOne({ where: { cod: maquinaDto.codigo } });
         if (!codid) {
-          return { msj: "No existe ese codigo" }
+         
+         return []
         }
     
         console.log(maquinaDto.codigo, codid);
@@ -199,7 +211,11 @@ export class AdminService implements OnModuleInit{
       }
     
       async createCargo(createCargoDto:CreateCargoDto){
-      
+      if(!createCargoDto.rol){
+        const newCargo =  this.cargoRepository.create({name:createCargoDto.cargo,rolId:null});
+      await this.cargoRepository.save(newCargo);
+      return {msj:"Nuevo cargo registrado!"}
+      }
       const newCargo =  this.cargoRepository.create({name:createCargoDto.cargo,rolId:{id:createCargoDto.rol}});
       await this.cargoRepository.save(newCargo);
   
@@ -252,9 +268,70 @@ export class AdminService implements OnModuleInit{
     return allTipoTrabajo;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} admin`;
+   async createBodega(createBodegaDto: CreateBodegaDto): Promise<{ok:boolean,message:string}> {
+    
+    const bodega = this.bodegaRepository.create({ bodega:createBodegaDto.bodega });
+      await this.bodegaRepository.save(bodega);
+
+  return {
+    ok: true,
+    message: 'Bodega creada correctamente',
+  };
   }
+
+  async createSeccion(createSeccionDto: CreateSeccionDto): Promise<{ok:boolean,message:string}> {
+   
+    const bodega = await this.bodegaRepository.findOne({ where: { id: createSeccionDto.bodegaId } });
+    if (!bodega) throw new NotFoundException('Bodega no encontrada');
+
+    const seccion = this.seccionRepository.create({
+      seccion :createSeccionDto.seccion,
+       bodega, 
+    });
+      await this.seccionRepository.save(seccion);
+
+  return {
+    ok: true,
+    message: 'Sección creada correctamente',
+  };
+  }
+
+  async createPercha(createPerchaDto: CreatePerchaDto): Promise<{ok:boolean,message:string}> {
+    const { percha, seccionId } = createPerchaDto;
+
+    const seccion = await this.seccionRepository.findOne({ where: { id: seccionId } });
+    if (!seccion) throw new NotFoundException('Sección no encontrada');
+
+   
+
+      const crearPercha = this.perchaRepository.create({
+    percha: createPerchaDto.percha,
+    seccion,
+  });
+
+ await this.perchaRepository.save(crearPercha);
+  return {
+    ok: true,
+    message: 'Percha creada correctamente',
+  };
+  }
+
+  async findAllSecciones(): Promise<{ id: number; seccion: string }[]> {
+  return await this.seccionRepository.find({
+    select: ['id', 'seccion'],
+    order: { seccion: 'ASC' },
+  });
+}
+
+async findAllBodegas(): Promise<{ id: number; bodega: string }[]> {
+  return await this.bodegaRepository.find({
+    select: ['id', 'bodega'],
+    order: { bodega: 'ASC' },
+  });
+}
+
+
+
 
  
 
