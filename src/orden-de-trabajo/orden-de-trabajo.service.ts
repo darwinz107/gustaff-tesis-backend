@@ -333,6 +333,7 @@ return new NotFoundException("No existen ordenes de trabajo");
       .innerJoin('solicitud.userReceptor', 'userReceptor')
       .leftJoin('solicitud.userTecnico', 'userTecnico')
       .innerJoin('solicitud.estadoTrabajo','estado')
+      .innerJoin('solicitud.estadoUso','estadoUso')
       .select([
         'solicitud.id',
         'solicitud.NumOrden',
@@ -349,7 +350,8 @@ return new NotFoundException("No existen ordenes de trabajo");
         'userSolicitante.name',
         'userReceptor.name',
         'userTecnico.name',
-        'estado.estado'
+        'estado.estado',
+         "estadoUso.uso"
       ])
      .where(`userSolicitante.name like :name`, { name: `${name}%` })
       .getMany();
@@ -463,7 +465,7 @@ return new NotFoundException("No existen ordenes de trabajo");
 
   async getAllOrdenesTrabajoSinUso(){
 
-    const ordenesSinUso = await this.solicitudOrdenRepository.find({where:{estadoUso:{id:1}},select:['id','NumOrden','Area','Codigo','Maquina','userSolicitante'],relations:['userSolicitante']});
+    const ordenesSinUso = await this.solicitudOrdenRepository.find({where:{estadoUso:{id:1}},select:['id','NumOrden','Area','Codigo','Maquina','userSolicitante','DescripcionTrabajo'],relations:['userSolicitante']});
     return ordenesSinUso;
 
   }

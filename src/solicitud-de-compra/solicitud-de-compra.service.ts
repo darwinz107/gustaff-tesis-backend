@@ -12,6 +12,7 @@ import { EstadoCompraEnum } from './enums/estadoCompra.enum';
 import { Inventario } from 'src/inventario/entities/inventario.entity';
 import { CreateItemsSolicitadosDto } from 'src/inventario/dto/create-items-solicitados.dto';
 import { EstadoUso } from 'src/orden-de-trabajo/entities/estadoUso';
+import { MailService } from 'src/mail/mail.service';
 
 @Injectable()
 export class SolicitudDeCompraService implements OnModuleInit{
@@ -21,6 +22,7 @@ export class SolicitudDeCompraService implements OnModuleInit{
   @InjectRepository(ItemsSolicitados) private readonly itemsSolicitadosRepository:Repository<ItemsSolicitados>,
   @InjectRepository(EstadoCompra) private readonly estadoCompraRepository:Repository<EstadoCompra>,
       private dataSource:DataSource,
+      private readonly mailService:MailService,
 ){}
 
  async onModuleInit() {
@@ -177,6 +179,7 @@ const cambiarEstadoUsoTrabajo = await queryRunner.manager.save(SolicitudOrden,or
    
  }*/
 await queryRunner.commitTransaction();
+await this.mailService.sendnewSolMaterialNotification(ordenTrabajo.NumOrden,solCompra.numOrden,compras);
 return {msj:"Solicitud de compra creada",validate:true}
     
   } catch (error) {
@@ -533,14 +536,15 @@ return {msj:"Solicitud de compra creada",validate:true}
    async getAllSolicitudesParciales(){
 
     const solicitudes = await this.solicitudDeCompraRepository.find({where:[{estadoCompra:{estado:EstadoCompraEnum.PAR}},{estadoCompra:{estado:EstadoCompraEnum.PRO}}],relations:['itemSolicitados']});
+    console.log(solicitudes.length);
     if(solicitudes.length ===0){
     return []
     }
-
+     console.log("Si paso por aqui");
      const solCompletas = solicitudes.filter(sol =>
-      sol.itemSolicitados.every(item => item.existencia ===false)
+      sol.itemSolicitados.some(item => item.existencia ===false)
     );
-    return solicitudes;
+    return solCompletas;
   }
 
 

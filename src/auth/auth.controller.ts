@@ -46,14 +46,14 @@ export class AuthController {
     return {isRol:true};
   }
 
-  @Rol(['user1'])
+  @Rol(['COORDINADOR DE MANTENIMIENTO'])
   @UseGuards(AuthUser1Guard)
   @Get('validate/user1')
   validateRol1(){
     return {isRol:true};
   }
 
-  @Rol(['user2'])
+  @Rol(['JEFE DE LOGISTICA INTERNA'])
   @UseGuards(AuthUser2Guard)
   @Get('validate/user2')
   validateRol2(){

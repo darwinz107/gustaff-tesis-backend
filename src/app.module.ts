@@ -13,13 +13,30 @@ import { InventarioModule } from './inventario/inventario.module';
 import { ParametroModule } from './parametro/parametro.module';
 import { AdminModule } from './admin/admin.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { MailerModule } from '@nestjs-modules/mailer';
+
 
 @Module({
-  imports: [
-    ScheduleModule.forRoot(),
-    ConfigModule.forRoot({
+  imports: [   
+     ConfigModule.forRoot({
     isGlobal:true
-  }),JwtModule.register({
+  }),
+      MailerModule.forRoot({
+      transport: {
+        host: process.env.SMTP_HOST ||"smtp.gmail.com",
+        port: Number(process.env.SMTP_PORT || 587),
+        secure: false,
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS,
+        },
+      },
+      defaults: {
+        from: process.env.MAIL_FROM,
+      },
+    }),
+    ScheduleModule.forRoot(),
+JwtModule.register({
     global:true,
     secret:process.env.SECRET || "messi",
     signOptions:{expiresIn:'10h'}
@@ -34,6 +51,8 @@ import { ScheduleModule } from '@nestjs/schedule';
       autoLoadEntities:true,
       synchronize: true,
   }),UsersModule, AuthModule,RolesModule, OrdenDeTrabajoModule, SolicitudDeCompraModule, InventarioModule, ParametroModule, AdminModule],
+    
+
   controllers: [AppController],
   providers: [AppService],
 })
