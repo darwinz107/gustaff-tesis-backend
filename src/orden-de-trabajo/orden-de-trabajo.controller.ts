@@ -11,6 +11,7 @@ import { CreateCategoriaDto } from '../admin/dto/create-categoria.dto';
 import { CreateSolicitudOrdenDto } from './dto/create-solicitud-orden.dto';
 import { CreateTipoTrabajoDto } from '../admin/dto/create-tipo-trabajo.dto';
 import { FiltrarOrdenDeTrabajoDto } from './dto/filtrar-orden-de-trabajo.dto';
+import { FiltrarOrdenDeTrabajoAdvancedDto } from './dto/filtrar-orden-de-trabajo-advanced.dto';
 
 @Controller('orden-de-trabajo')
 export class OrdenDeTrabajoController {
@@ -85,4 +86,9 @@ export class OrdenDeTrabajoController {
   remove(@Param('id') id: string) {
     return this.ordenDeTrabajoService.remove(+id);
   }
+
+  @Post('filter')
+async filtrarAvanzado(@Body() filtros: FiltrarOrdenDeTrabajoAdvancedDto) {
+  return await this.ordenDeTrabajoService.filtrarOrdenesAvanzado(filtros);
+}
 }

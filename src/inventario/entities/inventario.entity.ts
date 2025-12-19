@@ -14,6 +14,8 @@ export class Inventario {
      nombre:string;
      @Column()
      stock:number;
+     @Column()
+     stockMin:number;
      @Column({type:"decimal",precision:10,scale:2})
      costo:number;
      @ManyToOne(()=>Bodega,(bodega)=>bodega)

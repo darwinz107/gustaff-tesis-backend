@@ -6,6 +6,7 @@ import { User } from './entities/user.entity';
 import { Repository } from 'typeorm';
 import { Role } from 'src/roles/entities/role.entity';
 import * as bcrypt from 'bcrypt';
+import { FiltrarUserDto } from './dto/filtrar-user.dto';
 
 
 @Injectable()
@@ -47,7 +48,7 @@ export class UsersService {
 
   async findAllUsers(){
    
-    const users = await this.userRepository.find({select:['id','name','fechaNac','identification','cellphone','email','password','cargoId'],relations:['cargoId']});
+    const users = await this.userRepository.find({select:['id','name','fechaNac','identification','cellphone','email','password','cargoId','estado'],relations:['cargoId']});
 
     return users;
   }
@@ -58,10 +59,51 @@ export class UsersService {
 
   async findOne(id: number) {
 
-    const users = await this.userRepository.findOne({where:{id:id},select:['id','name','fechaNac','identification','cellphone','email','password','cargoId'],relations:['cargoId']});
+    const users = await this.userRepository.findOne({where:{id:id},select:['id','name','fechaNac','identification','cellphone','email','password','cargoId','estado'],relations:['cargoId']});
     
     return users;
   }
+
+  async filtrarUsers(filtros: FiltrarUserDto) {
+    console.log("entro aca");
+  const qb = this.userRepository.createQueryBuilder('user')
+    .leftJoin('user.cargoId','cargo')
+    .select([
+      'user.id',
+      'user.name',
+      'user.email',
+      'user.cellphone',
+      'user.identification',
+      'user.fechaNac',
+      'user.password',
+      'user.password',
+      'cargo.id',
+      'cargo.name'
+    ]);
+
+  if (filtros.name) {
+    qb.andWhere('user.name LIKE :name', { name: `%${filtros.name}%` });
+  }
+  if (filtros.email) {
+    qb.andWhere('user.email LIKE :email', { email: `%${filtros.email}%` });
+  }
+  if (typeof filtros.cargoId === 'number') {
+    qb.andWhere('cargo.id = :cargoId', { cargoId: filtros.cargoId });
+  }
+  if (filtros.identification) {
+    qb.andWhere('user.identification LIKE :identification', { identification: `%${filtros.identification}%` });
+  }
+  if (filtros.cellphone) {
+    qb.andWhere('user.cellphone LIKE :cellphone', { cellphone: `%${filtros.cellphone}%` });
+  }
+  if (typeof filtros.activo === 'boolean') {
+    qb.andWhere('user.estado = :estado', { estado: filtros.activo });
+  }
+
+  const resultados = await qb.getMany();
+  return resultados;
+}
+
 
 
 

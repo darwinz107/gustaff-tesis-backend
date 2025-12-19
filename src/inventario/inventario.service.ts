@@ -26,6 +26,9 @@ import { Seccion } from 'src/parametro/entities/seccion';
 import { Percha } from 'src/parametro/entities/percha';
 import { Bodega } from 'src/parametro/entities/bodega';
 import { MailService } from 'src/mail/mail.service';
+import { FiltrarActaEntradaDto } from './dto/filtrar-acta-entrada.dto';
+import { FiltrarActaSalidaDto } from './dto/filtrar-acta-salida.dto';
+import { FiltrarInventarioDto } from './dto/filtrar-inventario.dto';
 
 @Injectable()
 export class InventarioService {
@@ -255,6 +258,7 @@ async createActaEntrada(id:number,createActaEntradaDto:CreateActaEntradaDto){
       const newInventario ={
        nombre:item.nombre,
        stock:item.cantidad,
+       stockMin:item.stockMin,
        costo:item.costo,
        bodega:bodega,
        seccion:seccion,
@@ -268,7 +272,7 @@ async createActaEntrada(id:number,createActaEntradaDto:CreateActaEntradaDto){
    }
 
    const newItemEntrada = {
-   stockMin:item.stockMin,
+   
    cantidad:item.cantidad,
    costo:item.costo,
    registroEntrada:findRegistroEntrada,
@@ -304,7 +308,7 @@ else{
     await queryRunner.manager.save(Inventario, findItem);
 
      const newItemEntrada = {
-   stockMin:item.stockMin,
+   
    cantidad:item.cantidad,
    costo:item.costo,
    registroEntrada:findRegistroEntrada,
@@ -344,9 +348,9 @@ throw new NotFoundException("No se encontro el estado");
      await queryRunner.manager.save(solMaterial);
    }
        
-    
+     await this.mailService.sendEstadoChangeNotification(solMaterial.numOrden, solMaterial.estadoCompra.estado, `Se ha realizado la compra de los items solicitados con falta de stock o nuevos`);
       await queryRunner.commitTransaction();
-      await this.mailService.sendEstadoChangeNotification(solMaterial.numOrden, solMaterial.estadoCompra.estado, `Se ha realizado la compra de los items solicitados con falta de stock o nuevos`);
+     
 
 return {msj:"Acta de entrada creada",validate:true}
    } catch (error) {
@@ -526,15 +530,46 @@ throw new NotFoundException("No se encontro el estado");
      await queryRunner.manager.save(solMaterial);
    }
 
+
       const verificarEstadoSolMaterial = await queryRunner.manager.createQueryBuilder(SolicitudDeCompra,'solicitudDeCompra')
    .leftJoinAndSelect('solicitudDeCompra.estadoCompra','estadoCompra')   
    .leftJoinAndSelect('solicitudDeCompra.numOrdenTrabajo','ordenTrabajo')  
    .where('solicitudDeCompra.id = :id',{id:id})
    .getOne();
 
-   if(!verificarEstadoSolMaterial){
+      if(!verificarEstadoSolMaterial){
    throw new NotFoundException("No se encontro una solicitud de material asociada");
    }
+   
+const zeroInventarios = await queryRunner.manager.find(Inventario, {
+  where: { stock: 0 },
+  select: ['id', 'nombre'],
+});
+
+let nombresVacios: string[] = [];
+
+if (zeroInventarios.length > 0) {
+  for (const inv of zeroInventarios) {
+    
+    await queryRunner.manager.update(
+      ItemsSolicitados,
+      { item: inv.nombre, existencia: true },
+      { existencia: false }
+    );
+
+    nombresVacios.push(inv.nombre);
+  }
+} 
+
+    await queryRunner.commitTransaction();
+
+    if (nombresVacios.length > 0) {
+  await this.mailService.sendNotificationStockVacio(nombresVacios);
+}
+
+
+
+
 
    if(verificarEstadoSolMaterial.estadoCompra.estado === EstadoCompraEnum.PAR){
     await this.mailService.sendEstadoChangeNotification(solMaterial.numOrden, verificarEstadoSolMaterial.estadoCompra.estado, `Se ha realizado una acta de salida parcial por lo que aun hace falta material para la completa realizacion del trabajo #${verificarEstadoSolMaterial.numOrdenTrabajo.NumOrden}`);
@@ -544,7 +579,6 @@ throw new NotFoundException("No se encontro el estado");
     await this.mailService.sendEstadoChangeNotification(solMaterial.numOrden, verificarEstadoSolMaterial.estadoCompra.estado, `Se ha realizado la completa entrega de los items solicitados para la realizacion del trabajo #${verificarEstadoSolMaterial.numOrdenTrabajo.NumOrden}`);
    }
 
-    await queryRunner.commitTransaction();
 return {msj:"Acta de salida creada",validate:true}
    } catch (error) {
     await  queryRunner.rollbackTransaction();
@@ -631,7 +665,7 @@ try {
 
   async findAll() {
 
-    const inventarios = await this.inventarioRepository.find();
+    const inventarios = await this.inventarioRepository.find({relations:['bodega']});
     if(inventarios === null|| inventarios === undefined){
       return new NotFoundException("No se encontro inventarios");
     }
@@ -645,6 +679,16 @@ try {
     const inventario = await this.inventarioRepository.find({where:{nombre:Like(`${item}%`)},select:['id','nombre','stock']});
 
     return inventario;
+  }
+
+  async existeItem(item:string) {
+console.log(item);
+    const findItem = await this.inventarioRepository.findOne({where:{nombre:item}});
+console.log(findItem);
+    if(findItem){
+       return true;
+    }
+    return false;
   }
 
   async actaDeSalidaByIdCompra(id:number) {
@@ -835,6 +879,163 @@ async findPerchasBySeccion(
 async precargarBodegas(){
    return await this.adminService.findAllBodegas();
 }
+
+async filtrarActasEntrada(filtros: FiltrarActaEntradaDto) {
+  const qb = this.registroEntradaRepository.createQueryBuilder('registroEntrada')
+    .leftJoin('registroEntrada.numSolicitudCompra','numSolicitudCompra')
+    .leftJoin('numSolicitudCompra.numOrdenTrabajo','numOrdenTrabajo')
+    .leftJoin('numOrdenTrabajo.userSolicitante','userSolicitante')
+    .leftJoin('registroEntrada.proovedor','proovedor')
+    .leftJoin('registroEntrada.itemEntrada','itemEntrada')
+    .leftJoin('itemEntrada.item','inventario')
+    .select([
+      'registroEntrada.numActa',
+      'registroEntrada.fechaRemision',
+      'registroEntrada.factura',
+      'registroEntrada.total',
+      'userSolicitante.name',
+      'proovedor.nombre',
+      'numSolicitudCompra.id',
+      'numOrdenTrabajo.id',
+      'numSolicitudCompra.Destino',
+      'inventario.nombre',
+      'itemEntrada.cantidad',
+      'itemEntrada.costo',
+      'itemEntrada.descuento',
+      'itemEntrada.iva',
+      'itemEntrada.subtotal',
+      'itemEntrada.total'
+    ]);
+
+  if (filtros.numActa) {
+    qb.andWhere('registroEntrada.numActa LIKE :numActa', { numActa: `%${filtros.numActa}%` });
+  }
+  if (filtros.fechaRemision) {
+    qb.andWhere('DATE(registroEntrada.fechaRemision) = :fechaRemision', { fechaRemision: filtros.fechaRemision });
+  }
+  if (filtros.factura) {
+    qb.andWhere('registroEntrada.factura LIKE :factura', { factura: `%${filtros.factura}%` });
+  }
+  if (filtros.recibe) {
+    qb.andWhere('userSolicitante.name LIKE :recibe', { recibe: `%${filtros.recibe}%` });
+  }
+  if (filtros.destino) {
+    qb.andWhere('numSolicitudCompra.Destino LIKE :destino', { destino: `%${filtros.destino}%` });
+  }
+  if (filtros.proveedor) {
+    qb.andWhere('proovedor.nombreComercial LIKE :proveedor', { proveedor: `%${filtros.proveedor}%` });
+  }
+  if (filtros.numSolicitudCompraId) {
+    qb.andWhere('numSolicitudCompra.id = :id', { id: filtros.numSolicitudCompraId });
+  }
+  if (filtros.numOrdenTrabajoId) {
+    qb.andWhere('numOrdenTrabajo.id = :otId', { otId: filtros.numOrdenTrabajoId });
+  }
+
+
+  const resultados = await qb.getMany();
+  return resultados;
+}
+
+async filtrarActasSalida(filtros: FiltrarActaSalidaDto) {
+  const qb = this.registroSalidaRepository.createQueryBuilder('registroSalida')
+    .leftJoin('registroSalida.numSolicitudCompra','numSolicitudCompra')
+    .leftJoin('numSolicitudCompra.numOrdenTrabajo','numOrdenTrabajo')
+    .leftJoin('numOrdenTrabajo.userSolicitante','userSolicitante')
+    .leftJoin('registroSalida.entrega','entregaUser')
+    .leftJoin('registroSalida.itemSalida','itemSalida')
+    .leftJoin('itemSalida.inventario','inventario')
+    .select([
+      'registroSalida.numActa',
+      'registroSalida.fechaRemision',
+      'userSolicitante.name',
+      'entregaUser.id',
+      'entregaUser.name',
+      'numSolicitudCompra.id',
+      'numOrdenTrabajo.id',
+      'numSolicitudCompra.Destino',
+      'itemSalida.item',
+      'itemSalida.cantidad',
+      'itemSalida.Observacion',
+      'inventario.id',
+      'inventario.nombre'
+    ]);
+
+  if (filtros.numActa) {
+    qb.andWhere('registroSalida.numActa LIKE :numActa', { numActa: `%${filtros.numActa}%` });
+  }
+  if (filtros.fechaRemision) {
+    qb.andWhere('DATE(registroSalida.fechaRemision) = :fechaRemision', { fechaRemision: filtros.fechaRemision });
+  }
+  if (filtros.recibe) {
+    qb.andWhere('userSolicitante.name LIKE :recibe', { recibe: `%${filtros.recibe}%` });
+  }
+  if (filtros.entrega) {
+    qb.andWhere('entregaUser.name LIKE :entrega', { entrega: `%${filtros.entrega}%` });
+  }
+  if (filtros.destino) {
+    qb.andWhere('numSolicitudCompra.Destino LIKE :destino', { destino: `%${filtros.destino}%` });
+  }
+  if (filtros.numSolicitudCompraId) {
+    qb.andWhere('numSolicitudCompra.id = :id', { id: filtros.numSolicitudCompraId });
+  }
+  if (filtros.numOrdenTrabajoId) {
+    qb.andWhere('numOrdenTrabajo.id = :otId', { otId: filtros.numOrdenTrabajoId });
+  }
+
+  const resultados = await qb.getMany();
+  return resultados;
+}
+
+async filtrarInventarios(filtros: FiltrarInventarioDto) {
+  const qb = this.inventarioRepository.createQueryBuilder('inventario')
+    .leftJoin('inventario.bodega', 'bodega')
+    .leftJoin('inventario.seccion', 'seccion')
+    .leftJoin('inventario.percha', 'percha')
+    .select([
+      'inventario.id',
+      'inventario.nombre',
+      'inventario.stock',
+      'inventario.stockMin',
+      'inventario.costo',
+      'inventario.estado',
+      'bodega.id',
+      'bodega.bodega',
+      'seccion.id',
+      'seccion.seccion',
+      'percha.id',
+      'percha.percha'
+    ]);
+
+  if (filtros.nombre) {
+    qb.andWhere('inventario.nombre LIKE :nombre', { nombre: `${filtros.nombre}%` });
+  }
+  if (filtros.bodega) {
+    
+    qb.andWhere('bodega.bodega LIKE :bodega', { bodega: `${filtros.bodega}%` });
+  }
+  if (typeof filtros.seccionId === 'number') {
+    qb.andWhere('seccion.id = :seccionId', { seccionId: filtros.seccionId });
+  }
+  if (typeof filtros.perchaId === 'number') {
+    qb.andWhere('percha.id = :perchaId', { perchaId: filtros.perchaId });
+  }
+  if (typeof filtros.stockMin === 'number') {
+    qb.andWhere('inventario.stock >= :stockMin', { stockMin: filtros.stockMin });
+  }
+  if (typeof filtros.stockMax === 'number') {
+    qb.andWhere('inventario.stock <= :stockMax', { stockMax: filtros.stockMax });
+  }
+  if (typeof filtros.activo === 'boolean') {
+    qb.andWhere('inventario.estado = :estado', { estado: filtros.activo });
+  }
+
+  const resultados = await qb.getMany();
+  return resultados;
+}
+
+
+
 
   update(id: number, updateInventarioDto: UpdateInventarioDto) {
     return `This action updates a #${id} inventario`;

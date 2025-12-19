@@ -9,13 +9,12 @@ export class ItemsEntrada {
      id:number;
      @ManyToOne(()=>Inventario,(inventario)=>inventario.itemEntrada)
                item:Inventario;  
-     @Column()
-     stockMin:number;
+    
      @Column()
      cantidad:number;
      @Column({type:"decimal",precision:10,scale:2})
      costo:number;  
-     @Column()
+     @Column({default:0})
      descuento: number;
      @Column({default:false})
     iva: boolean;

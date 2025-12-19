@@ -7,14 +7,13 @@ export class CreateUserDto {
    @IsNotEmpty()
    name:string;
    @IsNumber()
-   @IsEmpty()
+   @IsNotEmpty()
    @MaxLength(10)
    @MinLength(10)
     identification?:number;
     @IsNumber()
     @IsNotEmpty()
-    @MaxLength(10)
-    @MinLength(10)
+    
     cellphone:number;
     @IsEmail()
     @IsNotEmpty()

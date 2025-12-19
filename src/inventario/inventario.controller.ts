@@ -7,6 +7,9 @@ import { StockDto } from './dto/stock.dto';
 import { CreateActaSalidaDto } from './dto/create-acta-salida.dto';
 import { CreateActaEntradaDto } from './dto/create-acta-entrada.dto';
 import { CreateProovedorDto } from './dto/create-proovedor.dto';
+import { FiltrarActaEntradaDto } from './dto/filtrar-acta-entrada.dto';
+import { FiltrarActaSalidaDto } from './dto/filtrar-acta-salida.dto';
+import { FiltrarInventarioDto } from './dto/filtrar-inventario.dto';
 
 @Controller('inventario')
 export class InventarioController {
@@ -45,6 +48,11 @@ export class InventarioController {
   @Get('acta-salida-by/:id')
   actaDeSalidaByIdCompra(@Param('id') id: string) {
     return this.inventarioService.actaDeSalidaByIdCompra(+id);
+  }
+
+  @Post('validar-item')
+  existeItem(@Body() findItemDto:{item: string}) {
+    return this.inventarioService.existeItem(findItemDto.item);
   }
 
   @Get('acta-entrada-by/:id')
@@ -111,4 +119,22 @@ export class InventarioController {
   remove(@Param('id') id: string) {
     return this.inventarioService.remove(+id);
   }
+
+  
+  @Post('actas-entradas/filter')
+  async filtrarActas(@Body() filtros: FiltrarActaEntradaDto) {
+    return await this.inventarioService.filtrarActasEntrada(filtros);
+  }
+  
+  
+  @Post('actas-salidas/filter')
+  async filtrarActasSalida(@Body() filtros: FiltrarActaSalidaDto) {
+    return await this.inventarioService.filtrarActasSalida(filtros);
+  }
+
+    @Post('filtrar-inventarios')
+  async filtrar(@Body() filtros: FiltrarInventarioDto) {
+    return await this.inventarioService.filtrarInventarios(filtros);
+  }
+
 }

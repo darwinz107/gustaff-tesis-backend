@@ -25,6 +25,7 @@ import { EstadoTrabajo } from './entities/estadoTrabajo';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { SolicitudDeCompra } from 'src/solicitud-de-compra/entities/solicitud-de-compra.entity';
 import { EstadoUso } from './entities/estadoUso';
+import { FiltrarOrdenDeTrabajoAdvancedDto } from './dto/filtrar-orden-de-trabajo-advanced.dto';
 
 
 @Injectable()
@@ -540,4 +541,68 @@ return new NotFoundException("No existen ordenes de trabajo");
   }
 
   }
+
+  async filtrarOrdenesAvanzado(filtros: FiltrarOrdenDeTrabajoAdvancedDto) {
+  const qb = this.solicitudOrdenRepository.createQueryBuilder('solicitud')
+    .innerJoin('solicitud.userSolicitante', 'userSolicitante')
+    .innerJoin('solicitud.userReceptor', 'userReceptor')
+    .leftJoin('solicitud.userTecnico', 'userTecnico')
+    .innerJoin('solicitud.estadoTrabajo', 'estado')
+    .innerJoin('solicitud.estadoUso', 'estadoUso')
+    .select([
+      'solicitud.id',
+      'solicitud.NumOrden',
+      'solicitud.fechaInicio',
+      'solicitud.fechaFinal',
+      'solicitud.HoraInicio',
+      'solicitud.HoraFinal',
+      'solicitud.Area',
+      'solicitud.Categoria',
+      'solicitud.TipoTrabajo',
+      'solicitud.Codigo',
+      'solicitud.Maquina',
+      'solicitud.EspecificacionMaquina',
+      'solicitud.DescripcionTrabajo',
+      'userSolicitante.name',
+      'userReceptor.name',
+      'userTecnico.name',
+      'estado.estado',
+      'estadoUso.uso'
+    ]);
+
+  if (filtros.numOrden) {
+    qb.andWhere('solicitud.NumOrden LIKE :numOrden', { numOrden: `%${filtros.numOrden}%` });
+  }
+  if (filtros.fechaFinal) {
+    qb.andWhere('solicitud.fechaFinal = :fechaFinal', { fechaFinal: filtros.fechaFinal });
+  }
+  if (filtros.solicitante) {
+    qb.andWhere('userSolicitante.name LIKE :solicitante', { solicitante: `${filtros.solicitante}%` });
+  }
+  if (filtros.descripcion) {
+    qb.andWhere('solicitud.DescripcionTrabajo LIKE :descripcion', { descripcion: `%${filtros.descripcion}%` });
+  }
+  if (filtros.estado) {
+    qb.andWhere('estado.estado = :estado', { estado: filtros.estado });
+  }
+  if (filtros.area) {
+    qb.andWhere('solicitud.Area = :area', { area: filtros.area });
+  }
+  if (filtros.codigo) {
+    qb.andWhere('solicitud.Codigo = :codigo', { codigo: filtros.codigo });
+  }
+  if (filtros.maquina) {
+    qb.andWhere('solicitud.Maquina = :maquina', { maquina: filtros.maquina });
+  }
+  if (filtros.categoria) {
+    qb.andWhere('solicitud.Categoria = :categoria', { categoria: filtros.categoria });
+  }
+  if (filtros.tipoTrabajo) {
+    qb.andWhere('solicitud.TipoTrabajo = :tipoTrabajo', { tipoTrabajo: filtros.tipoTrabajo });
+  }
+
+  const ordenes = await qb.getMany();
+  return ordenes;
+}
+
   }
