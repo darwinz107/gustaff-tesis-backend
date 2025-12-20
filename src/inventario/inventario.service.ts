@@ -431,69 +431,68 @@ throw new NotFoundException("Fallo al encontrar el registro de salida");
    }
 
    for(const item of itemsSolicitados){
-     const newInventario = await queryRunner.manager.findOne(Inventario,{where:{nombre:item.item}});
-      if(!newInventario){
-    throw new NotFoundException("No se encontro el item en inventario");
-    }
     
-    const newStock = newInventario.stock - item.cantidad;
+ const inventario = await queryRunner.manager
+    .createQueryBuilder(Inventario, 'inv')
+    .where('inv.nombre = :nombre', { nombre: item.item })
+    .setLock('pessimistic_write')
+    .getOne();
 
-    if(newStock <0 ){
-    const itemsSolSinExistencia = await queryRunner.manager.findOne(ItemsSolicitados,{where:{item:item.item,ordenCompra:{id:solMaterial.id},existencia:false}});
-
-     if(itemsSolSinExistencia === null){
-    throw new NotFoundException("Hubo un error al encontrar item solicitados sin existencia");
-    }
-
-    if(itemsSolSinExistencia){
-        const newItemEntrada = {
-   
-   cantidad:newStock+itemsSolSinExistencia.cantidad,
-
+  if (!inventario) {
+    throw new NotFoundException(`No se encontro el item en inventario: ${item.item}`);
   }
 
-  await queryRunner.manager.update(ItemsEntrada,{ id:itemsSolSinExistencia.id},newItemEntrada);
-    }else{
-      /*    const newRegistroEntrada = {
-    
-    factura:createActaEntradaDto?.factura,
-    numActa:newNumEntrada,
-    solicita:solMaterial?.numOrdenTrabajo?.userSolicitante.name,
-    proovedor:findProovedor,
-    total:createActaEntradaDto?.total,
-    numSolicitudCompra:solMaterial
-   }
+  const available = inventario.stock;           // >= 0
+  const requested = item.cantidad;              // lo que se pidió
+  const delivered = Math.min(available, requested); // lo que realmente podemos entregar
+  const missing = requested - delivered;        // >= 0
 
-   await queryRunner.manager.save(RegistroEntrada,newRegistroEntrada);*/
+  // 1) Crear ItemsSalida con lo entregado (si delivered > 0)
+  if (delivered > 0) {
+    const newItemsSalida: CreateItemsSalidaDto = {
+      item: item.item,
+      cantidad: delivered,
+      destino: solMaterial.Destino,
+      regSalida: registroSalidaNew ?? registroSalidaCreated, // la que corresponda
+      observacion: item.Observacion,
+      inventario: inventario
+    };
+    await queryRunner.manager.save(ItemsSalida, newItemsSalida);
+
+    // reducir stock y guardar
+    inventario.stock = inventario.stock - delivered;
+    await queryRunner.manager.save(Inventario, inventario);
+  }
+
+  // 2) Si falta, sumar o crear ItemsSolicitados con existencia=false
+  if (missing > 0) {
+    const existingMissing = await queryRunner.manager.findOne(ItemsSolicitados, {
+      where: { item: item.item, ordenCompra: { id: solMaterial.id }, existencia: false }
+    });
+
+    if (existingMissing) {
+      existingMissing.cantidad = (existingMissing.cantidad ?? 0) + missing;
+      await queryRunner.manager.save(ItemsSolicitados, existingMissing);
+    } else {
+      const newItemSol: CreateItemsSolicitadosDto = {
+        item: item.item,
+        cantidad: missing,
+        caracteristica: item.caracteristica,
+        Observacion: item.Observacion,
+        existencia: false,
+        ordenCompra: solMaterial
+      };
+      await queryRunner.manager.save(ItemsSolicitados, newItemSol);
     }
-     const newItemsSalida:CreateItemsSalidaDto = {
-       item:item.item,
-       cantidad:item.cantidad,
-       destino:solMaterial.Destino,
-       regSalida:registroSalidaNew,
-       observacion:item.Observacion,
-       inventario:newInventario
-    }
+  }
 
-    await queryRunner.manager.save(ItemsSalida,newItemsSalida);  
-    }else{
-
-      const newItemsSalida:CreateItemsSalidaDto = {
-       item:item.item,
-       cantidad:item.cantidad,
-       destino:solMaterial.Destino,
-       regSalida:registroSalidaNew,
-       observacion:item.Observacion,
-       inventario:newInventario
-    }
-
-    await queryRunner.manager.save(ItemsSalida,newItemsSalida);  
-
-
-    await queryRunner.manager.save(newInventario);
-
+  // 3) Actualiza el registro original (item) para reflejar lo entregado
+  //    (opción: si delivered === 0 podrías eliminarlo o marcar existencia=false)
+  item.cantidad = delivered;
+  item.existencia = delivered > 0;
+  await queryRunner.manager.save(ItemsSolicitados, item);
    // await queryRunner.manager.delete(ItemsSolicitados,item.id);
-    }
+    
    }
    const validarCambiarEstado = await queryRunner.manager.createQueryBuilder(ItemsSolicitados,'itemsSolicitados')
    .innerJoin('itemsSolicitados.ordenCompra','ordenCompra')
@@ -524,17 +523,7 @@ throw new NotFoundException("No se encontro el estado");
       if(!newInventario){
     throw new NotFoundException("No se encontro el item en inventario");
     }
-     
-    const newItemsSalida:CreateItemsSalidaDto = {
-       item:item.item,
-       cantidad:item.cantidad,
-       destino:solMaterial.Destino,
-       regSalida:registroSalidaCreated,
-       observacion:item.Observacion,
-       inventario:newInventario
-    }
 
-    await queryRunner.manager.save(ItemsSalida,newItemsSalida);
 
   /*   const newInventario = await queryRunner.manager.findOne(Inventario,{where:{nombre:item.item}});
 
@@ -545,12 +534,64 @@ throw new NotFoundException("No se encontro el estado");
     const newStock = newInventario.stock - item.cantidad;
 
     if(newStock <0 ){
-    throw new NotFoundException("Falta de stock para este item");
+       const itemsSolSinExistencia = await queryRunner.manager.findOne(ItemsSolicitados,{where:{item:item.item,ordenCompra:{id:solMaterial.id},existencia:false}});
+
+     if(itemsSolSinExistencia === null){
+    throw new NotFoundException("Hubo un error al encontrar item solicitados sin existencia");
     }
 
-    newInventario.stock = newStock;
+    if(itemsSolSinExistencia){
+        const newItemSolSinExistencia = {
+   
+   cantidad:newStock+itemsSolSinExistencia.cantidad,
+
+  }
+
+  await queryRunner.manager.update(ItemsSolicitados,{ id:itemsSolSinExistencia.id},newItemSolSinExistencia);
+    }else{
+          const newItemSol:CreateItemsSolicitadosDto = {
+      item:item.item,
+      cantidad:newStock,
+      caracteristica:item.caracteristica,
+      Observacion:item.Observacion,
+      existencia:false,
+      ordenCompra:solMaterial
+   }
+
+   await queryRunner.manager.save(ItemsSolicitados,newItemSol);
+    }
+         
+    const newItemsSalida:CreateItemsSalidaDto = {
+       item:item.item,
+       cantidad:newInventario.stock,
+       destino:solMaterial.Destino,
+       regSalida:registroSalidaCreated,
+       observacion:item.Observacion,
+       inventario:newInventario
+    }
+
+    await queryRunner.manager.save(ItemsSalida,newItemsSalida);
+    newInventario.stock = 0;
 
     await queryRunner.manager.save(newInventario);
+    }else{
+
+      const newItemsSalida:CreateItemsSalidaDto = {
+       item:item.item,
+       cantidad:item.cantidad,
+       destino:solMaterial.Destino,
+       regSalida:registroSalidaCreated,
+       observacion:item.Observacion,
+       inventario:newInventario
+    }
+
+    await queryRunner.manager.save(ItemsSalida,newItemsSalida);
+      newInventario.stock = newStock;
+
+    await queryRunner.manager.save(newInventario);
+    }
+
+    
 
    // await queryRunner.manager.delete(ItemsSolicitados,item.id);
    }
