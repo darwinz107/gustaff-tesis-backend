@@ -293,6 +293,7 @@ let solMaterial: SolicitudDeCompra | null = null;
 
   // await queryRunner.manager.delete(ItemsSolicitados,{item:item.nombre});
 
+  if(id !=0){
   const itemsSol = await queryRunner.manager.findOne(ItemsSolicitados,{where:{item:item.nombre, existencia:false, ordenCompra:{id:id}}});
     if(!itemsSol){
    throw new NotFoundException("No se encontro item solicitado");
@@ -300,13 +301,13 @@ let solMaterial: SolicitudDeCompra | null = null;
    itemsSol.existencia = true;
    await queryRunner.manager.save(ItemsSolicitados,itemsSol);
 
-   }
+   } }
 else{
 
         const updatedStock = findItem.stock + item.cantidad;
 
     findItem.stock = updatedStock;
-    findItem.costo = item.costo; 
+    findItem.costo = item.costo ??findItem.costo; 
     findItem.bodega = bodega ?? findItem.bodega;
     findItem.seccion = seccion ?? findItem.seccion;
     findItem.percha = percha ?? findItem.percha;
@@ -328,13 +329,13 @@ else{
   await queryRunner.manager.save(ItemsEntrada,newItemEntrada);
 
   // await queryRunner.manager.delete(ItemsSolicitados,{item:item.nombre});
-
+ if(id !=0){
   const itemsSol = await queryRunner.manager.findOne(ItemsSolicitados,{where:{item:item.nombre, existencia:false, ordenCompra:{id:id}}});
     if(!itemsSol){
    throw new NotFoundException("No se encontro item solicitado");
    }
    itemsSol.existencia = true;
-   await queryRunner.manager.save(ItemsSolicitados,itemsSol);
+   await queryRunner.manager.save(ItemsSolicitados,itemsSol);}
 }
    
    }
@@ -359,7 +360,7 @@ throw new NotFoundException("No se encontro el estado");
        if(solMaterial){
          await this.mailService.sendEstadoChangeNotification(solMaterial.numOrden, solMaterial.estadoCompra.estado, `Se ha realizado la compra de los items solicitados con falta de stock o nuevos`);
        }else{
-        await this.mailService.sendEstadoChangeNotification(null, null, `Se ha ingresado ${createActaEntradaDto.itemsSolicitados.join(", ")} a inventario para abastecimiento`);
+        await this.mailService.sendEstadoChangeNotification(null, null, `Se ha ingresado ${createActaEntradaDto.itemsSolicitados.map(i=>i.nombre).join(", ")} a inventario para abastecimiento`);
        }
  
 return {msj:"Acta de entrada creada",validate:true}
@@ -675,7 +676,7 @@ try {
 
  async filtrarInventario(item: string) {
 
-    const inventario = await this.inventarioRepository.find({where:{nombre:Like(`${item}%`)},select:['id','nombre','stock']});
+    const inventario = await this.inventarioRepository.find({where:{nombre:Like(`${item}%`)},select:['id','nombre','stock','costo']});
 
     return inventario;
   }
@@ -765,7 +766,7 @@ console.log(findItem);
     .leftJoin('registroEntrada.itemEntrada','itemEntrada')
     .leftJoin('itemEntrada.item','inventario')
     .select([
-
+       'registroEntrada.id',
       'registroEntrada.numActa',
       'registroEntrada.fechaRemision',
       'registroEntrada.factura',
@@ -822,9 +823,10 @@ console.log(findItem);
     ]);
 
 if (!isNaN(id)) {
-  query.where('numSolicitudCompra.id = :id', { id });
+  query.where('registroEntrada.id = :id', { id });
+  
 } else {
-  query.orderBy('registroEntrada.id', 'ASC');
+  query.orderBy('registroEntrada.id', 'DESC');
 }
    const registroDeEntrada = await query.getOne();
 

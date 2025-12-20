@@ -14,6 +14,8 @@ import { ParametroModule } from './parametro/parametro.module';
 import { AdminModule } from './admin/admin.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { MailerModule } from '@nestjs-modules/mailer';
+import { DashboardResolver } from './dashboard/dashboard.resolver';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 
 @Module({
@@ -50,10 +52,10 @@ JwtModule.register({
       entities: [],
       autoLoadEntities:true,
       synchronize: true,
-  }),UsersModule, AuthModule,RolesModule, OrdenDeTrabajoModule, SolicitudDeCompraModule, InventarioModule, ParametroModule, AdminModule],
+  }),UsersModule, AuthModule,RolesModule, OrdenDeTrabajoModule, SolicitudDeCompraModule, InventarioModule, ParametroModule, AdminModule, DashboardModule],
     
 
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, DashboardResolver],
 })
 export class AppModule {}
