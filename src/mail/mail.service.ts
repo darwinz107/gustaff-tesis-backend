@@ -53,7 +53,7 @@ private readonly logger = new Logger(MailService.name);
     }
   }
 
-   async sendEstadoChangeNotification(solicitudId: string, nuevoEstado: string, detalles?: any) {
+   async sendEstadoChangeNotification(solicitudId: string|null, nuevoEstado: string|null, detalles?: any) {
     try {
       
       const users = await this.userRepository
@@ -70,13 +70,26 @@ private readonly logger = new Logger(MailService.name);
         return;
       }
 
-      const subject = `Cambio de estado: Solicitud ${solicitudId} → ${nuevoEstado}`;
-      const html = `
+      let subject;
+      let html;
+      if(solicitudId){
+         subject = `Cambio de estado: Solicitud ${solicitudId} → ${nuevoEstado}`;
+       html = `
         <p>Hola,</p>
         <p>La solicitud de material <strong>${solicitudId}</strong> cambió su estado a <strong>${nuevoEstado}</strong>.</p>
         ${detalles ? `<p>Detalles: ${detalles}</p>` : ''}
         <p>Saludos,<br/>Sistema de Inventario</p>
       `;
+      }else{
+          subject = `Abastecimiento`;
+       html = `
+        <p>Hola,</p>
+        
+        ${detalles ? `<p>Detalles: ${detalles}</p>` : ''}
+        <p>Saludos,<br/>Sistema de Inventario</p>
+      `;
+      }
+      
 
       await this.mailer.sendMail({
         to: emails,
