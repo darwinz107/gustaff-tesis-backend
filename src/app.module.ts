@@ -14,7 +14,7 @@ import { ParametroModule } from './parametro/parametro.module';
 import { AdminModule } from './admin/admin.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { MailerModule } from '@nestjs-modules/mailer';
-import { DashboardResolver } from './dashboard/dashboard.resolver';
+
 import { DashboardModule } from './dashboard/dashboard.module';
 
 
@@ -56,6 +56,6 @@ JwtModule.register({
     
 
   controllers: [AppController],
-  providers: [AppService, DashboardResolver],
+  providers: [AppService],
 })
 export class AppModule {}

@@ -67,7 +67,7 @@ export class OrdenDeTrabajoService implements OnModuleInit{
   async ordenTrabajoVencida(){
  //console.log('Verificando ordenes de trabajo vencidas...');
     try {
-        const ordenesTrabajo = await this.solicitudOrdenRepository.find({where:{estadoTrabajo:{id:In([1,3,4])}},relations:['estadoTrabajo']});
+        const ordenesTrabajo = await this.solicitudOrdenRepository.find({where:{estadoTrabajo:{id:In([1,3])}},relations:['estadoTrabajo']});
 
         if(ordenesTrabajo.length === 0){
          // console.log('No hay ordenes de trabajo en estado procesado');
@@ -75,9 +75,9 @@ export class OrdenDeTrabajoService implements OnModuleInit{
         }
         const estadoEnProceso = await this.estadoTrabajoRepository.findOne({where:{id:1}});
         const estadoVencido = await this.estadoTrabajoRepository.findOne({where:{id:3}});
-        const estadoPendiente = await this.estadoTrabajoRepository.findOne({where:{id:4}});
+       // const estadoPendiente = await this.estadoTrabajoRepository.findOne({where:{id:4}});
 
-           if (!estadoEnProceso || !estadoVencido || !estadoPendiente) {
+           if (!estadoEnProceso || !estadoVencido /*|| !estadoPendiente*/) {
       console.error('Faltan estados en DB');
       return;
     }
@@ -113,9 +113,9 @@ const existOrdenTrabajo = await this.solicitudOrdenRepository.findOne({where:{id
   } else if (fechaActual.getTime() <= fechaFinal.getTime() && fechaActual.getTime() >= fechaInicio.getTime()) {
     orden.estadoTrabajo = estadoEnProceso;
      console.log('Verificación de en procesos ejecutada...');
-  } else if (fechaActual.getTime() < fechaInicio.getTime()) {
+  } /*else if (fechaActual.getTime() < fechaInicio.getTime()) {
     orden.estadoTrabajo = estadoPendiente;
-  }
+  }*/
   await this.solicitudOrdenRepository.save(orden);
  
 } else {
