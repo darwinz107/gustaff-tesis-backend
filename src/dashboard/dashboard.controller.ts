@@ -9,6 +9,9 @@ export class DashboardController {
   @Get('kpis')
   getKPIs() { return this.svc.getKPIs(); }
 
+  @Get('solicitudes')
+  getSolicitudes() { return this.svc.getSolicitudes(); }
+
   @Get('ordenes-por-estado')
   getOrdenesPorEstado() { return this.svc.getOrdenesPorEstado(); }
 
