@@ -25,4 +25,9 @@ export class DashboardController {
 
   @Get('ultimas-solicitudes')
   getUltimasSolicitudes(@Query('limit') limit?: string) { return this.svc.getUltimasSolicitudes(Number(limit) || 5); }
+
+  @Get('entradas-por-dia')
+  getActaEntradaPorDia(@Query('days') days?: string) {
+    return this.svc.getActaEntradaPorDia(Number(days) || 30);
+  }
 }

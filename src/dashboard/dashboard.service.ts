@@ -177,7 +177,7 @@ export class DashboardService {
       .innerJoin('o.userSolicitante', 'u')
       .innerJoin('s.itemSolicitados', 'is')
       .select([
-        's.id',
+        's.id as id',
         's.numOrden ',
         's.fechaRemision ',
         's.Destino AS destino',
@@ -189,4 +189,16 @@ export class DashboardService {
       .limit(limit)
       .getRawMany();
   };
+
+  async getActaEntradaPorDia(days = 30) {
+   
+    return await this.dataSource.getRepository('RegistroEntrada')
+    .createQueryBuilder('re')
+    .select('DATE(re.fechaRemision)','fechaRemision')
+    .addSelect('COUNT(re.id)','total')
+    .where('re.fechaRemision >=DATE_SUB(CURDATE(), INTERVAL :days DAY)',{days})
+    .groupBy('DATE(re.fechaRemision)')
+    .orderBy('DATE(fechaRemision)','ASC')
+    .getRawMany();
+  }
 }
