@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/commo
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { FiltrarUserDto } from './dto/filtrar-user.dto';
 
 @Controller('users')
 export class UsersController {
@@ -27,7 +28,10 @@ export class UsersController {
     return this.usersService.findOne(+id);
   }
 
- 
+  @Post('filter')
+  async filtrar(@Body() filtros: FiltrarUserDto) {
+    return await this.usersService.filtrarUsers(filtros);
+  }
 
   @Delete(':id')
   remove(@Param('id') id: string) {

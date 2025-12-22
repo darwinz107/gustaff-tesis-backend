@@ -15,6 +15,8 @@ import { AdminModule } from './admin/admin.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { MailerModule } from '@nestjs-modules/mailer';
 
+import { DashboardModule } from './dashboard/dashboard.module';
+
 
 @Module({
   imports: [   
@@ -50,7 +52,7 @@ JwtModule.register({
       entities: [],
       autoLoadEntities:true,
       synchronize: true,
-  }),UsersModule, AuthModule,RolesModule, OrdenDeTrabajoModule, SolicitudDeCompraModule, InventarioModule, ParametroModule, AdminModule],
+  }),UsersModule, AuthModule,RolesModule, OrdenDeTrabajoModule, SolicitudDeCompraModule, InventarioModule, ParametroModule, AdminModule, DashboardModule],
     
 
   controllers: [AppController],

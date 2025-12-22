@@ -13,6 +13,7 @@ import { Inventario } from 'src/inventario/entities/inventario.entity';
 import { CreateItemsSolicitadosDto } from 'src/inventario/dto/create-items-solicitados.dto';
 import { EstadoUso } from 'src/orden-de-trabajo/entities/estadoUso';
 import { MailService } from 'src/mail/mail.service';
+import { FiltrarSolicitudCompraDto } from './dto/filtrar-solicitud-orden.dto';
 
 @Injectable()
 export class SolicitudDeCompraService implements OnModuleInit{
@@ -547,5 +548,50 @@ return {msj:"Solicitud de compra creada",validate:true}
     return solCompletas;
   }
 
+async filtrarSolicitudesCompra(filtros: FiltrarSolicitudCompraDto) {
+  const qb = this.solicitudDeCompraRepository.createQueryBuilder('solicitudCompra')
+    .leftJoin('solicitudCompra.numOrdenTrabajo','ordenTrabajo')
+    .leftJoin('ordenTrabajo.userSolicitante','userSolicitante')
+    .leftJoin('solicitudCompra.estadoCompra','estadoCompra')
+    .select([
+      'solicitudCompra.id',
+      'solicitudCompra.numOrden',
+      'solicitudCompra.fechaRemision',
+      'solicitudCompra.Autoriza',
+      'solicitudCompra.Destino',
+      'ordenTrabajo.id',
+      'ordenTrabajo.NumOrden',
+      'ordenTrabajo.DescripcionTrabajo',
+      'userSolicitante.name',
+      'estadoCompra.id',
+      'estadoCompra.estado'
+    ]);
 
+  if (filtros.numOrden) {
+    qb.andWhere('solicitudCompra.numOrden LIKE :numOrden', { numOrden: `%${filtros.numOrden}%` });
+  }
+  if (filtros.fechaRemision) {
+    qb.andWhere('DATE(solicitudCompra.fechaRemision) = :fechaRemision', { fechaRemision: filtros.fechaRemision });
+  }
+  if (filtros.solicitante) {
+    qb.andWhere('userSolicitante.name LIKE :solicitante', { solicitante: `${filtros.solicitante}%` });
+  }
+  if (filtros.numOrdenTrabajo) {
+    qb.andWhere('ordenTrabajo.NumOrden LIKE :numOrdenTrabajo', { numOrdenTrabajo: `%${filtros.numOrdenTrabajo}%` });
+  }
+  if (filtros.estadoCompra) {
+    qb.andWhere('estadoCompra.estado = :estadoCompra', { estadoCompra: filtros.estadoCompra });
+  }
+  if (filtros.Destino) {
+    qb.andWhere('solicitudCompra.Destino LIKE :Destino', { Destino: `%${filtros.Destino}%` });
+  }
+  if (filtros.Autoriza) {
+    qb.andWhere('solicitudCompra.Autoriza LIKE :Autoriza', { Autoriza: `%${filtros.Autoriza}%` });
+  }
+
+  const resultados = await qb.getMany();
+  return resultados;
+}
+
+  
 }

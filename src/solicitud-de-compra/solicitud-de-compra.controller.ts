@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/commo
 import { SolicitudDeCompraService } from './solicitud-de-compra.service';
 import { CreateSolicitudDeCompraDto } from './dto/create-solicitud-de-compra.dto';
 import { UpdateSolicitudDeCompraDto } from './dto/update-solicitud-de-compra.dto';
+import { FiltrarSolicitudCompraDto } from './dto/filtrar-solicitud-orden.dto';
 
 @Controller('solicitud-de-compra')
 export class SolicitudDeCompraController {
@@ -59,5 +60,10 @@ export class SolicitudDeCompraController {
   @Get('buscar-solicitudes-parcial')
   getAllSolicitudesParciales(){
     return this.solicitudDeCompraService.getAllSolicitudesParciales();
+  }
+
+   @Post('filter')
+  async filtrar(@Body() filtros: FiltrarSolicitudCompraDto) {
+    return await this.solicitudDeCompraService.filtrarSolicitudesCompra(filtros);
   }
 }

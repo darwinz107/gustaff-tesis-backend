@@ -18,7 +18,42 @@ private readonly logger = new Logger(MailService.name);
     return 'This action adds a new mail';
   }
 
-   async sendEstadoChangeNotification(solicitudId: string, nuevoEstado: string, detalles?: any) {
+
+   async sendNotificationStockVacio(items:string[]) {
+    try {
+      
+      const users = await this.userRepository
+        .createQueryBuilder('user')
+        .select(['user.id','user.email'])
+        .getMany();
+
+      const emails = users.map(u => u.email).filter(Boolean);
+      if (emails.length === 0) {
+        this.logger.warn('No se encontraron usuarios para notificar.');
+        return;
+      }
+
+      const subject = `Items sin stock`;
+      const html = `
+        <p>Hola,</p>
+        <p>El item o los items <strong>${items.join(",")}</strong> se han quedado sin stock por lo que las solicitudes generadas con estos items se mostraran 
+        solo en la seccion para generar las entradas a inventario.</p>
+        <p>Saludos,<br/>Sistema de Inventario</p>
+      `;
+
+      await this.mailer.sendMail({
+        to: emails,
+        subject,
+        html,
+      });
+
+      this.logger.log(`Notificación enviada a: ${emails.join(', ')}`);
+    } catch (err) {
+      this.logger.error('Error enviando notificación por correo', err);
+    }
+  }
+
+   async sendEstadoChangeNotification(solicitudId: string|null, nuevoEstado: string|null, detalles?: any) {
     try {
       
       const users = await this.userRepository
@@ -35,13 +70,26 @@ private readonly logger = new Logger(MailService.name);
         return;
       }
 
-      const subject = `Cambio de estado: Solicitud ${solicitudId} → ${nuevoEstado}`;
-      const html = `
+      let subject;
+      let html;
+      if(solicitudId){
+         subject = `Cambio de estado: Solicitud ${solicitudId} → ${nuevoEstado}`;
+       html = `
         <p>Hola,</p>
         <p>La solicitud de material <strong>${solicitudId}</strong> cambió su estado a <strong>${nuevoEstado}</strong>.</p>
         ${detalles ? `<p>Detalles: ${detalles}</p>` : ''}
         <p>Saludos,<br/>Sistema de Inventario</p>
       `;
+      }else{
+          subject = `Abastecimiento`;
+       html = `
+        <p>Hola,</p>
+        
+        ${detalles ? `<p>Detalles: ${detalles}</p>` : ''}
+        <p>Saludos,<br/>Sistema de Inventario</p>
+      `;
+      }
+      
 
       await this.mailer.sendMail({
         to: emails,

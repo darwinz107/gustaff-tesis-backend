@@ -31,6 +31,7 @@ class ItemSolicitado {
   @Type(() => Number)
   cantidad: number;
 
+  @IsOptional()
   @IsInt()
   @Type(() => Number)
   stockMin: number;
@@ -39,10 +40,13 @@ class ItemSolicitado {
   @Type(() => Number)
   costo: number;
 
+  @IsOptional()
   @IsNumber()
   @Type(() => Number)
   descuento: number;
 
+  @IsOptional()
+  @Type(() => Boolean)
   @IsBoolean()
   iva: boolean;
 
@@ -54,16 +58,19 @@ class ItemSolicitado {
   @Type(() => Number)
   total: number;
 
-  @IsInt()
   @Type(() => Number)
+  @IsInt()
+  
   bodegaId: number;
 
-  @IsInt()
   @Type(() => Number)
+  @IsInt()
+  
   seccionId: number;
 
-  @IsInt()
   @Type(() => Number)
+  @IsInt()
+  
   perchaId: number;
 
   @IsOptional()

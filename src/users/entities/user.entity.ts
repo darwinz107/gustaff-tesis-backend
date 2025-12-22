@@ -18,6 +18,8 @@ cellphone:number;
 email:string;
 @Column()
 password:string;
+@Column({default:true})
+estado:boolean;
 @Column({type:'date',nullable:true})
 fechaNac:Date;
 @ManyToOne(()=>Cargo,(cargo)=>cargo.relacionUser)
