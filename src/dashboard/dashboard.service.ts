@@ -176,12 +176,14 @@ export class DashboardService {
       .innerJoin('s.numOrdenTrabajo', 'o')
       .innerJoin('o.userSolicitante', 'u')
       .innerJoin('s.itemSolicitados', 'is')
+      .innerJoin('s.estadoCompra', 'e')
       .select([
         's.id as id',
         's.numOrden ',
         's.fechaRemision ',
-        's.Destino AS destino',
-        'u.name AS solicitante'
+        //'s.Destino AS destino',
+        'u.name AS solicitante',
+        'e.estado AS estado'
       ])
       .addSelect('SUM(is.cantidad)','total_items')
       .groupBy('s.id')
@@ -201,4 +203,56 @@ export class DashboardService {
     .orderBy('DATE(fechaRemision)','ASC')
     .getRawMany();
   }
+
+   async getActaSalidaPorDia(days:number) {
+    return await this.dataSource.getRepository('RegistroSalida')
+    .createQueryBuilder('rs')
+    .select('DATE(rs.fechaRemision)','fechaRemision')
+    .addSelect('COUNT(rs.id)','total')
+    .where('rs.fechaRemision >= DATE_SUB(CURDATE(), INTERVAL :days DAY)',{days})
+    .groupBy('DATE(rs.fechaRemision)')
+    .orderBy('DATE(rs.fechaRemision)','ASC')
+    .getRawMany();
+   }
+
+   async getLogistica() {
+      const totalStock = await this.dataSource.getRepository('Inventario')
+      .createQueryBuilder('in')
+      .select('SUM(in.stock)','total')
+      .getRawOne();
+   
+
+const totalRegEntrada =  await this.dataSource.getRepository('RegistroEntrada')
+      .createQueryBuilder('re')
+      .getCount();
+  
+
+  const totalItemsEntrada =  await this.dataSource.getRepository('ItemsEntrada')
+      .createQueryBuilder('ie')
+      .select('SUM(ie.cantidad)','cantidad')
+      .getRawOne();
+  
+
+  
+ 
+      const totalRegSalida = await this.dataSource.getRepository('RegistroSalida')
+      .createQueryBuilder('rs')
+      .getCount();
+  
+
+  const totalItemsSalida =  await this.dataSource.getRepository('ItemsSalida')
+      .createQueryBuilder('is')
+      .select('SUM(is.cantidad)','cantidad')
+      .getRawOne();
+  
+      return {
+        totalStock,
+        totalRegEntrada,
+        totalItemsEntrada,
+        totalRegSalida,
+        totalItemsSalida
+      }
+}
+
+
 }

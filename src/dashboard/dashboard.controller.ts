@@ -30,4 +30,15 @@ export class DashboardController {
   getActaEntradaPorDia(@Query('days') days?: string) {
     return this.svc.getActaEntradaPorDia(Number(days) || 30);
   }
+
+  @Get('salidas-por-dia')
+  getActaSalidaPorDia(@Query('days') days?: string) {
+    return this.svc.getActaSalidaPorDia(Number(days) || 30);
+  }
+
+  @Get('logistica')
+  getTotalStock() {
+    return this.svc.getLogistica();
+  }
+
 }
