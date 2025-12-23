@@ -6,27 +6,28 @@ export class CreateUserDto {
    @IsString()
    @IsNotEmpty()
    name:string;
-   @IsNumber()
+   @IsString()
    @IsNotEmpty()
    @MaxLength(10)
    @MinLength(10)
-    identification?:number;
-    @IsNumber()
+    identification?:string;
+    @IsString()
     @IsNotEmpty()
     
-    cellphone:number;
+    cellphone:string;
     @IsEmail()
     @IsNotEmpty()
     email:string;
     @IsString()
-    @MinLength(8)
+    //@MinLength(8)
     password:string;
     @Type(()=>Date)
     @IsDate()
-    @IsEmpty()
+    
     fechaNac:Date;
     @IsNumber()
     @IsNotEmpty()
+    @Type(()=>Number)
     cargo:number;
 
 }

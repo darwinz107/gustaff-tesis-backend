@@ -11,9 +11,9 @@ id:number;
 @Column()
 name:string;
 @Column({nullable:true})
-identification:number;
+identification:string;
 @Column()
-cellphone:number;
+cellphone:string;
 @Column()
 email:string;
 @Column()

@@ -55,7 +55,7 @@ export class AdminService implements OnModuleInit{
         await this.cargoRepository.save(newCargo);
 
         const passHashed =await bcrypt.hash("admin",10);
-        const admin = this.userRepository.create({name:"admin",cellphone:989582358,email:"admin@gmail.com",password:passHashed,cargoId:{id:newCargo.id}});
+        const admin = this.userRepository.create({name:"admin",cellphone:"0989582358",email:"admin@gmail.com",password:passHashed,cargoId:{id:newCargo.id}});
         await this.userRepository.save(admin);
      }
     }
@@ -85,7 +85,7 @@ export class AdminService implements OnModuleInit{
       const createUser = this.userRepository.create(createUserDto);
       createUser.cargoId = cargo;
       await this.userRepository.save(createUser);
-      return {msj:'Usuario creado!'};
+      return {msj:'Usuario creado!',validate:true};
       } catch (error) {
         console.log(error);
         return Error(error);
