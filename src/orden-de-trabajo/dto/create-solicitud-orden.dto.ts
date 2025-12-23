@@ -1,5 +1,5 @@
 import { Type } from "class-transformer";
-import { IsBoolean, IsDate, IsEmpty, IsNotEmpty, IsNumber, IsString } from "class-validator";
+import { IsBoolean, IsDate, IsEmpty, IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator";
 
 
 export class CreateSolicitudOrdenDto {
@@ -28,7 +28,7 @@ export class CreateSolicitudOrdenDto {
     @IsNotEmpty()
     @IsString()
     Maquina:string;
-    @IsNotEmpty()
+    @IsOptional()
     @IsString()
     EspecificacionMaquina:string;
     @IsNotEmpty()
@@ -37,7 +37,7 @@ export class CreateSolicitudOrdenDto {
     @IsNotEmpty()
     @IsString()
     TipoTrabajo:string;
-    @IsNotEmpty()
+    @IsOptional()
     @IsString()
     DescripcionTrabajo:string;
     @IsString()
@@ -49,5 +49,4 @@ export class CreateSolicitudOrdenDto {
     @IsString()
     @IsNotEmpty()
     userTecnico:string;
-
 }

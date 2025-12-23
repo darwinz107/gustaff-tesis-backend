@@ -1,3 +1,4 @@
+import { Type } from "class-transformer";
 import { IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator";
 
 export class CreateCargoDto {
@@ -6,5 +7,6 @@ export class CreateCargoDto {
     cargo:string;
     @IsNumber()
     @IsOptional()
+    @Type(()=>Number)
     rol:number|null;
 }

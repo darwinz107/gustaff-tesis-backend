@@ -63,7 +63,7 @@ export class OrdenDeTrabajoService implements OnModuleInit{
     }
   }
 
-  @Cron(CronExpression.EVERY_5_MINUTES)
+  @Cron(CronExpression.EVERY_30_SECONDS)
   async ordenTrabajoVencida(){
  //console.log('Verificando ordenes de trabajo vencidas...');
     try {
@@ -104,13 +104,13 @@ export class OrdenDeTrabajoService implements OnModuleInit{
 
 const existOrdenTrabajo = await this.solicitudOrdenRepository.findOne({where:{id:orden.id}});
     if (existOrdenTrabajo) {
-  if (fechaActual.getTime() > fechaFinal.getTime()) {
+  if (fechaFinal.getTime() > fechaActual.getTime()) {
    /*console.log("fechaActual",fechaActual);
    console.log("fechaFinal",fechaFinal);*/
     
     orden.estadoTrabajo = estadoVencido;
      console.log('Verificación de vencidos ejecutada...');
-  } else if (fechaActual.getTime() <= fechaFinal.getTime() && fechaActual.getTime() >= fechaInicio.getTime()) {
+  } else /*if (fechaActual.getTime() <= fechaFinal.getTime() && fechaActual.getTime() >= fechaInicio.getTime())*/ {
     orden.estadoTrabajo = estadoEnProceso;
      console.log('Verificación de en procesos ejecutada...');
   } /*else if (fechaActual.getTime() < fechaInicio.getTime()) {
@@ -276,6 +276,7 @@ try {
   
 } catch (error) {
   await queryRunner.rollbackTransaction();
+  console.log(error);
   return { msj: `No se pudo crear la solicitud: ${error}`,validate:false };
      }finally{
     await  queryRunner.release();
