@@ -9,10 +9,10 @@ export class UpdateUserDto{
       
        name?:string;
        
-        identification?:number;
+        identification?:string;
        
         
-        cellphone?:number;
+        cellphone?:string;
         
         email?:string;
         
