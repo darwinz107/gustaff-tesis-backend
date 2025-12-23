@@ -39,7 +39,7 @@ export class AuthController {
     return this.authService.remove(+id);
   }
 
-  @Rol(['admin'])
+  @Rol(['ADMIN'])
   @UseGuards(AuthGuard)
   @Get('validate/rol')
   validateRol(){
