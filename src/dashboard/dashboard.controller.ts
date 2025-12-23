@@ -1,4 +1,4 @@
-// dashboard.controller.ts
+
 import { Controller, Get, Query } from '@nestjs/common';
 import { DashboardService } from './dashboard.service';
 
@@ -40,5 +40,26 @@ export class DashboardController {
   getTotalStock() {
     return this.svc.getLogistica();
   }
+
+  @Get('kpis/admin')
+  getAdminKPIs() {
+    return this.svc.getAdminKPIs();
+  }
+
+  @Get('users-by-cargo')
+  getUsersByCargo() {
+    return this.svc.getUsersByCargo();
+  }
+
+  @Get('maquinas-por-area')
+  getMaquinasPorArea() {
+    return this.svc.getMaquinasPorArea();
+  }
+
+  @Get('ultimos-usuarios')
+  getUltimosUsuarios(@Query('limit') limit = '5') {
+    return this.svc.getUltimosUsuarios(Number(limit));
+  }
+
 
 }
