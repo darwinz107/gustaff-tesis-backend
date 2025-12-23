@@ -358,7 +358,18 @@ async findAllBodegas(): Promise<{ id: number; bodega: string }[]> {
   });
 }
 
+async deleteUser(id: number) {
 
+  const user = await this.userRepository.findOne({where:{id}});
+
+  if(!user) throw new NotFoundException('No se encontro un usuario valido');
+
+  const userdelete = await this.userRepository.delete(id);
+
+  if(userdelete.affected ===0) {return {msj:"Fallo al eliminar",validate:false}};
+
+  return {msj:"Fallo al eliminar",validate:false};
+}
 
 
  
