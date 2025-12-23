@@ -1,7 +1,18 @@
 // dashboard.service.ts (fragmentos)
 import { Injectable } from '@nestjs/common';
 import { EstadoTrabajoEnum } from 'src/orden-de-trabajo/enums/estado-trabajo.enum';
+import { Area } from 'src/parametro/entities/area.entity';
+import { Bodega } from 'src/parametro/entities/bodega';
+import { Categoria } from 'src/parametro/entities/categoria.entity';
+import { Codigo } from 'src/parametro/entities/codigo.entity';
+import { Maquina } from 'src/parametro/entities/maquina.entity';
+import { Percha } from 'src/parametro/entities/percha';
+import { Seccion } from 'src/parametro/entities/seccion';
+import { TipoTrabajo } from 'src/parametro/entities/tipoTrabajo.entity';
+import { Role } from 'src/roles/entities/role.entity';
 import { EstadoCompraEnum } from 'src/solicitud-de-compra/enums/estadoCompra.enum';
+import { Cargo } from 'src/users/entities/cargo.entity';
+import { User } from 'src/users/entities/user.entity';
 import { DataSource } from 'typeorm';
 
 @Injectable()
@@ -176,12 +187,14 @@ export class DashboardService {
       .innerJoin('s.numOrdenTrabajo', 'o')
       .innerJoin('o.userSolicitante', 'u')
       .innerJoin('s.itemSolicitados', 'is')
+      .innerJoin('s.estadoCompra', 'e')
       .select([
         's.id as id',
         's.numOrden ',
         's.fechaRemision ',
-        's.Destino AS destino',
-        'u.name AS solicitante'
+        //'s.Destino AS destino',
+        'u.name AS solicitante',
+        'e.estado AS estado'
       ])
       .addSelect('SUM(is.cantidad)','total_items')
       .groupBy('s.id')
@@ -201,4 +214,169 @@ export class DashboardService {
     .orderBy('DATE(fechaRemision)','ASC')
     .getRawMany();
   }
+
+   async getActaSalidaPorDia(days:number) {
+    return await this.dataSource.getRepository('RegistroSalida')
+    .createQueryBuilder('rs')
+    .select('DATE(rs.fechaRemision)','fechaRemision')
+    .addSelect('COUNT(rs.id)','total')
+    .where('rs.fechaRemision >= DATE_SUB(CURDATE(), INTERVAL :days DAY)',{days})
+    .groupBy('DATE(rs.fechaRemision)')
+    .orderBy('DATE(rs.fechaRemision)','ASC')
+    .getRawMany();
+   }
+
+   async getLogistica() {
+      const totalStock = await this.dataSource.getRepository('Inventario')
+      .createQueryBuilder('in')
+      .select('SUM(in.stock)','total')
+      .getRawOne();
+   
+
+const totalRegEntrada =  await this.dataSource.getRepository('RegistroEntrada')
+      .createQueryBuilder('re')
+      .getCount();
+  
+
+  const totalItemsEntrada =  await this.dataSource.getRepository('ItemsEntrada')
+      .createQueryBuilder('ie')
+      .select('SUM(ie.cantidad)','cantidad')
+      .getRawOne();
+  
+
+  
+ 
+      const totalRegSalida = await this.dataSource.getRepository('RegistroSalida')
+      .createQueryBuilder('rs')
+      .getCount();
+  
+
+  const totalItemsSalida =  await this.dataSource.getRepository('ItemsSalida')
+      .createQueryBuilder('is')
+      .select('SUM(is.cantidad)','cantidad')
+      .getRawOne();
+  
+      return {
+        totalStock,
+        totalRegEntrada,
+        totalItemsEntrada,
+        totalRegSalida,
+        totalItemsSalida
+      }
+}
+
+async getAdminKPIs() {
+  const totalUsers = await this.dataSource
+    .getRepository(User)
+    .createQueryBuilder('u')
+    .getCount();
+
+  const totalAreas = await this.dataSource
+    .getRepository(Area)
+    .createQueryBuilder('a')
+    .getCount();
+
+  const totalCategorias = await this.dataSource
+    .getRepository(Categoria)
+    .createQueryBuilder('c')
+    .getCount();
+
+  const totalMaquinas = await this.dataSource
+    .getRepository(Maquina)
+    .createQueryBuilder('m')
+    .getCount();
+
+  const totalTipoTrabajos = await this.dataSource
+    .getRepository(TipoTrabajo)
+    .createQueryBuilder('t')
+    .getCount();
+
+  const totalBodegas = await this.dataSource
+    .getRepository(Bodega)
+    .createQueryBuilder('b')
+    .getCount();
+
+  const totalSecciones = await this.dataSource
+    .getRepository(Seccion)
+    .createQueryBuilder('s')
+    .getCount();
+
+  const totalPerchas = await this.dataSource
+    .getRepository(Percha)
+    .createQueryBuilder('p')
+    .getCount();
+
+  const totalRoles = await this.dataSource
+    .getRepository(Role)
+    .createQueryBuilder('r')
+    .getCount();
+
+  const totalCargos = await this.dataSource
+    .getRepository(Cargo)
+    .createQueryBuilder('c')
+    .getCount();
+
+  return {
+    totalUsers,
+    totalAreas,
+    totalCategorias,
+    totalMaquinas,
+    totalTipoTrabajos,
+    totalBodegas,
+    totalSecciones,
+    totalPerchas,
+    totalRoles,
+    totalCargos,
+  };
+}
+
+async getUsersByCargo() {
+  const raw = await this.dataSource
+    .getRepository(User)
+    .createQueryBuilder('u')
+    .innerJoin('u.cargoId', 'c')
+    .select('c.name', 'cargo')
+    .addSelect('COUNT(u.id)', 'count')
+    .groupBy('c.name')
+    .getRawMany();
+
+  return raw.map(r => ({
+    cargo: r.cargo,
+    count: Number(r.count),
+  }));
+}
+
+async getMaquinasPorArea() {
+  const raw = await this.dataSource
+    .getRepository(Maquina)
+    .createQueryBuilder('m')
+    .innerJoin(Codigo, 'cod', 'cod.id = m.codigoId')
+    .innerJoin(Area, 'a', 'a.id = cod.areaId')
+    .select('a.nombre', 'area')
+    .addSelect('COUNT(m.id)', 'count')
+    .groupBy('a.nombre')
+    .getRawMany();
+
+  return raw.map(r => ({
+    area: r.area,
+    count: Number(r.count),
+  }));
+}
+
+async getUltimosUsuarios(limit = 5) {
+  return await this.dataSource
+    .getRepository(User)
+    .createQueryBuilder('u')
+    .select([
+      'u.id AS id',
+      'u.name AS name',
+      'u.email AS email',
+      'u.cellphone AS cellphone',
+    ])
+    .orderBy('u.id', 'DESC')
+    .limit(limit)
+    .getRawMany();
+}
+
+
 }
