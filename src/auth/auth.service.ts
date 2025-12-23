@@ -52,7 +52,8 @@ export class AuthService{
       
     return new NotFoundException("Rol no valido");
     }
-
+    console.log("Contra al ingresar");
+  console.log(createAuthDto.password);
     const validatePassword = await bcrypt.compare(createAuthDto.password,login.password);
   
     if(validatePassword == false){

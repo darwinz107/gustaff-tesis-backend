@@ -76,8 +76,9 @@ export class AdminService implements OnModuleInit{
         
       return new NotFoundException("cargo");
       }
-      
-  
+      console.log(createUserDto.email);
+      console.log("contra al crear");
+    console.log(createUserDto.password);
       const passHashed = await bcrypt.hash(createUserDto.password,10);
        console.log(passHashed);
       createUserDto.password = passHashed;
@@ -238,7 +239,7 @@ export class AdminService implements OnModuleInit{
 
   async update(id: number, updateUserDto: UpdateUserDto) {
   try {
-    
+    console.log(updateUserDto)
     const user = await this.userRepository.findOne({ where: { id }, relations: ['cargoId'] });
     if (!user) {
       throw new NotFoundException('Usuario no encontrado');
@@ -269,7 +270,8 @@ export class AdminService implements OnModuleInit{
         user.fechaNac = f as Date;
       }
     }
-
+   console.log("Contra al editar")
+   console.log(updateUserDto)
    
     if (updateUserDto.password !== undefined && updateUserDto.password !== null && updateUserDto.password !== '') {
       const passHashed = await bcrypt.hash(updateUserDto.password, 10);
