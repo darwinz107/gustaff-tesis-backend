@@ -236,32 +236,58 @@ export class AdminService implements OnModuleInit{
       return getCargos;
       }  
 
-      async update(id: number, updateUserDto: UpdateUserDto) {
-    console.log(updateUserDto.cargo);
-    const cargo = await this.cargoRepository.findOne({where:{id:updateUserDto.cargo}});    
-    if(!cargo){
-      return new NotFoundException("cargo");
+  async update(id: number, updateUserDto: UpdateUserDto) {
+  try {
+    
+    const user = await this.userRepository.findOne({ where: { id }, relations: ['cargoId'] });
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
     }
 
-    const infoUpdate = {
-      name:updateUserDto.name,
-      fechaNac:updateUserDto.fechaNac,
-      identification:updateUserDto.identification,
-      cellphone:updateUserDto.cellphone,
-      email:updateUserDto.email,
-      password:updateUserDto.password,
-      cargoId:cargo
-    };
-
-   const res = await this.userRepository.update(id,infoUpdate);
-
-    if(res.affected ===0){
-    return {msj:`No se puedo actualizar la informacion de ${updateUserDto.name}`};
-
+    
+    if (updateUserDto.cargo !== undefined && updateUserDto.cargo !== null) {
+      const cargo = await this.cargoRepository.findOne({ where: { id: updateUserDto.cargo } });
+      if (!cargo) {
+        throw new NotFoundException('Cargo no encontrado');
+      }
+      user.cargoId = cargo;
     }
 
-    return {msj:`Se actualizo la informacion de ${updateUserDto.name}`};
-  } 
+    
+    if (updateUserDto.name !== undefined) user.name = updateUserDto.name;
+    if (updateUserDto.identification !== undefined) user.identification = updateUserDto.identification;
+    if (updateUserDto.cellphone !== undefined) user.cellphone = updateUserDto.cellphone;
+    if (updateUserDto.email !== undefined) user.email = updateUserDto.email;
+
+    
+    if (updateUserDto.fechaNac !== undefined && updateUserDto.fechaNac !== null) {
+      const f = updateUserDto.fechaNac;
+      
+      if (typeof f === 'string') {
+        user.fechaNac = new Date(f); 
+      } else {
+        user.fechaNac = f as Date;
+      }
+    }
+
+   
+    if (updateUserDto.password !== undefined && updateUserDto.password !== null && updateUserDto.password !== '') {
+      const passHashed = await bcrypt.hash(updateUserDto.password, 10);
+      user.password = passHashed;
+    }
+
+    
+    await this.userRepository.save(user);
+
+    return { msj: `Se actualizó la información de ${user.name}`, validate: true };
+  } catch (error) {
+   
+    if (error instanceof NotFoundException) throw error;
+    console.error('Error actualizando usuario:', error);
+    return { msj: 'Error al actualizar usuario', validate: false, error: error?.message ?? error };
+  }
+}
+
   
   async findAllTipoTrabajo(){
     const allTipoTrabajo = await this.tipoTrabajoRepository.find({select:['tipo']});
