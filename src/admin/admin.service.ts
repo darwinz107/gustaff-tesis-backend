@@ -68,7 +68,7 @@ export class AdminService implements OnModuleInit{
       const user = await this.userRepository.findOne({where:{email:createUserDto.email}});
   
       if(user){
-        return {msj:'Correo ya registrado'};
+        return {msj:'Correo ya registrado',validate:false};
         
       }
   
@@ -360,15 +360,13 @@ async findAllBodegas(): Promise<{ id: number; bodega: string }[]> {
 
 async deleteUser(id: number) {
 
-  const user = await this.userRepository.findOne({where:{id}});
-
-  if(!user) throw new NotFoundException('No se encontro un usuario valido');
+  console.log("Eliminar usuario id:", id);
 
   const userdelete = await this.userRepository.delete(id);
 
-  if(userdelete.affected ===0) {return {msj:"Fallo al eliminar",validate:false}};
+  if(userdelete.affected ===0) return {msj:"No se encontro un usuario valido",validate:false};
 
-  return {msj:"Fallo al eliminar",validate:false};
+  return {msj:"Se elimino correctamente",validate:true};
 }
 
 
