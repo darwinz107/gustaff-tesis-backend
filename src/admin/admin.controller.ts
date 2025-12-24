@@ -91,6 +91,11 @@ export class AdminController {
     return this.adminService.update(+id, updateUserDto);
   }
 
+  @Delete('user/:id')
+  deleteUser(@Param('id') id: string) {
+    return this.adminService.deleteUser(+id);
+  }
+
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.adminService.remove(+id);

@@ -63,7 +63,7 @@ export class OrdenDeTrabajoService implements OnModuleInit{
     }
   }
 
-  @Cron(CronExpression.EVERY_30_SECONDS)
+  @Cron(CronExpression.EVERY_5_MINUTES)
   async ordenTrabajoVencida(){
  //console.log('Verificando ordenes de trabajo vencidas...');
     try {
