@@ -20,6 +20,8 @@ export class ItemsEntrada {
     iva: boolean;
     @Column({type:"decimal",precision:10,scale:2})
     subtotal: number;
+     @Column({nullable:true})
+    Observacion:string;
     @Column({type:"decimal",precision:10,scale:2})
     total: number;   
      @ManyToOne(()=>RegistroEntrada,(registroEntrada)=>registroEntrada.itemEntrada)
