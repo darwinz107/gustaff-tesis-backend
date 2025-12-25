@@ -268,7 +268,8 @@ let solMaterial: SolicitudDeCompra | null = null;
        costo:item.costo,
        bodega:bodega,
        seccion:seccion,
-       percha:percha
+       percha:percha,
+       
       }
     await queryRunner.manager.save(Inventario,newInventario);
 
@@ -286,6 +287,7 @@ let solMaterial: SolicitudDeCompra | null = null;
    descuento:item.descuento,
    iva:item.iva,
    subtotal:item.subtotal,
+   Observacion:item.Observacion,
    total:item.total
   }
 
@@ -323,6 +325,7 @@ else{
    descuento:item.descuento,
    iva:item.iva,
    subtotal:item.subtotal,
+   Observacion:item.Observacion,
    total:item.total
   }
 
@@ -848,15 +851,18 @@ if (!isNaN(id)) {
   }
 
   async createProovedor(createProovedorDto:CreateProovedorDto){
- 
+ console.log(createProovedorDto);
+
+ if(createProovedorDto.ruc && createProovedorDto.ruc !== ''){
 const existe = await this.proovedoresRepository.findOne({
     where: { ruc: createProovedorDto.ruc },
   });
 
+  console.log(existe);
   if (existe) {
     throw new BadRequestException('El RUC ya está registrado');
   }
-
+ }
     const createProov = this.proovedoresRepository.create(createProovedorDto);
     await this.proovedoresRepository.save(createProov);
     return{

@@ -39,7 +39,7 @@ export class SolicitudDeCompraService implements OnModuleInit{
   }
 
  async create(createSolicitudDeCompraDto: CreateSolicitudDeCompraDto) {
-
+  console.log(createSolicitudDeCompraDto);
   const queryRunner = this.dataSource.createQueryRunner();
    await queryRunner.connect();
    await queryRunner.startTransaction();

@@ -9,18 +9,18 @@ export class Proovedores {
      nombre:string;
      @Column()
      nombreComercial:string;
-     @Column()
+     @Column({nullable:true})
      ruc:string;
      
-     @Column()
+     @Column({nullable:true})
      email:string;
-     @Column()
+     @Column({nullable:true})
      telefono:string;
-     @Column()
+     @Column({nullable:true})
      direccion:string;
-     @Column()
+     @Column({nullable:true})
      ciudad:string;
-     @Column()
+     @Column({nullable:true})
      notas:string;
      @OneToMany(()=>RegistroEntrada,(registroEntrada)=>registroEntrada.proovedor)
      registroEntrada:RegistroEntrada[]
