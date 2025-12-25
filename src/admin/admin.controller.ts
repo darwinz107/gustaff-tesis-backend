@@ -136,7 +136,25 @@ export class AdminController {
     const areas = await this.adminService.getAllInfoAreas();
     return areas;
   }
-  
-  
+
+  @Patch('area/edit/:id')
+  async editArea(@Param('id') id: string, @Body('area') area: string) {
+    return await this.adminService.editArea(+id, area);
+  }
+
+  @Delete('area/delete/:id')
+  async deleteArea(@Param('id') id: string) {
+    return await this.adminService.deleteArea(+id);
+  }
+
+  @Patch('maquina/edit/:id')
+  async editMaquina(@Param('id') id: string, @Body('nombre') maquina: string) {
+    return await this.adminService.editMaquina(+id, maquina);
+  }
+
+  @Delete('maquina/delete/:id')
+  async deleteMaquina(@Param('id') id: string) {
+    return await this.adminService.deleteMaquina(+id);
+  }
 
 }

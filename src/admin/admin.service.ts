@@ -382,4 +382,85 @@ async getAllInfoAreas(){
   remove(id: number) {
     return `This action removes a #${id} admin`;
   }
+
+  async editArea(id:number,area:string){
+    const areaEdit = await this.areaRepository.findOne({where:{id}});   
+    if(!areaEdit){
+      return {msj:"No se encontro un area valida",validate:false};
+    }
+    console.log(area);
+    areaEdit.nombre = area;
+    await this.areaRepository.save(areaEdit);
+    return {msj:"Area editada correctamente",validate:true};
+  }
+
+  async deleteArea(id:number){  
+    const findCodigo = await this.codigoRepository.find({where:{area:{id}}});
+    if(findCodigo.length > 0){
+      return {msj:"No se puede eliminar el area porque tiene codigos asociados",validate:false};
+    }
+    const areaDelete = await this.areaRepository.delete(id);   
+    if(areaDelete.affected ===0){
+      return {msj:"No se encontro un area valida",validate:false};
+    }
+    return {msj:"Area eliminada correctamente",validate:true};
+  }
+
+  async editMaquina(id:number,area:string){
+    const maquinaEdit = await this.maquinaRepository.findOne({where:{id}});   
+    if(!maquinaEdit){
+      return {msj:"No se encontro una maquina valida",validate:false};
+    }
+
+    const findArea = await this.areaRepository.findOne({where:{nombre:area}});
+    if(!findArea){
+      return {msj:"No se encontro un area valida para la maquina",validate:false};
+    }
+    
+    const findCodigo = await this.codigoRepository.findOne({where:{id:maquinaEdit.codigo.id}});
+    if(!findCodigo){
+      return {msj:"No se encontro un codigo valido para la maquina",validate:false};
+    }
+
+    const deleteMaquina = await this.maquinaRepository.delete(maquinaEdit.id);
+    if(deleteMaquina.affected ===0){
+      return {msj:"No se pudo actualizar la maquina, intente de nuevo",validate:false};
+    }
+
+    const deleteCodigo = await this.codigoRepository.delete(findCodigo.id);
+    if(deleteCodigo.affected ===0){
+      return {msj:"No se pudo actualizar la maquina, intente de nuevo",validate:false};
+    }
+    
+   const lastCodId = await this.codigoRepository.findOne({order:{id:"DESC"}});
+   if(!lastCodId){
+    return {msj:"No se pudo actualizar la maquina, intente de nuevo",validate:false};
+   }
+    const newCod =  `GU-${maquinaEdit.nombre.slice(0,3)}-${lastCodId.id+1}`;
+    const nuevoCodigo =  this.codigoRepository.create({ cod: newCod, area: { id: findArea.id } });
+    await this.codigoRepository.save(nuevoCodigo);
+
+    await this.maquinaRepository.save({...maquinaEdit,codigo:{id:nuevoCodigo.id}});
+
+    return {msj:"Maquina editada correctamente",validate:true
+
+  }; };
+
+  async deleteMaquina(id:number){  
+    const maquinaDelete = await this.maquinaRepository.findOne({where:{id}});
+    if(!maquinaDelete){
+      return {msj:"No se encontro una maquina valida",validate:false};
+    }
+    const deleteMaquina = await this.maquinaRepository.delete(maquinaDelete.id);
+    if(deleteMaquina.affected ===0){
+      return {msj:"No se pudo eliminar la maquina, intente de nuevo",validate:false};
+    }
+
+    const deleteCodigo = await this.codigoRepository.delete(maquinaDelete.codigo.id);
+    if(deleteCodigo.affected ===0){
+      return {msj:"No se pudo eliminar la maquina, intente de nuevo",validate:false};
+    }
+    return {msj:"Maquina eliminada correctamente",validate:true};
+  }
+
 }
