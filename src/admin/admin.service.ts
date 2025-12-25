@@ -369,6 +369,13 @@ async deleteUser(id: number) {
   return {msj:"Se elimino correctamente",validate:true};
 }
 
+async getAllInfoAreas(){
+  const areas = await this.areaRepository.find({
+    relations:['codigo','codigo.maquina'],
+  });
+  return areas;
+}
+
 
  
 

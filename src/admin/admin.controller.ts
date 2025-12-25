@@ -130,6 +130,12 @@ export class AdminController {
     const bodegas = await this.adminService.findAllBodegas();
     return bodegas;
   }
+
+  @Get('info/areas')
+  async getAllInfoAreas() {
+    const areas = await this.adminService.getAllInfoAreas();
+    return areas;
+  }
   
   
 
