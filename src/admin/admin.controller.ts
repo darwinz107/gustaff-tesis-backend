@@ -148,8 +148,8 @@ export class AdminController {
   }
 
   @Patch('maquina/edit/:id')
-  async editMaquina(@Param('id') id: string, @Body('nombre') maquina: string) {
-    return await this.adminService.editMaquina(+id, maquina);
+  async editMaquina(@Param('id') id: string, @Body('area') area: string) {
+    return await this.adminService.editMaquina(+id, area);
   }
 
   @Delete('maquina/delete/:id')

@@ -13,7 +13,7 @@ import { Role } from 'src/roles/entities/role.entity';
 import { CreateUserDto } from 'src/users/dto/create-user.dto';
 import { Cargo } from 'src/users/entities/cargo.entity';
 import { User } from 'src/users/entities/user.entity';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { AreaDto } from './dto/area.dto';
 import { CreateAreaDto } from './dto/create-area.dto';
 import { CreateCargoDto } from './dto/create-cargo.dto';
@@ -47,6 +47,7 @@ export class AdminService implements OnModuleInit{
     private readonly seccionRepository: Repository<Seccion>,
     @InjectRepository(Percha)
     private readonly perchaRepository: Repository<Percha>,
+    private dataSource:DataSource,
   ){}
     async onModuleInit() {
       const searchUsers = await this.userRepository.find();
@@ -362,11 +363,20 @@ async deleteUser(id: number) {
 
   console.log("Eliminar usuario id:", id);
 
+
+  const ordenTrabajoUser = await this.userRepository.find({where:{id},relations:['ordenesTrabajo']});
+
+  if(ordenTrabajoUser && ordenTrabajoUser.length >0){
+    return {msj:"No se puede eliminar el usuario porque tiene ordenes de trabajo asociadas",validate:false};
+  }
+
   const userdelete = await this.userRepository.delete(id);
 
   if(userdelete.affected ===0) return {msj:"No se encontro un usuario valido",validate:false};
 
   return {msj:"Se elimino correctamente",validate:true};
+
+
 }
 
 async getAllInfoAreas(){
@@ -407,7 +417,61 @@ async getAllInfoAreas(){
   }
 
   async editMaquina(id:number,area:string){
-    const maquinaEdit = await this.maquinaRepository.findOne({where:{id}});   
+    console.log("Editar maquina id:", id, " Area:", area);
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+
+      const maquinaEdit = await queryRunner.manager.findOne(Maquina, {where:{id},relations:['codigo']});   
+      if(!maquinaEdit){
+        await queryRunner.rollbackTransaction();
+        return {msj:"No se encontro una maquina valida",validate:false};
+      }
+      const findArea = await queryRunner.manager.findOne(Area,{where:{nombre:area}});
+      if(!findArea){
+        await queryRunner.rollbackTransaction();
+        return {msj:"No se encontro un area valida para la maquina",validate:false};
+      }
+      const findCodigo = await queryRunner.manager.findOne(Codigo,{where:{id:maquinaEdit.codigo.id}});
+      if(!findCodigo){
+        await queryRunner.rollbackTransaction();
+        return {msj:"No se encontro un codigo valido para la maquina",validate:false};
+      }
+      const deleteMaquina = await queryRunner.manager.delete(Maquina,maquinaEdit.id);
+      if(deleteMaquina.affected ===0){
+        await queryRunner.rollbackTransaction();
+        return {msj:"No se pudo actualizar la maquina, intente de nuevo",validate:false};
+      }
+      const deleteCodigo = await queryRunner.manager.delete(Codigo,findCodigo.id);
+      if(deleteCodigo.affected ===0){
+        await queryRunner.rollbackTransaction();
+        return {msj:"No se pudo actualizar la maquina, intente de nuevo",validate:false};
+      }
+      const lastCodId = await queryRunner.manager.findOne(Codigo,{where:{area:{id:findArea.id}}, order:{id:"DESC"}});
+      if(!lastCodId){
+        await queryRunner.rollbackTransaction();
+        return {msj:"No se pudo actualizar la maquina, intente de nuevo",validate:false};
+      }
+      const newCod =  `GU-${maquinaEdit.nombre.slice(0,3)}-${lastCodId.id+1}`;
+      const nuevoCodigo =  queryRunner.manager.create(Codigo, { cod: newCod, area: { id: findArea.id } });
+      await queryRunner.manager.save(nuevoCodigo);
+      await queryRunner.manager.save(Maquina,{...maquinaEdit,codigo:{id:nuevoCodigo.id}});
+      await queryRunner.commitTransaction();
+      return {msj:"Maquina editada correctamente",validate:true};
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      console.error('Error editando maquina:', error);
+      return { msj: 'Error al editar maquina', validate: false, error: error?.message ?? error };
+    }
+    finally {
+      await queryRunner.release();
+    }
+
+
+  /*  const maquinaEdit = await this.maquinaRepository.findOne({where:{id},relations:['codigo']});   
     if(!maquinaEdit){
       return {msj:"No se encontro una maquina valida",validate:false};
     }
@@ -432,7 +496,7 @@ async getAllInfoAreas(){
       return {msj:"No se pudo actualizar la maquina, intente de nuevo",validate:false};
     }
     
-   const lastCodId = await this.codigoRepository.findOne({order:{id:"DESC"}});
+   const lastCodId = await this.codigoRepository.findOne({where:{area:{id:findArea.id}}, order:{id:"DESC"}});
    if(!lastCodId){
     return {msj:"No se pudo actualizar la maquina, intente de nuevo",validate:false};
    }
@@ -444,9 +508,10 @@ async getAllInfoAreas(){
 
     return {msj:"Maquina editada correctamente",validate:true
 
-  }; };
+  };*/ };
 
-  async deleteMaquina(id:number){  
+  async deleteMaquina(id:number){ 
+    console.log("Eliminar maquina id:", id); 
     const maquinaDelete = await this.maquinaRepository.findOne({where:{id}});
     if(!maquinaDelete){
       return {msj:"No se encontro una maquina valida",validate:false};
