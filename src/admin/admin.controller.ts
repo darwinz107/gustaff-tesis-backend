@@ -53,6 +53,7 @@ export class AdminController {
     createCategoria(@Body() createCategoriaDto:CreateCategoriaDto){
       return this.adminService.createCategoria(createCategoriaDto);
     }
+
     
     @Get('categorias/all')
     findAllCategorias(){
@@ -163,9 +164,68 @@ export class AdminController {
     return bodegas;
   }
 
-  @Get('bodega/edit/:id')
+  @Patch('bodega/edit/:id')
   async editBodega(@Param('id') id: string, @Body('bodega') bodega: string) {
     return await this.adminService.editBodega(+id, bodega);
   }
+
+  @Delete('bodega/delete/:id')
+  async deleteBodega(@Param('id') id: string) {
+    return await this.adminService.deleteBodega(+id);
+  }
+
+  @Patch('seccion/edit/:id')
+  async editSeccion(@Param('id') id: string, @Body('seccion') seccion: string,@Body('bodega') bodega:string) {
+    return await this.adminService.editSeccion(+id, seccion, bodega);
+
+}
+
+  @Delete('seccion/delete/:id')
+  async deleteSeccion(@Param('id') id: string) {
+    return await this.adminService.deleteSeccion(+id);
+  }
+
+  @Patch('percha/edit/:id')
+  async editPercha(@Param('id') id: string, @Body('percha') percha: string, @Body('seccion') seccion:string) {
+    return await this.adminService.editPercha(+id, percha, seccion);
+  }
+  @Delete('percha/delete/:id')
+  async deletePercha(@Param('id') id: string) {
+    return await this.adminService.deletePercha(+id);
+  }
+
+  @Patch('cargo/edit/:id')
+  async editCargo(@Param('id') id: string, @Body('cargo') cargo: string ,@Body('rol') rol:number) {
+    return await this.adminService.editCargo(+id, cargo, rol);
+  }
+  @Delete('cargo/delete/:id')
+  async deleteCargo(@Param('id') id: string) {
+    return await this.adminService.deleteCargo(+id);
+  }
+
+  @Patch('categoria/edit/:id')
+  async editCategoria(@Param('id') id: string, @Body('categoria') categoria: string) {
+    return await this.adminService.editCategoria(+id, categoria);
+  }
+  @Delete('categoria/delete/:id')
+  async deleteCategoria(@Param('id') id: string) {
+    return await this.adminService.deleteCategoria(+id);
+  }
+
+  @Patch('tipo-trabajo/edit/:id')
+  async editTipoTrabajo(@Param('id') id: string, @Body('tipo') tipo: string) {
+    return await this.adminService.edittipoTrabajo(+id, tipo);
+  }
+  @Delete('tipo-trabajo/delete/:id')
+  async deleteTipoTrabajo(@Param('id') id: string) {
+    return await this.adminService.deleteTipoTrabajo(+id);
+  }
+
+  @Get('all/tipos-trabajo')
+  async getAllTiposTrabajo() {
+    const tiposTrabajo = await this.adminService.getAllTiposTrabajo();
+    return tiposTrabajo;
+  }
+
 
 }
