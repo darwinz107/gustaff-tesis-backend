@@ -12,7 +12,7 @@ export class Seccion{
    @Column()
    seccion:string;
    @ManyToOne(()=>Bodega,(bodega)=>bodega.seccion)
-   @JoinColumn()
+   
    bodega:Bodega;
 
    @OneToMany(()=>Percha,(percha)=>percha.percha)

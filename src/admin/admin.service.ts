@@ -386,7 +386,16 @@ async getAllInfoAreas(){
   return areas;
 }
 
-
+async getAllBodegas(){
+  const bodegas = await this.bodegaRepository.createQueryBuilder('bodega')
+  .leftJoinAndSelect('bodega.seccion', 'seccion')
+  .leftJoinAndSelect('seccion.percha', 'percha')
+  .orderBy('bodega.bodega', 'ASC')
+  .addOrderBy('seccion.seccion', 'ASC')
+  .addOrderBy('percha.percha', 'ASC')
+  .getMany();
+  return bodegas;
+}
  
 
   remove(id: number) {
@@ -404,6 +413,15 @@ async getAllInfoAreas(){
     return {msj:"Area editada correctamente",validate:true};
   }
 
+  async editBodega(id:number,bodega:string){
+    const bodegaEdit = await this.bodegaRepository.findOne({where:{id}});
+    if(!bodegaEdit){
+      return {msj:"No se encontro una bodega valida",validate:false};
+    }
+    bodegaEdit.bodega = bodega;
+    await this.bodegaRepository.save(bodegaEdit);
+    return {msj:"Bodega editada correctamente",validate:true};
+  }
   async deleteArea(id:number){  
     const findCodigo = await this.codigoRepository.find({where:{area:{id}}});
     if(findCodigo.length > 0){
@@ -416,7 +434,64 @@ async getAllInfoAreas(){
     return {msj:"Area eliminada correctamente",validate:true};
   }
 
-  async editMaquina(id:number,area:string){
+  async deleteBodega(id:number){
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      console.log("Eliminar bodega id:", id);
+      const findSecciones = await queryRunner.manager.find(Seccion,{where:{bodega:{id}}});
+      if(findSecciones.length > 0){
+       for(const seccion of findSecciones){
+        const findPerchas = await queryRunner.manager.find(Percha,{where:{seccion:{id:seccion.id}}});
+        if(findPerchas.length > 0){
+          for(const percha of findPerchas){
+            const perchaDelete = await queryRunner.manager.delete(Percha,percha.id);
+            if(perchaDelete.affected ===0){
+              await queryRunner.rollbackTransaction();
+              return {msj:"No se pudo eliminar la bodega, intente de nuevo",validate:false};
+            }
+          }
+          
+      }
+        const seccionDelete = await queryRunner.manager.delete(Seccion,seccion.id);
+        if(seccionDelete.affected ===0){
+          await queryRunner.rollbackTransaction();
+          return {msj:"No se pudo eliminar la bodega, intente de nuevo",validate:false};
+        }
+        }
+      }
+      const bodegaDelete = await queryRunner.manager.delete(Bodega,id);
+      if(bodegaDelete.affected ===0){
+        await queryRunner.rollbackTransaction();
+        return {msj:"No se encontro una bodega valida",validate:false};
+      }
+      await queryRunner.commitTransaction();
+      return {msj:"Bodega eliminada correctamente",validate:true};
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      console.error('Error eliminando bodega:', error);
+      return { msj: 'Error al eliminar bodega', validate: false, error: error?.message ?? error };
+    }
+    finally {
+      await queryRunner.release();
+    }
+
+
+   /* const findSecciones = await this.seccionRepository.find({where:{bodega:{id}}});
+    if(findSecciones.length > 0){
+      
+    }
+    const bodegaDelete = await this.bodegaRepository.delete(id);
+    if(bodegaDelete.affected ===0){
+      return {msj:"No se encontro una bodega valida",validate:false};
+    }
+    return {msj:"Bodega eliminada correctamente",validate:true};*/
+  }
+
+  async editMaquina(id:number,area:string, maquina:string){
     console.log("Editar maquina id:", id, " Area:", area);
 
     const queryRunner = this.dataSource.createQueryRunner();
@@ -430,6 +505,22 @@ async getAllInfoAreas(){
         await queryRunner.rollbackTransaction();
         return {msj:"No se encontro una maquina valida",validate:false};
       }
+
+      maquinaEdit.nombre = maquina;
+
+     const findAreaa = await queryRunner.manager.findOne(Area,{where:{codigo:{id:maquinaEdit.codigo.id}}});
+
+     if(!findAreaa){
+      await queryRunner.rollbackTransaction();
+      return {msj:"No se encontro un area valida para la maquina",validate:false};
+     }
+
+     if(area === findAreaa.nombre){
+        await queryRunner.manager.save(maquinaEdit);
+        await queryRunner.commitTransaction();
+        return {msj:"Maquina editada correctamente",validate:true};
+      }
+
       const findArea = await queryRunner.manager.findOne(Area,{where:{nombre:area}});
       if(!findArea){
         await queryRunner.rollbackTransaction();
@@ -511,7 +602,41 @@ async getAllInfoAreas(){
   };*/ };
 
   async deleteMaquina(id:number){ 
-    console.log("Eliminar maquina id:", id); 
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      console.log("Eliminar maquina id:", id);
+      const maquinaDelete = await queryRunner.manager.findOne(Maquina, {where:{id},relations:['codigo']});
+      if(!maquinaDelete){
+        await queryRunner.rollbackTransaction();
+        return {msj:"No se encontro una maquina valida",validate:false};
+      }
+      const deleteMaquina = await queryRunner.manager.delete(Maquina,maquinaDelete.id);
+      if(deleteMaquina.affected ===0){
+        await queryRunner.rollbackTransaction();
+        return {msj:"No se pudo eliminar la maquina, intente de nuevo",validate:false};
+      }
+      const deleteCodigo = await queryRunner.manager.delete(Codigo,maquinaDelete.codigo.id);
+      if(deleteCodigo.affected ===0){
+        await queryRunner.rollbackTransaction();
+        return {msj:"No se pudo eliminar la maquina, intente de nuevo",validate:false};
+      }
+      await queryRunner.commitTransaction();
+      return {msj:"Maquina eliminada correctamente",validate:true};
+    }
+    catch (error) {
+      await queryRunner.rollbackTransaction();
+      console.error('Error eliminando maquina:', error);
+      return { msj: 'Error al eliminar maquina', validate: false, error: error?.message ?? error };
+    }
+    finally {
+      await queryRunner.release();
+    }
+
+
+  /*  console.log("Eliminar maquina id:", id); 
     const maquinaDelete = await this.maquinaRepository.findOne({where:{id}});
     if(!maquinaDelete){
       return {msj:"No se encontro una maquina valida",validate:false};
@@ -525,7 +650,7 @@ async getAllInfoAreas(){
     if(deleteCodigo.affected ===0){
       return {msj:"No se pudo eliminar la maquina, intente de nuevo",validate:false};
     }
-    return {msj:"Maquina eliminada correctamente",validate:true};
+    return {msj:"Maquina eliminada correctamente",validate:true};*/
   }
 
 }

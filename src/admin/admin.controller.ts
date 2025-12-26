@@ -148,13 +148,24 @@ export class AdminController {
   }
 
   @Patch('maquina/edit/:id')
-  async editMaquina(@Param('id') id: string, @Body('area') area: string) {
-    return await this.adminService.editMaquina(+id, area);
+  async editMaquina(@Param('id') id: string, @Body('area') area: string, @Body('maquina') maquina:string) {
+    return await this.adminService.editMaquina(+id, area, maquina);
   }
 
   @Delete('maquina/delete/:id')
   async deleteMaquina(@Param('id') id: string) {
     return await this.adminService.deleteMaquina(+id);
+  }
+
+  @Get('info/bodegas')
+  async getAllBodegasSeccPer() {
+    const bodegas = await this.adminService.getAllBodegas();
+    return bodegas;
+  }
+
+  @Get('bodega/edit/:id')
+  async editBodega(@Param('id') id: string, @Body('bodega') bodega: string) {
+    return await this.adminService.editBodega(+id, bodega);
   }
 
 }
