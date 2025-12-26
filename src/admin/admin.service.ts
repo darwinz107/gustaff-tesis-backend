@@ -13,7 +13,7 @@ import { Role } from 'src/roles/entities/role.entity';
 import { CreateUserDto } from 'src/users/dto/create-user.dto';
 import { Cargo } from 'src/users/entities/cargo.entity';
 import { User } from 'src/users/entities/user.entity';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { AreaDto } from './dto/area.dto';
 import { CreateAreaDto } from './dto/create-area.dto';
 import { CreateCargoDto } from './dto/create-cargo.dto';
@@ -47,6 +47,7 @@ export class AdminService implements OnModuleInit{
     private readonly seccionRepository: Repository<Seccion>,
     @InjectRepository(Percha)
     private readonly perchaRepository: Repository<Percha>,
+    private dataSource:DataSource,
   ){}
     async onModuleInit() {
       const searchUsers = await this.userRepository.find();
@@ -207,7 +208,7 @@ export class AdminService implements OnModuleInit{
       return {msj:"Tipo de trabajo registrado!"}
       }
       async findAllCategorias() {
-        const categorias = await this.categoriaRepository.find({ select: ['nombre'] });
+        const categorias = await this.categoriaRepository.find();
         return categorias;
       }
     
@@ -232,7 +233,7 @@ export class AdminService implements OnModuleInit{
 
     async allCargos(){
       
-      const getCargos = await this.cargoRepository.find({select:['id','name']});
+      const getCargos = await this.cargoRepository.find({relations:['rolId']});
 
       return getCargos;
       }  
@@ -362,11 +363,20 @@ async deleteUser(id: number) {
 
   console.log("Eliminar usuario id:", id);
 
+
+  const ordenTrabajoUser = await this.userRepository.find({where:{id},relations:['ordenesTrabajo']});
+
+  if(ordenTrabajoUser && ordenTrabajoUser.length >0){
+    return {msj:"No se puede eliminar el usuario porque tiene ordenes de trabajo asociadas",validate:false};
+  }
+
   const userdelete = await this.userRepository.delete(id);
 
   if(userdelete.affected ===0) return {msj:"No se encontro un usuario valido",validate:false};
 
   return {msj:"Se elimino correctamente",validate:true};
+
+
 }
 
 async getAllInfoAreas(){
@@ -376,7 +386,16 @@ async getAllInfoAreas(){
   return areas;
 }
 
-
+async getAllBodegas(){
+  const bodegas = await this.bodegaRepository.createQueryBuilder('bodega')
+  .leftJoinAndSelect('bodega.seccion', 'seccion')
+  .leftJoinAndSelect('seccion.percha', 'percha')
+  .orderBy('bodega.bodega', 'ASC')
+  .addOrderBy('seccion.seccion', 'ASC')
+  .addOrderBy('percha.percha', 'ASC')
+  .getMany();
+  return bodegas;
+}
  
 
   remove(id: number) {
@@ -394,6 +413,17 @@ async getAllInfoAreas(){
     return {msj:"Area editada correctamente",validate:true};
   }
 
+  async editBodega(id:number,bodega:string){
+    console.log("Editar bodega id:", id, " Bodega:", bodega);
+    const bodegaEdit = await this.bodegaRepository.findOne({where:{id}});
+    if(!bodegaEdit){
+      return {msj:"No se encontro una bodega valida",validate:false};
+    }
+    bodegaEdit.bodega = bodega;
+    await this.bodegaRepository.save(bodegaEdit);
+    return {msj:"Bodega editada correctamente",validate:true};
+  }
+  
   async deleteArea(id:number){  
     const findCodigo = await this.codigoRepository.find({where:{area:{id}}});
     if(findCodigo.length > 0){
@@ -406,8 +436,135 @@ async getAllInfoAreas(){
     return {msj:"Area eliminada correctamente",validate:true};
   }
 
-  async editMaquina(id:number,area:string){
-    const maquinaEdit = await this.maquinaRepository.findOne({where:{id}});   
+  async deleteBodega(id:number){
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      console.log("Eliminar bodega id:", id);
+      const findSecciones = await queryRunner.manager.find(Seccion,{where:{bodega:{id}}});
+      if(findSecciones.length > 0){
+       for(const seccion of findSecciones){
+        const findPerchas = await queryRunner.manager.find(Percha,{where:{seccion:{id:seccion.id}}});
+        if(findPerchas.length > 0){
+          for(const percha of findPerchas){
+            const perchaDelete = await queryRunner.manager.delete(Percha,percha.id);
+            if(perchaDelete.affected ===0){
+              await queryRunner.rollbackTransaction();
+              return {msj:"No se pudo eliminar la bodega, intente de nuevo",validate:false};
+            }
+          }
+          
+      }
+        const seccionDelete = await queryRunner.manager.delete(Seccion,seccion.id);
+        if(seccionDelete.affected ===0){
+          await queryRunner.rollbackTransaction();
+          return {msj:"No se pudo eliminar la bodega, intente de nuevo",validate:false};
+        }
+        }
+      }
+      const bodegaDelete = await queryRunner.manager.delete(Bodega,id);
+      if(bodegaDelete.affected ===0){
+        await queryRunner.rollbackTransaction();
+        return {msj:"No se encontro una bodega valida",validate:false};
+      }
+      await queryRunner.commitTransaction();
+      return {msj:"Bodega eliminada correctamente",validate:true};
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      console.error('Error eliminando bodega:', error);
+      return { msj: 'Error al eliminar bodega', validate: false, error: error?.message ?? error };
+    }
+    finally {
+      await queryRunner.release();
+    }
+
+
+   /* const findSecciones = await this.seccionRepository.find({where:{bodega:{id}}});
+    if(findSecciones.length > 0){
+      
+    }
+    const bodegaDelete = await this.bodegaRepository.delete(id);
+    if(bodegaDelete.affected ===0){
+      return {msj:"No se encontro una bodega valida",validate:false};
+    }
+    return {msj:"Bodega eliminada correctamente",validate:true};*/
+  }
+
+  async editMaquina(id:number,area:string, maquina:string){
+    console.log("Editar maquina id:", id, " Area:", area);
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+
+      const maquinaEdit = await queryRunner.manager.findOne(Maquina, {where:{id},relations:['codigo']});   
+      if(!maquinaEdit){
+        await queryRunner.rollbackTransaction();
+        return {msj:"No se encontro una maquina valida",validate:false};
+      }
+
+      maquinaEdit.nombre = maquina;
+
+     const findAreaa = await queryRunner.manager.findOne(Area,{where:{codigo:{id:maquinaEdit.codigo.id}}});
+
+     if(!findAreaa){
+      await queryRunner.rollbackTransaction();
+      return {msj:"No se encontro un area valida para la maquina",validate:false};
+     }
+
+     if(area === findAreaa.nombre){
+        await queryRunner.manager.save(maquinaEdit);
+        await queryRunner.commitTransaction();
+        return {msj:"Maquina editada correctamente",validate:true};
+      }
+
+      const findArea = await queryRunner.manager.findOne(Area,{where:{nombre:area}});
+      if(!findArea){
+        await queryRunner.rollbackTransaction();
+        return {msj:"No se encontro un area valida para la maquina",validate:false};
+      }
+      const findCodigo = await queryRunner.manager.findOne(Codigo,{where:{id:maquinaEdit.codigo.id}});
+      if(!findCodigo){
+        await queryRunner.rollbackTransaction();
+        return {msj:"No se encontro un codigo valido para la maquina",validate:false};
+      }
+      const deleteMaquina = await queryRunner.manager.delete(Maquina,maquinaEdit.id);
+      if(deleteMaquina.affected ===0){
+        await queryRunner.rollbackTransaction();
+        return {msj:"No se pudo actualizar la maquina, intente de nuevo",validate:false};
+      }
+      const deleteCodigo = await queryRunner.manager.delete(Codigo,findCodigo.id);
+      if(deleteCodigo.affected ===0){
+        await queryRunner.rollbackTransaction();
+        return {msj:"No se pudo actualizar la maquina, intente de nuevo",validate:false};
+      }
+      const lastCodId = await queryRunner.manager.findOne(Codigo,{where:{area:{id:findArea.id}}, order:{id:"DESC"}});
+      if(!lastCodId){
+        await queryRunner.rollbackTransaction();
+        return {msj:"No se pudo actualizar la maquina, intente de nuevo",validate:false};
+      }
+      const newCod =  `GU-${maquinaEdit.nombre.slice(0,3)}-${lastCodId.id+1}`;
+      const nuevoCodigo =  queryRunner.manager.create(Codigo, { cod: newCod, area: { id: findArea.id } });
+      await queryRunner.manager.save(nuevoCodigo);
+      await queryRunner.manager.save(Maquina,{...maquinaEdit,codigo:{id:nuevoCodigo.id}});
+      await queryRunner.commitTransaction();
+      return {msj:"Maquina editada correctamente",validate:true};
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      console.error('Error editando maquina:', error);
+      return { msj: 'Error al editar maquina', validate: false, error: error?.message ?? error };
+    }
+    finally {
+      await queryRunner.release();
+    }
+
+
+  /*  const maquinaEdit = await this.maquinaRepository.findOne({where:{id},relations:['codigo']});   
     if(!maquinaEdit){
       return {msj:"No se encontro una maquina valida",validate:false};
     }
@@ -432,7 +589,7 @@ async getAllInfoAreas(){
       return {msj:"No se pudo actualizar la maquina, intente de nuevo",validate:false};
     }
     
-   const lastCodId = await this.codigoRepository.findOne({order:{id:"DESC"}});
+   const lastCodId = await this.codigoRepository.findOne({where:{area:{id:findArea.id}}, order:{id:"DESC"}});
    if(!lastCodId){
     return {msj:"No se pudo actualizar la maquina, intente de nuevo",validate:false};
    }
@@ -444,9 +601,121 @@ async getAllInfoAreas(){
 
     return {msj:"Maquina editada correctamente",validate:true
 
-  }; };
+  };*/ };
 
-  async deleteMaquina(id:number){  
+  async editSeccion(id:number,seccion:string,bodega:string){
+   console.log("Editar seccion id:", id, " Seccion:", seccion, " Bodega:", bodega);
+   const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      const seccionEdit = await queryRunner.manager.findOne(Seccion,{where:{id},relations:['bodega']});
+      if(!seccionEdit){
+        await queryRunner.rollbackTransaction();
+        return {msj:"No se encontro una seccion valida",validate:false};
+      }
+      const bodegaFind = await queryRunner.manager.findOne(Bodega,{where:{bodega}});
+      if(!bodegaFind){
+        await queryRunner.rollbackTransaction();
+        return {msj:"No se encontro una bodega valida",validate:false};
+      }
+      
+      if(seccionEdit.bodega.id === bodegaFind.id){
+        seccionEdit.seccion = seccion;
+        await queryRunner.manager.save(seccionEdit);
+        await queryRunner.commitTransaction();
+        console.log(bodegaFind);
+        console.log("Seccion editada correctamente");
+        return {msj:"Seccion editada correctamente",validate:true};
+      }
+
+      seccionEdit.seccion = seccion;
+      seccionEdit.bodega = bodegaFind;
+      await queryRunner.manager.save(seccionEdit);
+      await queryRunner.commitTransaction();
+      return {msj:"Seccion editada correctamente",validate:true};
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      console.error('Error editando seccion:', error);
+      return { msj: 'Error al editar seccion', validate: false, error: error?.message ?? error };
+    
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  async editPercha(id:number,percha:string,seccion:string){
+   console.log("Editar percha id:", id, " Percha:", percha, " Seccion:", seccion);
+   const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      const perchaEdit = await queryRunner.manager.findOne(Percha,{where:{id},relations:['seccion']});
+      if(!perchaEdit){
+        await queryRunner.rollbackTransaction();
+        return {msj:"No se encontro una percha valida",validate:false};
+      }
+      const seccionFind = await queryRunner.manager.findOne(Seccion,{where:{seccion}});
+      if(!seccionFind){
+        await queryRunner.rollbackTransaction();
+        return {msj:"No se encontro una seccion valida",validate:false};
+      }
+      if(perchaEdit.seccion.id === seccionFind.id){
+        perchaEdit.percha = percha;
+        await queryRunner.manager.save(perchaEdit);
+        await queryRunner.commitTransaction();
+        return {msj:"Percha editada correctamente",validate:true};
+      }
+      perchaEdit.percha = percha;
+      perchaEdit.seccion = seccionFind;
+      await queryRunner.manager.save(perchaEdit);
+      await queryRunner.commitTransaction();
+      return {msj:"Percha editada correctamente",validate:true};
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      console.error('Error editando percha:', error);
+      return { msj: 'Error al editar percha', validate: false, error: error?.message ?? error };
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  async deleteMaquina(id:number){ 
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      console.log("Eliminar maquina id:", id);
+      const maquinaDelete = await queryRunner.manager.findOne(Maquina, {where:{id},relations:['codigo']});
+      if(!maquinaDelete){
+        await queryRunner.rollbackTransaction();
+        return {msj:"No se encontro una maquina valida",validate:false};
+      }
+      const deleteMaquina = await queryRunner.manager.delete(Maquina,maquinaDelete.id);
+      if(deleteMaquina.affected ===0){
+        await queryRunner.rollbackTransaction();
+        return {msj:"No se pudo eliminar la maquina, intente de nuevo",validate:false};
+      }
+      const deleteCodigo = await queryRunner.manager.delete(Codigo,maquinaDelete.codigo.id);
+      if(deleteCodigo.affected ===0){
+        await queryRunner.rollbackTransaction();
+        return {msj:"No se pudo eliminar la maquina, intente de nuevo",validate:false};
+      }
+      await queryRunner.commitTransaction();
+      return {msj:"Maquina eliminada correctamente",validate:true};
+    }
+    catch (error) {
+      await queryRunner.rollbackTransaction();
+      console.error('Error eliminando maquina:', error);
+      return { msj: 'Error al eliminar maquina', validate: false, error: error?.message ?? error };
+    }
+    finally {
+      await queryRunner.release();
+    }
+
+
+  /*  console.log("Eliminar maquina id:", id); 
     const maquinaDelete = await this.maquinaRepository.findOne({where:{id}});
     if(!maquinaDelete){
       return {msj:"No se encontro una maquina valida",validate:false};
@@ -460,7 +729,123 @@ async getAllInfoAreas(){
     if(deleteCodigo.affected ===0){
       return {msj:"No se pudo eliminar la maquina, intente de nuevo",validate:false};
     }
-    return {msj:"Maquina eliminada correctamente",validate:true};
+    return {msj:"Maquina eliminada correctamente",validate:true};*/
+  }
+
+  async deleteSeccion(id:number){
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      console.log("Eliminar seccion id:", id);
+      const findPerchas = await queryRunner.manager.find(Percha,{where:{seccion:{id}}});
+      if(findPerchas.length > 0){
+        for(const percha of findPerchas){
+          const perchaDelete = await queryRunner.manager.delete(Percha,percha.id);
+          if(perchaDelete.affected ===0){
+            await queryRunner.rollbackTransaction();
+            return {msj:"No se pudo eliminar la seccion, intente de nuevo",validate:false};
+          }
+        }
+    }
+      const seccionDelete = await queryRunner.manager.delete(Seccion,id);
+      if(seccionDelete.affected ===0){
+        await queryRunner.rollbackTransaction();
+        return {msj:"No se encontro una seccion valida",validate:false};
+      }
+      await queryRunner.commitTransaction();
+      return {msj:"Seccion eliminada correctamente",validate:true};
+    }
+    catch (error) {
+      await queryRunner.rollbackTransaction();
+      console.error('Error eliminando seccion:', error);
+      return { msj: 'Error al eliminar seccion', validate: false, error: error?.message ?? error };
+    }
+    finally {
+      await queryRunner.release();
+    }
+
+  }
+
+  async deletePercha(id:number){
+  
+    console.log("Eliminar percha id:", id);
+    const perchaDelete = await this.perchaRepository.delete(id);
+    if(perchaDelete.affected ===0){
+      return {msj:"No se encontro una percha valida",validate:false};
+    }
+    return {msj:"Percha eliminada correctamente",validate:true};
+  }
+
+  async editCategoria(id:number,categoria:string){
+    console.log("Editar categoria id:", id, " Categoria:", categoria);
+    const categoriaEdit = await this.categoriaRepository.findOne({where:{id}});
+    if(!categoriaEdit){
+      return {msj:"No se encontro una categoria valida",validate:false};
+    }
+    categoriaEdit.nombre = categoria;
+    await this.categoriaRepository.save(categoriaEdit);
+    return {msj:"Categoria editada correctamente",validate:true};
+  }
+
+  async deleteCategoria(id:number){
+    const categoriaDelete = await this.categoriaRepository.delete(id);
+    if(categoriaDelete.affected ===0){
+      return {msj:"No se encontro una categoria valida",validate:false};
+    }
+    return {msj:"Categoria eliminada correctamente",validate:true};
+  }
+
+  async edittipoTrabajo(id:number,tipo:string){
+    console.log("Editar tipo de trabajo id:", id, " Tipo de trabajo:", tipo); 
+    const tipoTrabajoEdit = await this.tipoTrabajoRepository.findOne({where:{id}});
+    if(!tipoTrabajoEdit){
+      return {msj:"No se encontro un tipo de trabajo valido",validate:false};
+    }
+    tipoTrabajoEdit.tipo = tipo;
+    await this.tipoTrabajoRepository.save(tipoTrabajoEdit);
+    return {msj:"Tipo de trabajo editado correctamente",validate:true};
+  }
+
+  async deleteTipoTrabajo(id:number){
+    const tipoTrabajoDelete = await this.tipoTrabajoRepository.delete(id);
+    if(tipoTrabajoDelete.affected ===0){
+      return {msj:"No se encontro un tipo de trabajo valido",validate:false};
+    }
+    return {msj:"Tipo de trabajo eliminado correctamente",validate:true};
+  }
+
+  async editCargo(id:number,cargo:string,rol:number){
+    const cargoEdit = await this.cargoRepository.findOne({where:{id},relations:['rolId']});
+    if(!cargoEdit){
+      return {msj:"No se encontro un cargo valido",validate:false};
+    }
+    if(rol){
+      const rolFind = await this.roleRepository.findOne({where:{id:rol}});
+      if(!rolFind){
+        return {msj:"No se encontro un rol valido",validate:false};
+      }
+      cargoEdit.rolId = rolFind;
+    }
+    cargoEdit.name = cargo;
+    await this.cargoRepository.save(cargoEdit);
+    return {msj:"Cargo editado correctamente",validate:true};
+  }
+  async deleteCargo(id:number){
+    const cargoDelete = await this.cargoRepository.delete(id);
+    if(cargoDelete.affected ===0){
+      return {msj:"No se encontro un cargo valido",validate:false};
+    }
+    return {msj:"Cargo eliminado correctamente",validate:true};
+  }
+
+  async getAllTiposTrabajo():Promise<TipoTrabajo[]>{
+    const tiposTrabajo = await this.tipoTrabajoRepository.find();
+    if(!tiposTrabajo){
+      throw new NotFoundException('No se encontraron tipos de trabajo');
+    }
+    return tiposTrabajo;
   }
 
 }

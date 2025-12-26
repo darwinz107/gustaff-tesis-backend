@@ -10,7 +10,7 @@ export class Percha{
    @Column()
    percha:string;
    @ManyToOne(()=>Seccion,(seccion)=>seccion.percha)
-   @JoinColumn()
+   
    seccion:Seccion;
    @OneToMany(()=>Inventario,(inventario)=>inventario.percha)
        inventario:Inventario[]

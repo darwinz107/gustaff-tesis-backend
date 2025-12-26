@@ -12,10 +12,10 @@ export class Seccion{
    @Column()
    seccion:string;
    @ManyToOne(()=>Bodega,(bodega)=>bodega.seccion)
-   @JoinColumn()
+   
    bodega:Bodega;
 
-   @OneToMany(()=>Percha,(percha)=>percha.percha)
+   @OneToMany(()=>Percha,(percha)=>percha.seccion)
    percha:Percha[]
    @OneToMany(()=>Inventario,(inventario)=>inventario.seccion)
        inventario:Inventario[]
