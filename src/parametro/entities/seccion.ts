@@ -15,7 +15,7 @@ export class Seccion{
    
    bodega:Bodega;
 
-   @OneToMany(()=>Percha,(percha)=>percha.percha)
+   @OneToMany(()=>Percha,(percha)=>percha.seccion)
    percha:Percha[]
    @OneToMany(()=>Inventario,(inventario)=>inventario.seccion)
        inventario:Inventario[]
