@@ -28,6 +28,7 @@ import { EstadoUso } from './entities/estadoUso';
 import { FiltrarOrdenDeTrabajoAdvancedDto } from './dto/filtrar-orden-de-trabajo-advanced.dto';
 import { Jornada } from './entities/jornadas';
 import { Fases } from './entities/fases';
+import { addDays, isBefore, isSunday, parseISO } from 'date-fns';
 
 
 @Injectable()
@@ -246,16 +247,22 @@ try {
      const solicitudCreated = await queryRunner.manager.save(SolicitudOrden,nuevaSolicitud);
 
      const horariosxDia = ['09:30:00','12:00:00','15:00:00','16:30:00'];
+     
+  let fechaI = parseISO(solicitudCreated.fechaInicio);
+  let fechaf = parseISO(solicitudCreated.fechaFinal);
 
-     for(let i=solicitudCreated.fechaInicio; i <= solicitudCreated.fechaFinal; i.setDate(i.getDate() +1)){
-      const newJornada = await queryRunner.manager.save(Jornada,{ fecha:i, OrdenDeTrabajoId:solicitudCreated });
+     while(isBefore(fechaI, addDays(fechaf,1))) {
+     if(isSunday(fechaI) === false){
+       const newJornada = await queryRunner.manager.save(Jornada,{ fecha:fechaI, OrdenDeTrabajoId:solicitudCreated });
+      
       for(const hora of horariosxDia){
         if(solicitudCreated.HoraInicio > hora) continue;
-        if(solicitudCreated.HoraFinal < hora) break;
-      
+        if(solicitudCreated.HoraFinal < hora) break;   
          await queryRunner.manager.save(Fases,{ hora:hora, jornada:newJornada });
          
       }
+     }
+      fechaI = addDays(fechaI,1);
     }
     
      await queryRunner.commitTransaction();
@@ -472,7 +479,7 @@ return new NotFoundException("No existen ordenes de trabajo");
     console.log(ordenTrabajo);
     return ordenTrabajo;
     }else{
-      const ordenTrabajo = await this.solicitudOrdenRepository.find({ where: [{ userSolicitante: { name: Like(`${filtrarOrdenDeTrabajoDto.userSolicitante}%`) }, fechaInicio: filtrarOrdenDeTrabajoDto.fechaInicio }],
+      const ordenTrabajo = await this.solicitudOrdenRepository.find({ where: [{ userSolicitante: { name: Like(`${filtrarOrdenDeTrabajoDto.userSolicitante}%`) }, fechaInicio: filtrarOrdenDeTrabajoDto.fechaInicio.toDateString().split('T')[0]},],
     select: ['id','NumOrden','Area','Codigo','Maquina','userSolicitante'],relations:['userSolicitante'] });
     console.log(ordenTrabajo);
     return ordenTrabajo;

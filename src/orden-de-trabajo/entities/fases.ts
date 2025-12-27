@@ -5,7 +5,7 @@ import { Jornada } from "./jornadas";
 export class Fases{
     @PrimaryGeneratedColumn()
     id:number;
-    @Column()
+    @Column({type:'time'})
     hora:string;
     @Column({default:false})
     completo:boolean;

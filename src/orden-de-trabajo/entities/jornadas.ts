@@ -6,7 +6,7 @@ import { Fases } from "./fases";
 export class Jornada{
     @PrimaryGeneratedColumn()
     id:number;
-    @Column()
+    @Column({type:'date'})
     fecha:Date;
     @ManyToOne(()=>SolicitudOrden,(solicitudOrden)=>solicitudOrden.jornadasOrdenDeTrabajoId)
     OrdenDeTrabajoId:SolicitudOrden;
