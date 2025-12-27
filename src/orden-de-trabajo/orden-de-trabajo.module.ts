@@ -9,11 +9,13 @@ import { UsersModule } from 'src/users/users.module';
 import { EstadoTrabajo } from './entities/estadoTrabajo';
 import { SolicitudDeCompra } from 'src/solicitud-de-compra/entities/solicitud-de-compra.entity';
 import { EstadoUso } from './entities/estadoUso';
+import { Jornada } from './entities/jornadas';
+import { Fases } from './entities/fases';
 
 
 
 @Module({
-  imports:[TypeOrmModule.forFeature([SolicitudOrden,EstadoTrabajo,SolicitudDeCompra,EstadoUso]),UsersModule],
+  imports:[TypeOrmModule.forFeature([SolicitudOrden,EstadoTrabajo,SolicitudDeCompra,EstadoUso,Jornada,Fases]),UsersModule],
   controllers: [OrdenDeTrabajoController],
   providers: [OrdenDeTrabajoService],
   exports:[TypeOrmModule]

@@ -1,8 +1,9 @@
 import { SolicitudDeCompra } from "src/solicitud-de-compra/entities/solicitud-de-compra.entity";
 import { User } from "src/users/entities/user.entity";
-import { Column, Entity, ManyToOne, OneToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn } from "typeorm";
 import { EstadoTrabajo } from "./estadoTrabajo";
 import { EstadoUso } from "./estadoUso";
+import { Jornada } from "./jornadas";
 
 
 @Entity('orden_trabajo')
@@ -47,4 +48,6 @@ export class SolicitudOrden {
     estadoTrabajo:EstadoTrabajo;
     @ManyToOne(()=>EstadoUso,(estadoUso)=>estadoUso.ordenTrabajo)
     estadoUso:EstadoUso; 
+    @OneToMany(()=>Jornada,(jornada)=>jornada.OrdenDeTrabajoId)
+    jornadasOrdenDeTrabajoId:Jornada[];
 }

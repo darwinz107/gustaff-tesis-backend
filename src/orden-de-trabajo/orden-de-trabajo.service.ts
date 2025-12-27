@@ -26,6 +26,8 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { SolicitudDeCompra } from 'src/solicitud-de-compra/entities/solicitud-de-compra.entity';
 import { EstadoUso } from './entities/estadoUso';
 import { FiltrarOrdenDeTrabajoAdvancedDto } from './dto/filtrar-orden-de-trabajo-advanced.dto';
+import { Jornada } from './entities/jornadas';
+import { Fases } from './entities/fases';
 
 
 @Injectable()
@@ -241,8 +243,21 @@ try {
         estadoUso:estadoUso
       };
 
-       await queryRunner.manager.save(SolicitudOrden,nuevaSolicitud);
+     const solicitudCreated = await queryRunner.manager.save(SolicitudOrden,nuevaSolicitud);
 
+     const horariosxDia = ['09:30:00','12:00:00','15:00:00','16:30:00'];
+
+     for(let i=solicitudCreated.fechaInicio; i <= solicitudCreated.fechaFinal; i.setDate(i.getDate() +1)){
+      const newJornada = await queryRunner.manager.save(Jornada,{ fecha:i, OrdenDeTrabajoId:solicitudCreated });
+      for(const hora of horariosxDia){
+        if(solicitudCreated.HoraInicio > hora) continue;
+        if(solicitudCreated.HoraFinal < hora) break;
+      
+         await queryRunner.manager.save(Fases,{ hora:hora, jornada:newJornada });
+         
+      }
+    }
+    
      await queryRunner.commitTransaction();
       return { msj: "Solicitud de orden creada!",validate:true };
     /*else{
