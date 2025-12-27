@@ -91,4 +91,9 @@ export class OrdenDeTrabajoController {
 async filtrarAvanzado(@Body() filtros: FiltrarOrdenDeTrabajoAdvancedDto) {
   return await this.ordenDeTrabajoService.filtrarOrdenesAvanzado(filtros);
 }
+
+@Get('fases-by-orden-trabajo/:id')
+async getFasesByOrdenTrabajo(@Param('id') id:string){
+  return await this.ordenDeTrabajoService.getfasesByOrdenTrabajo(+id);
+}
 }

@@ -42,6 +42,8 @@ export class OrdenDeTrabajoService implements OnModuleInit{
     @InjectRepository(EstadoTrabajo) private readonly estadoTrabajoRepository: Repository<EstadoTrabajo>, 
     @InjectRepository(SolicitudDeCompra) private readonly solicitudDeCompraRepository: Repository<SolicitudDeCompra>, 
     @InjectRepository(EstadoUso) private readonly estadoUsoRepository: Repository<EstadoUso>, 
+    @InjectRepository(Jornada) private readonly jornadaRepository: Repository<Jornada>,
+    @InjectRepository(Fases) private readonly fasesRepository: Repository<Fases>,
     private dataSource:DataSource,
   ) { }
 
@@ -251,13 +253,20 @@ try {
   let fechaI = parseISO(solicitudCreated.fechaInicio);
   let fechaf = parseISO(solicitudCreated.fechaFinal);
 
+   const toDateTime = (hora:string) => parseISO(`1970-01-01T${hora}`)
+
+   const horaI = toDateTime(solicitudCreated.HoraInicio);
+    const horaF = toDateTime(solicitudCreated.HoraFinal);
+  // const horasDate = horariosxDia.map(hora => toDateTime(hora));
+
      while(isBefore(fechaI, addDays(fechaf,1))) {
      if(isSunday(fechaI) === false){
        const newJornada = await queryRunner.manager.save(Jornada,{ fecha:fechaI, OrdenDeTrabajoId:solicitudCreated });
       
       for(const hora of horariosxDia){
-        if(solicitudCreated.HoraInicio > hora) continue;
-        if(solicitudCreated.HoraFinal < hora) break;   
+        const horaActual = toDateTime(hora);
+        if(horaI > horaActual) continue;
+        if(horaF < horaActual) break;   
          await queryRunner.manager.save(Fases,{ hora:hora, jornada:newJornada });
          
       }
@@ -628,4 +637,23 @@ return new NotFoundException("No existen ordenes de trabajo");
   return ordenes;
 }
 
+async getfasesByOrdenTrabajo(id:number){
+
+  const currentDate  = new Date();
+console.log("Fecha actual:", currentDate);
+  const fases = await this.fasesRepository.createQueryBuilder('fases')
+  .innerJoin('fases.jornada','jornada')
+  .innerJoin('jornada.OrdenDeTrabajoId','ordenDeTrabajo')
+  .select([
+    'fases.id',
+    'fases.hora',
+    'fases.completo',
+    'fases.descripcion',
+    'jornada.fecha'
+  ])
+  .where('ordenDeTrabajo.id = :id',{id})
+  .andWhere('jornada.fecha = :currentDate',{currentDate:currentDate.toISOString().split('T')[0]})
+  .getMany();
+  return fases;
+}
   }
