@@ -260,7 +260,7 @@ try {
   // const horasDate = horariosxDia.map(hora => toDateTime(hora));
 
      while(isBefore(fechaI, addDays(fechaf,1))) {
-     if(isSunday(fechaI) === false){
+    // if(isSunday(fechaI) === false){
        const newJornada = await queryRunner.manager.save(Jornada,{ fecha:fechaI, OrdenDeTrabajoId:solicitudCreated });
       
       for(const hora of horariosxDia){
@@ -270,7 +270,7 @@ try {
          await queryRunner.manager.save(Fases,{ hora:hora, jornada:newJornada });
          
       }
-     }
+    // }
       fechaI = addDays(fechaI,1);
     }
     
@@ -688,5 +688,26 @@ console.log(fase.jornada.fecha);
   return fases;
 }
 
+async getPromedioFasesCompletadas(id:number){
 
+  const totalFases = await this.fasesRepository.createQueryBuilder('fases')
+  .innerJoin('fases.jornada','jornada')
+  .innerJoin('jornada.OrdenDeTrabajoId','ordenDeTrabajo')
+  .where('ordenDeTrabajo.id = :id',{id})
+  .getCount();
+
+  const fasesCompletadas = await this.fasesRepository.createQueryBuilder('fases')
+  .innerJoin('fases.jornada','jornada')
+  .innerJoin('jornada.OrdenDeTrabajoId','ordenDeTrabajo')
+  .where('ordenDeTrabajo.id = :id',{id})
+  .andWhere('fases.completo = :completo',{completo:true})
+  .getCount();
+
+  if(totalFases === 0){
+    return 0;
+  }
+  const promedio = (fasesCompletadas / totalFases) * 100;
+
+  return Math.round(promedio);
+}
 }

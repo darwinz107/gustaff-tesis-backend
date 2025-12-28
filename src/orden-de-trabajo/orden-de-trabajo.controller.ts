@@ -96,4 +96,9 @@ async filtrarAvanzado(@Body() filtros: FiltrarOrdenDeTrabajoAdvancedDto) {
 async getFasesByOrdenTrabajo(@Param('id') id:string){
   return await this.ordenDeTrabajoService.getfasesByOrdenTrabajo(+id);
 }
+
+@Get('promedio-tiempo-fases/:id')
+async getPromedioFasesCompletadas(@Param('id') id:string){
+  return await this.ordenDeTrabajoService.getPromedioFasesCompletadas(+id);
+}
 }
