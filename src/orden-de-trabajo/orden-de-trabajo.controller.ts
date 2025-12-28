@@ -101,4 +101,9 @@ async getFasesByOrdenTrabajo(@Param('id') id:string){
 async getPromedioFasesCompletadas(@Param('id') id:string){
   return await this.ordenDeTrabajoService.getPromedioFasesCompletadas(+id);
 }
+
+@Patch('update-fase-completa/:id')
+async updateFaseCompleta(@Param('id') id:string, @Body('descripcion') descripcion:string){
+  return await this.ordenDeTrabajoService.faseCompleted(+id, descripcion);
+}
 }

@@ -109,7 +109,7 @@ export class OrdenDeTrabajoService implements OnModuleInit{
 
 const existOrdenTrabajo = await this.solicitudOrdenRepository.findOne({where:{id:orden.id}});
     if (existOrdenTrabajo) {
-  if (fechaFinal.getTime() > fechaActual.getTime()) {
+  if (fechaFinal.getTime() < fechaActual.getTime()) {
    /*console.log("fechaActual",fechaActual);
    console.log("fechaFinal",fechaFinal);*/
     
@@ -656,7 +656,8 @@ console.log("Fecha y hora actual:", currentDateTime);
     'fases.hora',
     'fases.completo',
     'fases.descripcion',
-    'jornada.fecha'
+    'jornada.fecha',
+    'fases.agotado'
   ])
   .where('ordenDeTrabajo.id = :id',{id})
   .andWhere('jornada.fecha = :currentDate',{currentDate:currentDate})
@@ -706,8 +707,38 @@ async getPromedioFasesCompletadas(id:number){
   if(totalFases === 0){
     return 0;
   }
+
+  if(totalFases === 100){
+   const ordenTrabajo = await this.solicitudOrdenRepository.findOne({where:{id}});
+   if(!ordenTrabajo){
+     throw new NotFoundException();
+   }
+   if(ordenTrabajo.estadoTrabajo.estado === EstadoTrabajoEnum.PROC){
+      const estadoFin = await this.estadoTrabajoRepository.findOne({where:{estado:EstadoTrabajoEnum.FIN}});
+      if(!estadoFin){
+       throw new NotFoundException();
+      }
+      ordenTrabajo.estadoTrabajo = estadoFin;
+      await this.solicitudOrdenRepository.save(ordenTrabajo);
+   }
+   return 100;
+  }
   const promedio = (fasesCompletadas / totalFases) * 100;
 
   return Math.round(promedio);
+}
+
+async faseCompleted(id:number, descripcion:string){
+console.log(id,descripcion);
+  const fase = await this.fasesRepository.findOne({where:{id},relations:['jornada','jornada.OrdenDeTrabajoId']});
+  if(!fase){
+    throw new NotFoundException("No se encontro la fase");
+  }
+  fase.completo = true;
+  fase.descripcion = descripcion;
+ //fase.agotado = true;
+  await this.fasesRepository.save(fase);
+  return {msj:"Fase marcada como completada"};
+   
 }
 }
