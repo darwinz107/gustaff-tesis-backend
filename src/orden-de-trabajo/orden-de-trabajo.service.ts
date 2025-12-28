@@ -687,4 +687,6 @@ console.log(fase.jornada.fecha);
 }
   return fases;
 }
+
+
 }
