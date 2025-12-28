@@ -639,8 +639,15 @@ return new NotFoundException("No existen ordenes de trabajo");
 
 async getfasesByOrdenTrabajo(id:number){
 
-  const currentDate  = new Date();
+  const currentDate  = new Date().toLocaleDateString('en-CA',{timeZone:'America/Bogota'});
+  
+const currentDateTime = new Date(
+  new Date().toLocaleString('en-US', { timeZone: 'America/Bogota' })
+);
+  
 console.log("Fecha actual:", currentDate);
+console.log("Fecha y hora actual:", currentDateTime);
+//return;
   const fases = await this.fasesRepository.createQueryBuilder('fases')
   .innerJoin('fases.jornada','jornada')
   .innerJoin('jornada.OrdenDeTrabajoId','ordenDeTrabajo')
@@ -652,8 +659,32 @@ console.log("Fecha actual:", currentDate);
     'jornada.fecha'
   ])
   .where('ordenDeTrabajo.id = :id',{id})
-  .andWhere('jornada.fecha = :currentDate',{currentDate:currentDate.toISOString().split('T')[0]})
+  .andWhere('jornada.fecha = :currentDate',{currentDate:currentDate})
   .getMany();
+
+  if(fases.length === 0 || !fases){
+    return [];
+  }
+//console.log("Fases obtenidas:", fases);
+ const horariosxDia = ['12:00:00','15:00:00','16:30:00','18:00:00'];
+     
+for (let i = 0; i < fases.length; i++) {
+  const fase = fases[i];
+console.log(fase.jornada.fecha);
+  if (!fase.agotado && !fase.completo) {
+
+    const fechaBase = fase.jornada.fecha;
+
+    const horaLimite = horariosxDia[i];
+
+    const fechaHoraLimite = new Date(`${fechaBase}T${horaLimite}`);
+
+    if (currentDateTime.getTime() > fechaHoraLimite.getTime()) {
+      fase.agotado = true;
+      await this.fasesRepository.save(fase);
+    }
+  }
+}
   return fases;
 }
-  }
+}

@@ -11,6 +11,8 @@ export class Fases{
     completo:boolean;
     @Column({nullable:true})
     descripcion:string;
+    @Column({default:false})
+    agotado:boolean;
     @ManyToOne(()=>Jornada,(jornada)=>jornada.fases)
     jornada:Jornada;
 }
