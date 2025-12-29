@@ -668,25 +668,25 @@ console.log("Fecha y hora actual:", currentDateTime);
   if(fases.length === 0 || !fases){
     return [];
   }
-//console.log("Fases obtenidas:", fases);
+
  const horariosxDia = ['12:00:00','15:00:00','16:30:00','18:00:00'];
      
 for (let i = 0; i < fases.length; i++) {
   const fase = fases[i];
 console.log(fase.jornada.fecha);
-  if (!fase.agotado && !fase.completo) {
-
+  if (fase.agotado === true && fase.completo ===true) return fases;
+  if(fase.agotado === true) return fases;
     const fechaBase = fase.jornada.fecha;
 
     const horaLimite = horariosxDia[i];
 
     const fechaHoraLimite = new Date(`${fechaBase}T${horaLimite}`);
-
+    
     if (currentDateTime.getTime() > fechaHoraLimite.getTime()) {
+     
       fase.agotado = true;
       await this.fasesRepository.save(fase);
     }
-  }
 }
   return fases;
 }
