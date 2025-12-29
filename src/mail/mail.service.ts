@@ -158,6 +158,55 @@ private readonly logger = new Logger(MailService.name);
     }
   }
 
+     async sendEstadoOrdenTrabjoNotification(ordenTrabjoNum: string|null, nuevoEstado: string|null, detalles?: any) {
+    try {
+      
+      const users = await this.userRepository
+        .createQueryBuilder('user')
+        .innerJoinAndSelect('user.cargoId', 'cargo')
+        .innerJoinAndSelect('cargo.rolId', 'rol')
+        .where('rol.role IN (:...roles)', { roles: ['admin', 'JEFE DE LOGISTICA INTERNA'] })
+        .select(['user.id','user.email'])
+        .getMany();
+
+      const emails = users.map(u => u.email).filter(Boolean);
+      if (emails.length === 0) {
+        this.logger.warn('No se encontraron usuarios para notificar.');
+        return;
+      }
+
+      let subject;
+      let html;
+      if(ordenTrabjoNum){
+         subject = `Cambio de estado: Orden de trabajo ${ordenTrabjoNum} → ${nuevoEstado}`;
+       html = `
+        <p>Hola,</p>
+        <p>La orden de trabajo <strong>${ordenTrabjoNum}</strong> cambió su estado a <strong>${nuevoEstado}</strong>.</p>
+        ${detalles ? `<p>Detalles: ${detalles}</p>` : ''}
+        <p>Saludos,<br/>Sistema de Inventario</p>
+      `;
+      }else{
+          subject = `Abastecimiento`;
+       html = `
+        <p>Hola,</p>
+        
+        ${detalles ? `<p>Detalles: ${detalles}</p>` : ''}
+        <p>Saludos,<br/>Area de mantenimiento</p>
+      `;
+      }
+      
+
+      await this.mailer.sendMail({
+        to: emails,
+        subject,
+        html,
+      });
+
+      this.logger.log(`Notificación enviada a: ${emails.join(', ')}`);
+    } catch (err) {
+      this.logger.error('Error enviando notificación por correo', err);
+    }
+  }
 
   findAll() {
     return `This action returns all mail`;

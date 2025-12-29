@@ -1,18 +1,20 @@
-import { Type } from "class-transformer";
-import { IsBoolean, IsDate, IsEmpty, IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator";
+import { Transform, Type } from "class-transformer";
+import { IsBoolean, IsDate, IsDateString, IsEmpty, IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator";
 
 
 export class CreateSolicitudOrdenDto {
     @IsEmpty()
     NumOrden:string;
-    @Type(()=> Date)
-    @IsDate()
+
+    
+    
+    @IsDateString()
     @IsNotEmpty()
-    fechaInicio :Date;
-    @Type(()=> Date)
-    @IsDate()
+    fechaInicio :string;
+    
+    @IsDateString()
     @IsNotEmpty()
-    fechaFinal:Date;
+    fechaFinal:string;
     
     @IsNotEmpty()
     HoraInicio:string;

@@ -91,4 +91,24 @@ export class OrdenDeTrabajoController {
 async filtrarAvanzado(@Body() filtros: FiltrarOrdenDeTrabajoAdvancedDto) {
   return await this.ordenDeTrabajoService.filtrarOrdenesAvanzado(filtros);
 }
+
+@Get('fases-by-orden-trabajo/:id')
+async getFasesByOrdenTrabajo(@Param('id') id:string){
+  return await this.ordenDeTrabajoService.getfasesByOrdenTrabajo(+id);
+}
+
+@Get('promedio-tiempo-fases/:id')
+async getPromedioFasesCompletadas(@Param('id') id:string){
+  return await this.ordenDeTrabajoService.getPromedioFasesCompletadas(+id);
+}
+
+@Patch('update-fase-completa/:id')
+async updateFaseCompleta(@Param('id') id:string, @Body('descripcion') descripcion:string){
+  return await this.ordenDeTrabajoService.faseCompleted(+id, descripcion);
+}
+
+@Get('all/jornadas')
+async getAllJornadas(){
+  return await this.ordenDeTrabajoService.getAllJornadas();
+}
 }

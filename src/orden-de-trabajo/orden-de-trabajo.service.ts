@@ -26,6 +26,10 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { SolicitudDeCompra } from 'src/solicitud-de-compra/entities/solicitud-de-compra.entity';
 import { EstadoUso } from './entities/estadoUso';
 import { FiltrarOrdenDeTrabajoAdvancedDto } from './dto/filtrar-orden-de-trabajo-advanced.dto';
+import { Jornada } from './entities/jornadas';
+import { Fases } from './entities/fases';
+import { addDays, isBefore, isSunday, parseISO } from 'date-fns';
+import { MailService } from 'src/mail/mail.service';
 
 
 @Injectable()
@@ -39,7 +43,10 @@ export class OrdenDeTrabajoService implements OnModuleInit{
     @InjectRepository(EstadoTrabajo) private readonly estadoTrabajoRepository: Repository<EstadoTrabajo>, 
     @InjectRepository(SolicitudDeCompra) private readonly solicitudDeCompraRepository: Repository<SolicitudDeCompra>, 
     @InjectRepository(EstadoUso) private readonly estadoUsoRepository: Repository<EstadoUso>, 
+    @InjectRepository(Jornada) private readonly jornadaRepository: Repository<Jornada>,
+    @InjectRepository(Fases) private readonly fasesRepository: Repository<Fases>,
     private dataSource:DataSource,
+    private readonly mailService:MailService,
   ) { }
 
   async onModuleInit() {
@@ -104,7 +111,7 @@ export class OrdenDeTrabajoService implements OnModuleInit{
 
 const existOrdenTrabajo = await this.solicitudOrdenRepository.findOne({where:{id:orden.id}});
     if (existOrdenTrabajo) {
-  if (fechaFinal.getTime() > fechaActual.getTime()) {
+  if (fechaFinal.getTime() < fechaActual.getTime()) {
    /*console.log("fechaActual",fechaActual);
    console.log("fechaFinal",fechaFinal);*/
     
@@ -241,8 +248,34 @@ try {
         estadoUso:estadoUso
       };
 
-       await queryRunner.manager.save(SolicitudOrden,nuevaSolicitud);
+     const solicitudCreated = await queryRunner.manager.save(SolicitudOrden,nuevaSolicitud);
 
+     const horariosxDia = ['09:30:00','12:00:00','15:00:00','16:30:00'];
+     
+  let fechaI = parseISO(solicitudCreated.fechaInicio);
+  let fechaf = parseISO(solicitudCreated.fechaFinal);
+
+   const toDateTime = (hora:string) => parseISO(`1970-01-01T${hora}`)
+
+   const horaI = toDateTime(solicitudCreated.HoraInicio);
+    const horaF = toDateTime(solicitudCreated.HoraFinal);
+  // const horasDate = horariosxDia.map(hora => toDateTime(hora));
+
+     while(isBefore(fechaI, addDays(fechaf,1))) {
+    if(isSunday(fechaI) === false){
+       const newJornada = await queryRunner.manager.save(Jornada,{ fecha:fechaI, OrdenDeTrabajoId:solicitudCreated });
+      
+      for(const hora of horariosxDia){
+        const horaActual = toDateTime(hora);
+        if(horaI > horaActual) continue;
+        if(horaF < horaActual) break;   
+         await queryRunner.manager.save(Fases,{ hora:hora, jornada:newJornada });
+         
+      }
+     }
+      fechaI = addDays(fechaI,1);
+    }
+    
      await queryRunner.commitTransaction();
       return { msj: "Solicitud de orden creada!",validate:true };
     /*else{
@@ -457,7 +490,7 @@ return new NotFoundException("No existen ordenes de trabajo");
     console.log(ordenTrabajo);
     return ordenTrabajo;
     }else{
-      const ordenTrabajo = await this.solicitudOrdenRepository.find({ where: [{ userSolicitante: { name: Like(`${filtrarOrdenDeTrabajoDto.userSolicitante}%`) }, fechaInicio: filtrarOrdenDeTrabajoDto.fechaInicio }],
+      const ordenTrabajo = await this.solicitudOrdenRepository.find({ where: [{ userSolicitante: { name: Like(`${filtrarOrdenDeTrabajoDto.userSolicitante}%`) }, fechaInicio: filtrarOrdenDeTrabajoDto.fechaInicio.toDateString().split('T')[0]},],
     select: ['id','NumOrden','Area','Codigo','Maquina','userSolicitante'],relations:['userSolicitante'] });
     console.log(ordenTrabajo);
     return ordenTrabajo;
@@ -606,4 +639,148 @@ return new NotFoundException("No existen ordenes de trabajo");
   return ordenes;
 }
 
+async getfasesByOrdenTrabajo(id:number){
+
+  const currentDate  = new Date().toLocaleDateString('en-CA',{timeZone:'America/Bogota'});
+  
+const currentDateTime = new Date(
+  new Date().toLocaleString('en-US', { timeZone: 'America/Bogota' })
+);
+  
+console.log("Fecha actual:", currentDate);
+console.log("Fecha y hora actual:", currentDateTime);
+//return;
+  const fases = await this.fasesRepository.createQueryBuilder('fases')
+  .innerJoin('fases.jornada','jornada')
+  .innerJoin('jornada.OrdenDeTrabajoId','ordenDeTrabajo')
+  .select([
+    'fases.id',
+    'fases.hora',
+    'fases.completo',
+    'fases.descripcion',
+    'jornada.fecha',
+    'fases.agotado'
+  ])
+  .where('ordenDeTrabajo.id = :id',{id})
+  .andWhere('jornada.fecha = :currentDate',{currentDate:currentDate})
+  .getMany();
+
+  if(fases.length === 0 || !fases){
+    return [];
   }
+//console.log("Fases obtenidas:", fases);
+ const horariosxDia = ['12:00:00','15:00:00','16:30:00','18:00:00'];
+     
+for (let i = 0; i < fases.length; i++) {
+  const fase = fases[i];
+console.log(fase.jornada.fecha);
+  if (!fase.agotado && !fase.completo) {
+
+    const fechaBase = fase.jornada.fecha;
+
+    const horaLimite = horariosxDia[i];
+
+    const fechaHoraLimite = new Date(`${fechaBase}T${horaLimite}`);
+
+    if (currentDateTime.getTime() > fechaHoraLimite.getTime()) {
+      fase.agotado = true;
+      await this.fasesRepository.save(fase);
+    }
+  }
+}
+  return fases;
+}
+
+async getPromedioFasesCompletadas(id:number){
+
+  const totalFases = await this.fasesRepository.createQueryBuilder('fases')
+  .innerJoin('fases.jornada','jornada')
+  .innerJoin('jornada.OrdenDeTrabajoId','ordenDeTrabajo')
+  .where('ordenDeTrabajo.id = :id',{id})
+  .getCount();
+
+  const fasesCompletadas = await this.fasesRepository.createQueryBuilder('fases')
+  .innerJoin('fases.jornada','jornada')
+  .innerJoin('jornada.OrdenDeTrabajoId','ordenDeTrabajo')
+  .where('ordenDeTrabajo.id = :id',{id})
+  .andWhere('fases.completo = :completo',{completo:true})
+  .getCount();
+
+  if(totalFases === 0){
+    return 0;
+  }
+
+  if(totalFases === 100){
+   const ordenTrabajo = await this.solicitudOrdenRepository.findOne({where:{id},relations:['estadoTrabajo']});
+   if(!ordenTrabajo){
+     throw new NotFoundException();
+   }
+   if(ordenTrabajo.estadoTrabajo.estado === EstadoTrabajoEnum.PROC){
+      const estadoFin = await this.estadoTrabajoRepository.findOne({where:{estado:EstadoTrabajoEnum.FIN}});
+      if(!estadoFin){
+       throw new NotFoundException();
+      }
+      ordenTrabajo.estadoTrabajo = estadoFin;
+      await this.solicitudOrdenRepository.save(ordenTrabajo);
+await this.mailService.sendEstadoOrdenTrabjoNotification(ordenTrabajo.NumOrden,ordenTrabajo.estadoTrabajo.estado,"Se notifica que el trabajo para la orden mencionada a sido completada con exito.");
+   }
+
+   return 100;
+  }
+  const promedio = (fasesCompletadas / totalFases) * 100;
+
+  return Math.round(promedio);
+}
+
+async faseCompleted(id:number, descripcion:string){
+console.log(id,descripcion);
+  const fase = await this.fasesRepository.findOne({where:{id},relations:['jornada','jornada.OrdenDeTrabajoId']});
+  if(!fase){
+    throw new NotFoundException("No se encontro la fase");
+  }
+  fase.completo = true;
+  fase.descripcion = descripcion;
+ //fase.agotado = true;
+  await this.fasesRepository.save(fase);
+  return {msj:"Fase marcada como completada"};
+   
+}
+
+async getAllJornadas(){
+ 
+ /* const jornadas = await this.jornadaRepository.createQueryBuilder('jornada')
+  .leftJoin('jornada.OrdenDeTrabajoId','ordenTrabajo')
+  .leftJoin('jornada.fases','fases')
+  .select([
+    'ordenTrabajo.id',
+    'ordenTrabajo.NumOrden',
+    'jornada.id',
+    'jornada.fecha',
+    'fases.id',
+    'fases.hora',
+    'fases.completo',
+    'fases.descripcion',
+    'fases.agotado',
+  ])
+  .getMany();*/
+
+  const jornadas = await this.solicitudOrdenRepository.createQueryBuilder('ordenTrabajo')
+  .leftJoinAndSelect('ordenTrabajo.jornadas','jornada')
+  .leftJoin('jornada.fases','fases')
+  .select([
+     'ordenTrabajo.id',
+    'ordenTrabajo.NumOrden',
+    'jornada.id',
+    'jornada.fecha',
+    'fases.id',
+    'fases.hora',
+    'fases.completo',
+    'fases.descripcion',
+    'fases.agotado',
+  ])
+.getMany();
+  return jornadas;
+
+}
+
+}
