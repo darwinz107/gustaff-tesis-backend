@@ -642,14 +642,7 @@ return new NotFoundException("No existen ordenes de trabajo");
 async getfasesByOrdenTrabajo(id:number){
 
   const currentDate  = new Date().toLocaleDateString('en-CA',{timeZone:'America/Bogota'});
-  
-const currentDateTime = new Date(
-  new Date().toLocaleString('en-US', { timeZone: 'America/Bogota' })
-);
-  
-console.log("Fecha actual:", currentDate);
-console.log("Fecha y hora actual:", currentDateTime);
-//return;
+
   const fases = await this.fasesRepository.createQueryBuilder('fases')
   .innerJoin('fases.jornada','jornada')
   .innerJoin('jornada.OrdenDeTrabajoId','ordenDeTrabajo')
@@ -669,26 +662,74 @@ console.log("Fecha y hora actual:", currentDateTime);
     return [];
   }
 
+ 
+  return fases;
+}
+
+//@Cron(CronExpression.EVERY_2_HOURS)
+async setFasesVencidas(){
+
+   const currentDate  = new Date().toLocaleDateString('en-CA',{timeZone:'America/Bogota'});
+  
+const currentDateTime = new Date(
+  new Date().toLocaleString('en-US', { timeZone: 'America/Bogota' })
+);
+
+const jornadas = await this.solicitudOrdenRepository.createQueryBuilder('ordenTrabajo')
+  .leftJoinAndSelect('ordenTrabajo.jornadas','jornada')
+  .leftJoin('jornada.fases','fases')
+  .select([
+     'ordenTrabajo.id',
+    'ordenTrabajo.NumOrden',
+    'jornada.id',
+    'jornada.fecha',
+    'fases.id',
+    'fases.hora',
+    'fases.completo',
+    'fases.descripcion',
+    'fases.agotado',
+  ])
+.getMany();
+
+ /*  const fases = await this.fasesRepository.createQueryBuilder('fases')
+  .innerJoin('fases.jornada','jornada')
+ 
+  .select([
+    'fases.id',
+    'fases.hora',
+    'fases.completo',
+    'fases.descripcion',
+    'jornada.fecha',
+    'fases.agotado'
+  ])
+  
+  .where('jornada.fecha = :currentDate',{currentDate:currentDate})
+  .getMany();
+console.log(fases);  
+console.log(fases.length);*/
+ /* if(fases.length === 0 || !fases){
+    return [];
+  }
+
  const horariosxDia = ['12:00:00','15:00:00','16:30:00','18:00:00'];
      
 for (let i = 0; i < fases.length; i++) {
   const fase = fases[i];
-console.log(fase.jornada.fecha);
-  if (fase.agotado === true && fase.completo ===true) return fases;
-  if(fase.agotado === true) return fases;
-    const fechaBase = fase.jornada.fecha;
+  console.log(fase);*/
+//console.log(fase.jornada.fecha);
+ // if (fase.agotado === true && fase.completo ===true) continue;
+  //if(fase.agotado === true) continue;
+  /*  const fechaBase = fase.jornada.fecha;
 
     const horaLimite = horariosxDia[i];
 
     const fechaHoraLimite = new Date(`${fechaBase}T${horaLimite}`);
     
     if (currentDateTime.getTime() > fechaHoraLimite.getTime()) {
-     
-      fase.agotado = true;
-      await this.fasesRepository.save(fase);
+      //console.log(fase.id);
+      await this.fasesRepository.update(fase.id,{agotado:true});
     }
-}
-  return fases;
+}*/
 }
 
 async getPromedioFasesCompletadas(id:number){
