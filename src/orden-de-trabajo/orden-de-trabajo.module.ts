@@ -11,11 +11,12 @@ import { SolicitudDeCompra } from 'src/solicitud-de-compra/entities/solicitud-de
 import { EstadoUso } from './entities/estadoUso';
 import { Jornada } from './entities/jornadas';
 import { Fases } from './entities/fases';
+import { MailModule } from 'src/mail/mail.module';
 
 
 
 @Module({
-  imports:[TypeOrmModule.forFeature([SolicitudOrden,EstadoTrabajo,SolicitudDeCompra,EstadoUso,Jornada,Fases]),UsersModule],
+  imports:[TypeOrmModule.forFeature([SolicitudOrden,EstadoTrabajo,SolicitudDeCompra,EstadoUso,Jornada,Fases]),UsersModule,MailModule],
   controllers: [OrdenDeTrabajoController],
   providers: [OrdenDeTrabajoService],
   exports:[TypeOrmModule]

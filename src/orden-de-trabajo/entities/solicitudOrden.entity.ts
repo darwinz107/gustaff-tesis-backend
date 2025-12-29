@@ -49,5 +49,5 @@ export class SolicitudOrden {
     @ManyToOne(()=>EstadoUso,(estadoUso)=>estadoUso.ordenTrabajo)
     estadoUso:EstadoUso; 
     @OneToMany(()=>Jornada,(jornada)=>jornada.OrdenDeTrabajoId)
-    jornadasOrdenDeTrabajoId:Jornada[];
+    jornadas:Jornada[];
 }

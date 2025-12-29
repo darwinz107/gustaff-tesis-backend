@@ -106,4 +106,9 @@ async getPromedioFasesCompletadas(@Param('id') id:string){
 async updateFaseCompleta(@Param('id') id:string, @Body('descripcion') descripcion:string){
   return await this.ordenDeTrabajoService.faseCompleted(+id, descripcion);
 }
+
+@Get('all/jornadas')
+async getAllJornadas(){
+  return await this.ordenDeTrabajoService.getAllJornadas();
+}
 }

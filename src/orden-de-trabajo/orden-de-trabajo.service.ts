@@ -29,6 +29,7 @@ import { FiltrarOrdenDeTrabajoAdvancedDto } from './dto/filtrar-orden-de-trabajo
 import { Jornada } from './entities/jornadas';
 import { Fases } from './entities/fases';
 import { addDays, isBefore, isSunday, parseISO } from 'date-fns';
+import { MailService } from 'src/mail/mail.service';
 
 
 @Injectable()
@@ -45,6 +46,7 @@ export class OrdenDeTrabajoService implements OnModuleInit{
     @InjectRepository(Jornada) private readonly jornadaRepository: Repository<Jornada>,
     @InjectRepository(Fases) private readonly fasesRepository: Repository<Fases>,
     private dataSource:DataSource,
+    private readonly mailService:MailService,
   ) { }
 
   async onModuleInit() {
@@ -260,7 +262,7 @@ try {
   // const horasDate = horariosxDia.map(hora => toDateTime(hora));
 
      while(isBefore(fechaI, addDays(fechaf,1))) {
-    // if(isSunday(fechaI) === false){
+    if(isSunday(fechaI) === false){
        const newJornada = await queryRunner.manager.save(Jornada,{ fecha:fechaI, OrdenDeTrabajoId:solicitudCreated });
       
       for(const hora of horariosxDia){
@@ -270,7 +272,7 @@ try {
          await queryRunner.manager.save(Fases,{ hora:hora, jornada:newJornada });
          
       }
-    // }
+     }
       fechaI = addDays(fechaI,1);
     }
     
@@ -709,7 +711,7 @@ async getPromedioFasesCompletadas(id:number){
   }
 
   if(totalFases === 100){
-   const ordenTrabajo = await this.solicitudOrdenRepository.findOne({where:{id}});
+   const ordenTrabajo = await this.solicitudOrdenRepository.findOne({where:{id},relations:['estadoTrabajo']});
    if(!ordenTrabajo){
      throw new NotFoundException();
    }
@@ -720,7 +722,9 @@ async getPromedioFasesCompletadas(id:number){
       }
       ordenTrabajo.estadoTrabajo = estadoFin;
       await this.solicitudOrdenRepository.save(ordenTrabajo);
+await this.mailService.sendEstadoOrdenTrabjoNotification(ordenTrabajo.NumOrden,ordenTrabajo.estadoTrabajo.estado,"Se notifica que el trabajo para la orden mencionada a sido completada con exito.");
    }
+
    return 100;
   }
   const promedio = (fasesCompletadas / totalFases) * 100;
@@ -741,4 +745,42 @@ console.log(id,descripcion);
   return {msj:"Fase marcada como completada"};
    
 }
+
+async getAllJornadas(){
+ 
+ /* const jornadas = await this.jornadaRepository.createQueryBuilder('jornada')
+  .leftJoin('jornada.OrdenDeTrabajoId','ordenTrabajo')
+  .leftJoin('jornada.fases','fases')
+  .select([
+    'ordenTrabajo.id',
+    'ordenTrabajo.NumOrden',
+    'jornada.id',
+    'jornada.fecha',
+    'fases.id',
+    'fases.hora',
+    'fases.completo',
+    'fases.descripcion',
+    'fases.agotado',
+  ])
+  .getMany();*/
+
+  const jornadas = await this.solicitudOrdenRepository.createQueryBuilder('ordenTrabajo')
+  .leftJoinAndSelect('ordenTrabajo.jornadas','jornada')
+  .leftJoin('jornada.fases','fases')
+  .select([
+     'ordenTrabajo.id',
+    'ordenTrabajo.NumOrden',
+    'jornada.id',
+    'jornada.fecha',
+    'fases.id',
+    'fases.hora',
+    'fases.completo',
+    'fases.descripcion',
+    'fases.agotado',
+  ])
+.getMany();
+  return jornadas;
+
+}
+
 }

@@ -8,7 +8,7 @@ export class Jornada{
     id:number;
     @Column({type:'date'})
     fecha:Date;
-    @ManyToOne(()=>SolicitudOrden,(solicitudOrden)=>solicitudOrden.jornadasOrdenDeTrabajoId)
+    @ManyToOne(()=>SolicitudOrden,(solicitudOrden)=>solicitudOrden.jornadas)
     OrdenDeTrabajoId:SolicitudOrden;
     @OneToMany(()=>Fases,(fases)=>fases.jornada)
     fases:Fases[];
