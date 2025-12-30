@@ -116,4 +116,9 @@ async getAllJornadas(){
 async fasesVencidas(){
   return await this.ordenDeTrabajoService.setFasesVencidas();
 }
+
+  @Post('filter/fases')
+async filtrarJornadas(@Body() filtros: FiltrarOrdenDeTrabajoAdvancedDto) {
+  return await this.ordenDeTrabajoService.filtrarJornadas(filtros);
+}
 }
