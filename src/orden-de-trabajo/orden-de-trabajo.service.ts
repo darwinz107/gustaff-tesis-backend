@@ -666,7 +666,7 @@ async getfasesByOrdenTrabajo(id:number){
   return fases;
 }
 
-//@Cron(CronExpression.EVERY_2_HOURS)
+@Cron(CronExpression.EVERY_2_HOURS)
 async setFasesVencidas(){
 
    const currentDate  = new Date().toLocaleDateString('en-CA',{timeZone:'America/Bogota'});
@@ -680,7 +680,7 @@ const jornadas = await this.solicitudOrdenRepository.createQueryBuilder('ordenTr
   .leftJoin('jornada.fases','fases')
   .select([
      'ordenTrabajo.id',
-    'ordenTrabajo.NumOrden',
+  
     'jornada.id',
     'jornada.fecha',
     'fases.id',
@@ -689,8 +689,38 @@ const jornadas = await this.solicitudOrdenRepository.createQueryBuilder('ordenTr
     'fases.descripcion',
     'fases.agotado',
   ])
+  .where('jornada.fecha = :currentDate',{currentDate:currentDate})
 .getMany();
+const horariosxDia = ['12:00:00','15:00:00','16:30:00','18:00:00'];
+let count = 0;
+for(const ot of jornadas){
+ 
+  for(const j of ot.jornadas){
+     count = 0;
 
+     for(const f of j.fases){
+
+      if (f.completo && f.agotado) {
+  console.log(`Saltando fase ${f.id} porque ya está completa`);
+  continue;
+}
+          const horaLimite = horariosxDia[count];
+
+    const fechaHoraLimite = new Date(`${j.fecha}T${horaLimite}`);
+
+        if (currentDateTime.getTime() > fechaHoraLimite.getTime()) {
+      
+     const upda = await this.fasesRepository.update(f.id,{agotado:true});
+    console.log(upda);
+    }
+    count ++;
+     }
+
+  }
+}
+
+
+return jornadas;
  /*  const fases = await this.fasesRepository.createQueryBuilder('fases')
   .innerJoin('fases.jornada','jornada')
  
@@ -750,8 +780,8 @@ async getPromedioFasesCompletadas(id:number){
   if(totalFases === 0){
     return 0;
   }
-
-  if(totalFases === 100){
+  const promedio = (fasesCompletadas / totalFases) * 100;
+  if(promedio === 100){
    const ordenTrabajo = await this.solicitudOrdenRepository.findOne({where:{id},relations:['estadoTrabajo']});
    if(!ordenTrabajo){
      throw new NotFoundException();
@@ -762,13 +792,14 @@ async getPromedioFasesCompletadas(id:number){
        throw new NotFoundException();
       }
       ordenTrabajo.estadoTrabajo = estadoFin;
+      console.log("finalizando", ordenTrabajo.NumOrden);
       await this.solicitudOrdenRepository.save(ordenTrabajo);
 await this.mailService.sendEstadoOrdenTrabjoNotification(ordenTrabajo.NumOrden,ordenTrabajo.estadoTrabajo.estado,"Se notifica que el trabajo para la orden mencionada a sido completada con exito.");
    }
 
    return 100;
   }
-  const promedio = (fasesCompletadas / totalFases) * 100;
+  
 
   return Math.round(promedio);
 }
