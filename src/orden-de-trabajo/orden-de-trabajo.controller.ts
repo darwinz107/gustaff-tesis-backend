@@ -111,4 +111,9 @@ async updateFaseCompleta(@Param('id') id:string, @Body('descripcion') descripcio
 async getAllJornadas(){
   return await this.ordenDeTrabajoService.getAllJornadas();
 }
+
+@Get('actualizar/fases')
+async fasesVencidas(){
+  return await this.ordenDeTrabajoService.setFasesVencidas();
+}
 }
