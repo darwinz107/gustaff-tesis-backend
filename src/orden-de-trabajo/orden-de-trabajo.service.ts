@@ -857,7 +857,7 @@ async getAllJornadas(){
 
 async filtrarJornadas(filtros:FiltrarOrdenDeTrabajoAdvancedDto){
  
-
+  console.log(filtros);
   const qb = await this.solicitudOrdenRepository.createQueryBuilder('ordenTrabajo')
   .leftJoinAndSelect('ordenTrabajo.jornadas','jornada')
    .innerJoin('ordenTrabajo.estadoTrabajo', 'estado')
@@ -878,7 +878,7 @@ async filtrarJornadas(filtros:FiltrarOrdenDeTrabajoAdvancedDto){
  if (filtros.numOrden) {
     qb.andWhere('ordenTrabajo.NumOrden LIKE :numOrden', { numOrden: `%${filtros.numOrden}` });
   }
-  if (filtros.fechaFinal) {
+  if (filtros.fechaInicio) {
     qb.andWhere('ordenTrabajo.fechaInicio = :fechaInicio', { fechaInicio: filtros.fechaInicio });
   }
  
