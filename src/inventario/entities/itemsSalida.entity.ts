@@ -21,6 +21,5 @@ export class ItemsSalida {
      @ManyToOne(()=>RegistroSalida,(registroSalida)=>registroSalida.itemSalida)
      regSalida:RegistroSalida;
      @ManyToOne(()=>Inventario,(inventario)=>inventario.itemsSalida)
-     inventario:Inventario;
-     
+     inventario:Inventario; 
 }

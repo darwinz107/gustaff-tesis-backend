@@ -33,4 +33,6 @@ receptorId:SolicitudOrden[];
 tecnicoId:SolicitudOrden[];
 @OneToMany(()=>RegistroSalida,(registroSalida)=>registroSalida.entrega)
 registroSalida:RegistroSalida[];
+@OneToMany(()=>RegistroSalida,(registroSalida2)=>registroSalida2.recibeSinSM)
+registroSalida2:RegistroSalida[];
 }
