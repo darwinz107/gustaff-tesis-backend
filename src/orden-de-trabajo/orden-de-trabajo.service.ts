@@ -855,4 +855,40 @@ async getAllJornadas(){
 
 }
 
+async filtrarJornadas(filtros:FiltrarOrdenDeTrabajoAdvancedDto){
+ 
+  console.log(filtros);
+  const qb = await this.solicitudOrdenRepository.createQueryBuilder('ordenTrabajo')
+  .leftJoinAndSelect('ordenTrabajo.jornadas','jornada')
+   .innerJoin('ordenTrabajo.estadoTrabajo', 'estado')
+  .leftJoin('jornada.fases','fases')
+  .select([
+     'ordenTrabajo.id',
+    'ordenTrabajo.NumOrden',
+    'jornada.id',
+    'jornada.fecha',
+    'fases.id',
+    'fases.hora',
+    'fases.completo',
+    'fases.descripcion',
+    'fases.agotado',
+  ]);
+
+ 
+ if (filtros.numOrden) {
+    qb.andWhere('ordenTrabajo.NumOrden LIKE :numOrden', { numOrden: `%${filtros.numOrden}` });
+  }
+  if (filtros.fechaInicio) {
+    qb.andWhere('ordenTrabajo.fechaInicio = :fechaInicio', { fechaInicio: filtros.fechaInicio });
+  }
+ 
+  if (filtros.estado) {
+    qb.andWhere('estado.estado = :estado', { estado: filtros.estado });
+  }
+
+  const ordenes = await qb.getMany();
+  return ordenes;
+
+}
+
 }

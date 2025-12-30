@@ -1,6 +1,7 @@
 export class FiltrarOrdenDeTrabajoAdvancedDto {
   numOrden?: string;
   fechaFinal?: string;
+  fechaInicio?:string;
   solicitante?: string;
   descripcion?: string;
   estado?: string;

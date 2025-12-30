@@ -28,6 +28,7 @@ import { Percha } from 'src/parametro/entities/percha';
 import { CreateBodegaDto } from './dto/create-bodega.dto';
 import { CreateSeccionDto } from './dto/create-seccion.dto';
 import { CreatePerchaDto } from './dto/create-percha.dto';
+import { FiltrarBodegaDto } from './dto/filtrar-bodega';
 
 
 @Injectable()
@@ -395,6 +396,28 @@ async getAllBodegas(){
   .addOrderBy('percha.percha', 'ASC')
   .getMany();
   return bodegas;
+}
+
+async filtrarBodegas(filtrar:FiltrarBodegaDto){
+  const bodegas = await this.bodegaRepository.createQueryBuilder('bodega')
+  .leftJoinAndSelect('bodega.seccion', 'seccion')
+  .leftJoinAndSelect('seccion.percha', 'percha')
+  .orderBy('bodega.bodega', 'ASC')
+  .addOrderBy('seccion.seccion', 'ASC')
+  .addOrderBy('percha.percha', 'ASC');
+
+  if(filtrar.bodega){
+    bodegas.andWhere('bodega.bodega LIKE :bodega',{ bodega:`%${filtrar.bodega}%`})
+  }
+
+  if(filtrar.seccion){
+    bodegas.andWhere('seccion.seccion LIKE :seccion',{ seccion:`%${filtrar.seccion}%`})
+  }
+  if(filtrar.percha){
+    bodegas.andWhere('percha.percha LIKE :percha',{ percha:`%${filtrar.percha}%`})
+  }
+  const bsp = await bodegas.getMany();
+  return bsp;
 }
  
 

@@ -14,6 +14,7 @@ import { UpdateUserDto } from 'src/users/dto/update-user.dto';
 import { CreateBodegaDto } from './dto/create-bodega.dto';
 import { CreateSeccionDto } from './dto/create-seccion.dto';
 import { CreatePerchaDto } from './dto/create-percha.dto';
+import { FiltrarBodegaDto } from './dto/filtrar-bodega';
 
 @Controller('admin')
 export class AdminController {
@@ -161,6 +162,12 @@ export class AdminController {
   @Get('info/bodegas')
   async getAllBodegasSeccPer() {
     const bodegas = await this.adminService.getAllBodegas();
+    return bodegas;
+  }
+
+  @Post('filtrar/bodegas')
+  async filtrarBodegas(@Body() filtrar:FiltrarBodegaDto) {
+    const bodegas = await this.adminService.filtrarBodegas(filtrar);
     return bodegas;
   }
 
