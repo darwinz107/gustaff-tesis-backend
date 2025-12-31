@@ -7,7 +7,7 @@ export class CreateItemsSalidaDto {
     item:string;
     
     cantidad:number;
-    destino:string;
+   // destino:string;
     regSalida:RegistroSalida;
     Observacion:string;
     inventario:Inventario;

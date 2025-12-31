@@ -20,6 +20,6 @@ export class RegistroEntrada {
      @OneToMany(()=>ItemsEntrada,(itemsEntrada)=>itemsEntrada.registroEntrada)
      itemEntrada:ItemsEntrada[];
      
-     @Column()
+     @Column({type:"decimal",precision:10,scale:2})
      total:number;
 }

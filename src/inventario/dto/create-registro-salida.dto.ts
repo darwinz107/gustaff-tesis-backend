@@ -13,4 +13,6 @@ export class CreateRegistroSalidaDto {
     observacion:string;
     
     recibeSinSM:User|null;
+    
+    destino:string;
 }
