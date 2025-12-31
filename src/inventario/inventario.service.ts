@@ -29,6 +29,8 @@ import { MailService } from 'src/mail/mail.service';
 import { FiltrarActaEntradaDto } from './dto/filtrar-acta-entrada.dto';
 import { FiltrarActaSalidaDto } from './dto/filtrar-acta-salida.dto';
 import { FiltrarInventarioDto } from './dto/filtrar-inventario.dto';
+import { CreateActaSalidaSinSMDto } from './dto/create-acta-salida-sm.dto';
+import { CreateItemsSalidaSinSMDto } from './dto/create-items-salida-sinSM.dto';
 
 @Injectable()
 export class InventarioService {
@@ -416,12 +418,13 @@ async createActaSalida(id:number, createActaSalidaDto:CreateActaSalidaDto) {
 
       const totalItems = itemsSolicitados.reduce((s, it) => s + it.cantidad, 0);
 
-      const newRegistroSalida: CreateRegistroSalidaDto = {
+      const newRegistroSalida:CreateRegistroSalidaDto = {
         numActa: newNumSalida,
         total: totalItems,
         numSolicitudCompra: solMaterial,
         entrega: findEntrega,
-        observacion: createActaSalidaDto.observacion
+        observacion: createActaSalidaDto.observacion,
+        recibeSinSM:null
       };
 
       await queryRunner.manager.save(RegistroSalida, newRegistroSalida);
@@ -457,7 +460,7 @@ async createActaSalida(id:number, createActaSalidaDto:CreateActaSalidaDto) {
           cantidad: delivered,
           destino: solMaterial.Destino,
           regSalida: registroSalida,
-          observacion: item.Observacion,
+          Observacion: item.Observacion,
           inventario: inventario
         };
         await queryRunner.manager.save(ItemsSalida, newItemsSalida);
@@ -591,6 +594,106 @@ await queryRunner.manager.createQueryBuilder()
   }
 }
 
+async createActaSalidaSinSM(createActaSalidaSinSMDto:CreateActaSalidaSinSMDto) {
+  const queryRunner = this.dataSource.createQueryRunner();
+  await queryRunner.connect();
+  await queryRunner.startTransaction();
+
+  try {
+  
+
+    const findEntrega = await queryRunner.manager.findOne(User,{where:{id:createActaSalidaSinSMDto.entregaId}});
+    if (!findEntrega) throw new NotFoundException("No se encontro el usuario de entrega");
+
+    const findRecibe = await queryRunner.manager.findOne(User,{where:{id:createActaSalidaSinSMDto.recibeId}});
+    if (!findRecibe) throw new NotFoundException("No se encontro el usuario que recibe");
+
+     
+      const countReg = await queryRunner.manager.find(RegistroSalida,{take:1,order:{id:"ASC"}});
+      const newNumSalida = 'AS-' + (countReg[0].id + 1).toString().padStart(5, '0');
+
+      const totalItems = createActaSalidaSinSMDto.itemsSalida.reduce((s, it) => s + it.cantidad, 0);
+
+      const newRegistroSalida: CreateRegistroSalidaDto = {
+        numActa: newNumSalida,
+        total: totalItems,
+        numSolicitudCompra: null,
+        entrega: findEntrega,
+        recibeSinSM:findRecibe,
+        observacion: createActaSalidaSinSMDto.observacion
+      };
+
+     const registrCreated = await queryRunner.manager.save(RegistroSalida, newRegistroSalida);
+
+   
+    
+    for (const item of createActaSalidaSinSMDto.itemsSalida) {
+      
+      const inventario = await queryRunner.manager
+        .createQueryBuilder(Inventario, 'inv')
+        .where('inv.nombre = :nombre', { nombre: item.item })
+        .setLock('pessimistic_write')
+        .getOne();
+
+      if (!inventario) throw new NotFoundException(`No se encontro el item en inventario: ${item.item}`);
+
+      const available = inventario.stock ?? 0;
+      const requested = item.cantidad ?? 0;
+      const delivered = Math.min(available, requested);
+      const missing = requested - delivered; 
+
+      
+      if (delivered > 0) {
+        const newItemsSalida :CreateItemsSalidaDto = {
+          item: item.item,
+          cantidad: delivered,
+          destino: item.destino,
+          regSalida: registrCreated,
+          Observacion: item.Observacion,         
+          inventario: inventario
+        };
+        await queryRunner.manager.save(ItemsSalida, newItemsSalida);
+
+       
+        inventario.stock = inventario.stock - delivered;
+        await queryRunner.manager.save(Inventario, inventario);
+      }
+
+    }
+    
+    const zeroInventarios = await queryRunner.manager.find(Inventario, {
+      where: { stock: 0 },
+      select: ['id','nombre'],
+    });
+
+
+let nombresVacios: string[] = [];
+if (zeroInventarios.length > 0) {
+  for (const inv of zeroInventarios) {
+
+    nombresVacios.push(inv.nombre);
+  }
+}
+    
+    await queryRunner.commitTransaction();
+
+    
+    if (nombresVacios.length > 0) {
+      await this.mailService.sendNotificationStockVacio(nombresVacios);
+    }
+ 
+    await this.mailService.sendActaSalidaSinOrden(newNumSalida);
+
+    return { msj: "Acta de salida creada", validate: true };
+
+  } catch (error) {
+    await queryRunner.rollbackTransaction();
+    console.log(error);
+    return { msj: "Error al registrar la acta de salida", validate: false };
+  } finally {
+    await queryRunner.release();
+  }
+}
 
 /*  async createItemsSolicitados(createItemsSolicitadosDto: CreateItemsSolicitadosDto) {
 console.log("llego al servicio de inventario para items solicitados");

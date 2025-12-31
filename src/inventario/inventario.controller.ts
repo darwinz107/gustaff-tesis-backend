@@ -10,6 +10,7 @@ import { CreateProovedorDto } from './dto/create-proovedor.dto';
 import { FiltrarActaEntradaDto } from './dto/filtrar-acta-entrada.dto';
 import { FiltrarActaSalidaDto } from './dto/filtrar-acta-salida.dto';
 import { FiltrarInventarioDto } from './dto/filtrar-inventario.dto';
+import { CreateActaSalidaSinSMDto } from './dto/create-acta-salida-sm.dto';
 
 @Controller('inventario')
 export class InventarioController {
@@ -38,6 +39,11 @@ export class InventarioController {
    @Post('acta-salida/:id')
   createActaSalida(@Param('id') id: string, @Body() createActaSalidaDto:CreateActaSalidaDto) {
     return this.inventarioService.createActaSalida(+id, createActaSalidaDto);
+  }
+
+     @Post('acta-salida/sin-orden')
+  createActaSalidaSinSM( @Body() createActaSalidaSinSMDto:CreateActaSalidaSinSMDto) {
+    return this.inventarioService.createActaSalidaSinSM(createActaSalidaSinSMDto);
   }
 
    @Post('acta-entrada/:id')

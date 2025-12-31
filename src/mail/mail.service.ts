@@ -208,6 +208,46 @@ private readonly logger = new Logger(MailService.name);
     }
   }
 
+     async sendActaSalidaSinOrden(numSal:string) {
+    try {
+      
+      const users = await this.userRepository
+        .createQueryBuilder('user')
+        .innerJoinAndSelect('user.cargoId', 'cargo')
+        .innerJoinAndSelect('cargo.rolId', 'rol')
+        .where('rol.role IN (:...roles)', { roles: ['admin', 'JEFE DE LOGISTICA INTERNA'] })
+        .select(['user.id','user.email'])
+        .getMany();
+
+      const emails = users.map(u => u.email).filter(Boolean);
+      if (emails.length === 0) {
+        this.logger.warn('No se encontraron usuarios para notificar.');
+        return;
+      }
+
+      let subject;
+      let html;
+     
+          subject = `Acta de salida sin una orden`;
+       html = `
+        <p>Hola,</p>
+        
+        <p>Se ha generado la acta de salida ${numSal} sin una orden creada</p>
+        <p>Saludos,<br/>Sistema de Inventario</p>
+      `;
+
+      await this.mailer.sendMail({
+        to: emails,
+        subject,
+        html,
+      });
+
+      this.logger.log(`Notificación enviada a: ${emails.join(', ')}`);
+    } catch (err) {
+      this.logger.error('Error enviando notificación por correo', err);
+    }
+  }
+
   findAll() {
     return `This action returns all mail`;
   }
