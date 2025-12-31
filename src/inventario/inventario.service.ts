@@ -424,7 +424,8 @@ async createActaSalida(id:number, createActaSalidaDto:CreateActaSalidaDto) {
         numSolicitudCompra: solMaterial,
         entrega: findEntrega,
         observacion: createActaSalidaDto.observacion,
-        recibeSinSM:null
+        recibeSinSM:null,
+        destino:solMaterial.Destino
       };
 
       await queryRunner.manager.save(RegistroSalida, newRegistroSalida);
@@ -458,7 +459,7 @@ async createActaSalida(id:number, createActaSalidaDto:CreateActaSalidaDto) {
         const newItemsSalida: CreateItemsSalidaDto = {
           item: item.item,
           cantidad: delivered,
-          destino: solMaterial.Destino,
+         // destino: solMaterial.Destino,
           regSalida: registroSalida,
           Observacion: item.Observacion,
           inventario: inventario
@@ -620,7 +621,8 @@ async createActaSalidaSinSM(createActaSalidaSinSMDto:CreateActaSalidaSinSMDto) {
         numSolicitudCompra: null,
         entrega: findEntrega,
         recibeSinSM:findRecibe,
-        observacion: createActaSalidaSinSMDto.observacion
+        observacion: createActaSalidaSinSMDto.observacion,
+        destino:createActaSalidaSinSMDto.destino
       };
 
      const registrCreated = await queryRunner.manager.save(RegistroSalida, newRegistroSalida);
@@ -647,7 +649,7 @@ async createActaSalidaSinSM(createActaSalidaSinSMDto:CreateActaSalidaSinSMDto) {
         const newItemsSalida :CreateItemsSalidaDto = {
           item: item.item,
           cantidad: delivered,
-          destino: item.destino,
+         // destino: item.destino,
           regSalida: registrCreated,
           Observacion: item.Observacion,         
           inventario: inventario

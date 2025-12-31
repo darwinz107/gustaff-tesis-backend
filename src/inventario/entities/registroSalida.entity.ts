@@ -24,6 +24,9 @@ export class RegistroSalida {
 
     @Column()
      observacion:string;
+
+     @Column()
+     destino:string;
     
     @ManyToOne(()=>User,(entrega)=>entrega.registroSalida)
         entrega:User;

@@ -22,7 +22,7 @@ import { ExceptionsHandler } from '@nestjs/core/exceptions/exceptions-handler';
 import { FiltrarOrdenDeTrabajoDto } from './dto/filtrar-orden-de-trabajo.dto';
 import { EstadoTrabajoEnum } from './enums/estado-trabajo.enum';
 import { EstadoTrabajo } from './entities/estadoTrabajo';
-import { Cron, CronExpression } from '@nestjs/schedule';
+import { Cron, CronExpression, SchedulerRegistry } from '@nestjs/schedule';
 import { SolicitudDeCompra } from 'src/solicitud-de-compra/entities/solicitud-de-compra.entity';
 import { EstadoUso } from './entities/estadoUso';
 import { FiltrarOrdenDeTrabajoAdvancedDto } from './dto/filtrar-orden-de-trabajo-advanced.dto';
@@ -30,11 +30,14 @@ import { Jornada } from './entities/jornadas';
 import { Fases } from './entities/fases';
 import { addDays, isBefore, isSunday, parseISO } from 'date-fns';
 import { MailService } from 'src/mail/mail.service';
+import { CronJob } from 'cron';
+
 
 
 @Injectable()
 export class OrdenDeTrabajoService implements OnModuleInit{
 
+  private isRunning = false;
   constructor(
 
     @InjectRepository(SolicitudOrden) private readonly solicitudOrdenRepository: Repository<SolicitudOrden>,
@@ -47,9 +50,13 @@ export class OrdenDeTrabajoService implements OnModuleInit{
     @InjectRepository(Fases) private readonly fasesRepository: Repository<Fases>,
     private dataSource:DataSource,
     private readonly mailService:MailService,
+    private schedulerRegistry: SchedulerRegistry,
   ) { }
 
   async onModuleInit() {
+
+   //  await this.safeRunSetFases();
+
     const estados = [EstadoTrabajoEnum.PROC,EstadoTrabajoEnum.FIN,EstadoTrabajoEnum.VEN,EstadoTrabajoEnum.PEN];
 
     for(const estado of estados){
@@ -68,7 +75,142 @@ export class OrdenDeTrabajoService implements OnModuleInit{
         await this.estadoUsoRepository.save(crearUso);
        }
     }
+
+     const cronExpressions = [
+      '0 0 12 * * *',   
+      '0 0 15 * * *',   
+      '0 30 16 * * *',  
+      '0 0 18 * * *'    
+    ];
+
+    cronExpressions.forEach((expr, idx) => {
+  const name = `setFases_${idx}`;
+
+  if (this.schedulerRegistry.doesExist('cron', name)) {
+    this.schedulerRegistry.deleteCronJob(name);
   }
+
+  const job = new CronJob(expr, async () => {
+    await this.safeRunSetFases();
+  }, null, true, 'America/Bogota');
+
+  this.schedulerRegistry.addCronJob(name, job);
+});
+  }
+
+
+   private async safeRunSetFases() {
+    if (this.isRunning) {
+      console.log('setFasesVencidas ya está corriendo — salto ejecución concurrente');
+      return;
+    }
+    this.isRunning = true;
+    try {
+      await this.setFasesVencidas();
+    } finally {
+      this.isRunning = false;
+    }
+  }
+
+  async setFasesVencidas(){
+      console.log(
+    'CRON setFasesVencidas ejecutado:',
+    new Date().toLocaleString('es-EC', { timeZone: 'America/Bogota' })
+  );
+
+   const currentDate  = new Date().toLocaleDateString('en-CA',{timeZone:'America/Bogota'});
+  
+const currentDateTime = new Date(
+  new Date().toLocaleString('en-US', { timeZone: 'America/Bogota' })
+);
+
+const jornadas = await this.solicitudOrdenRepository.createQueryBuilder('ordenTrabajo')
+  .leftJoinAndSelect('ordenTrabajo.jornadas','jornada')
+  .leftJoin('jornada.fases','fases')
+  .orderBy('fases.hora', 'ASC')
+  .select([
+     'ordenTrabajo.id',
+  
+    'jornada.id',
+    'jornada.fecha',
+    'fases.id',
+    'fases.hora',
+    'fases.completo',
+    'fases.descripcion',
+    'fases.agotado',
+  ])
+  .where('jornada.fecha = :currentDate',{currentDate:currentDate})
+.getMany();
+const horariosxDia = ['12:00:00','15:00:00','16:30:00','18:00:00'];
+let count = 0;
+for(const ot of jornadas){
+ 
+  for(const j of ot.jornadas){
+     count = 0;
+
+     for(const f of j.fases){
+
+      if (f.completo && f.agotado) {
+  console.log(`Saltando fase ${f.id} porque ya está completa`);
+  continue;
+}
+          const horaLimite = horariosxDia[count];
+
+    const fechaHoraLimite = new Date(`${j.fecha}T${horaLimite}`);
+
+        if (currentDateTime.getTime() > fechaHoraLimite.getTime()) {
+      
+     const upda = await this.fasesRepository.update(f.id,{agotado:true});
+    console.log(upda);
+    }
+    count ++;
+     }
+
+  }
+}
+
+
+return jornadas;
+ /*  const fases = await this.fasesRepository.createQueryBuilder('fases')
+  .innerJoin('fases.jornada','jornada')
+ 
+  .select([
+    'fases.id',
+    'fases.hora',
+    'fases.completo',
+    'fases.descripcion',
+    'jornada.fecha',
+    'fases.agotado'
+  ])
+  
+  .where('jornada.fecha = :currentDate',{currentDate:currentDate})
+  .getMany();
+console.log(fases);  
+console.log(fases.length);*/
+ /* if(fases.length === 0 || !fases){
+    return [];
+  }
+
+ const horariosxDia = ['12:00:00','15:00:00','16:30:00','18:00:00'];
+     
+for (let i = 0; i < fases.length; i++) {
+  const fase = fases[i];
+  console.log(fase);*/
+//console.log(fase.jornada.fecha);
+ // if (fase.agotado === true && fase.completo ===true) continue;
+  //if(fase.agotado === true) continue;
+  /*  const fechaBase = fase.jornada.fecha;
+
+    const horaLimite = horariosxDia[i];
+
+    const fechaHoraLimite = new Date(`${fechaBase}T${horaLimite}`);
+    
+    if (currentDateTime.getTime() > fechaHoraLimite.getTime()) {
+      //console.log(fase.id);
+      await this.fasesRepository.update(fase.id,{agotado:true});
+    }
+}*/
+}
 
   @Cron(CronExpression.EVERY_5_MINUTES)
   async ordenTrabajoVencida(){
@@ -277,6 +419,7 @@ try {
     }
     
      await queryRunner.commitTransaction();
+     await this.mailService.newOrdenTrabajoNoti(solicitudCreated.NumOrden,solicitudCreated.fechaInicio,solicitudCreated.fechaFinal);
       return { msj: "Solicitud de orden creada!",validate:true };
     /*else{
         const nuevaSolicitud = 
@@ -666,101 +809,8 @@ async getfasesByOrdenTrabajo(id:number){
   return fases;
 }
 
-@Cron(CronExpression.EVERY_2_HOURS)
-async setFasesVencidas(){
-
-   const currentDate  = new Date().toLocaleDateString('en-CA',{timeZone:'America/Bogota'});
-  
-const currentDateTime = new Date(
-  new Date().toLocaleString('en-US', { timeZone: 'America/Bogota' })
-);
-
-const jornadas = await this.solicitudOrdenRepository.createQueryBuilder('ordenTrabajo')
-  .leftJoinAndSelect('ordenTrabajo.jornadas','jornada')
-  .leftJoin('jornada.fases','fases')
-  .select([
-     'ordenTrabajo.id',
-  
-    'jornada.id',
-    'jornada.fecha',
-    'fases.id',
-    'fases.hora',
-    'fases.completo',
-    'fases.descripcion',
-    'fases.agotado',
-  ])
-  .where('jornada.fecha = :currentDate',{currentDate:currentDate})
-.getMany();
-const horariosxDia = ['12:00:00','15:00:00','16:30:00','18:00:00'];
-let count = 0;
-for(const ot of jornadas){
- 
-  for(const j of ot.jornadas){
-     count = 0;
-
-     for(const f of j.fases){
-
-      if (f.completo && f.agotado) {
-  console.log(`Saltando fase ${f.id} porque ya está completa`);
-  continue;
-}
-          const horaLimite = horariosxDia[count];
-
-    const fechaHoraLimite = new Date(`${j.fecha}T${horaLimite}`);
-
-        if (currentDateTime.getTime() > fechaHoraLimite.getTime()) {
-      
-     const upda = await this.fasesRepository.update(f.id,{agotado:true});
-    console.log(upda);
-    }
-    count ++;
-     }
-
-  }
-}
 
 
-return jornadas;
- /*  const fases = await this.fasesRepository.createQueryBuilder('fases')
-  .innerJoin('fases.jornada','jornada')
- 
-  .select([
-    'fases.id',
-    'fases.hora',
-    'fases.completo',
-    'fases.descripcion',
-    'jornada.fecha',
-    'fases.agotado'
-  ])
-  
-  .where('jornada.fecha = :currentDate',{currentDate:currentDate})
-  .getMany();
-console.log(fases);  
-console.log(fases.length);*/
- /* if(fases.length === 0 || !fases){
-    return [];
-  }
-
- const horariosxDia = ['12:00:00','15:00:00','16:30:00','18:00:00'];
-     
-for (let i = 0; i < fases.length; i++) {
-  const fase = fases[i];
-  console.log(fase);*/
-//console.log(fase.jornada.fecha);
- // if (fase.agotado === true && fase.completo ===true) continue;
-  //if(fase.agotado === true) continue;
-  /*  const fechaBase = fase.jornada.fecha;
-
-    const horaLimite = horariosxDia[i];
-
-    const fechaHoraLimite = new Date(`${fechaBase}T${horaLimite}`);
-    
-    if (currentDateTime.getTime() > fechaHoraLimite.getTime()) {
-      //console.log(fase.id);
-      await this.fasesRepository.update(fase.id,{agotado:true});
-    }
-}*/
-}
 
 async getPromedioFasesCompletadas(id:number){
 
