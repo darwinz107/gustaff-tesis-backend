@@ -10,7 +10,7 @@ export class CreateRegistroSalidaDto {
     total:number;
     numSolicitudCompra:SolicitudDeCompra|null;
     entrega:User;
-    Observacion:string;
+    observacion:string;
     
     recibeSinSM:User|null;
 }

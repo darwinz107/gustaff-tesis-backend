@@ -423,7 +423,7 @@ async createActaSalida(id:number, createActaSalidaDto:CreateActaSalidaDto) {
         total: totalItems,
         numSolicitudCompra: solMaterial,
         entrega: findEntrega,
-        Observacion: createActaSalidaDto.observacion,
+        observacion: createActaSalidaDto.observacion,
         recibeSinSM:null
       };
 
@@ -620,7 +620,7 @@ async createActaSalidaSinSM(createActaSalidaSinSMDto:CreateActaSalidaSinSMDto) {
         numSolicitudCompra: null,
         entrega: findEntrega,
         recibeSinSM:findRecibe,
-        Observacion: createActaSalidaSinSMDto.observacion
+        observacion: createActaSalidaSinSMDto.observacion
       };
 
      const registrCreated = await queryRunner.manager.save(RegistroSalida, newRegistroSalida);
