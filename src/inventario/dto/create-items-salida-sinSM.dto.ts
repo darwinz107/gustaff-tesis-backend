@@ -2,7 +2,7 @@ import { IsOptional } from "class-validator";
 import { Inventario } from "../entities/inventario.entity";
 import { RegistroSalida } from "../entities/registroSalida.entity";
 
-export class CreateItemsSalidaDto {
+export class CreateItemsSalidaSinSMDto {
     
     item:string;
     
@@ -11,5 +11,5 @@ export class CreateItemsSalidaDto {
     regSalida:RegistroSalida;
     Observacion:string;
     inventario:Inventario;
-    
+    caracteristica:string;
 }

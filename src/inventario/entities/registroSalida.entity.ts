@@ -30,5 +30,5 @@ export class RegistroSalida {
 
         @ManyToOne(()=>User,(recibeSinSM)=>recibeSinSM.registroSalida2,{nullable:true})
         
-        recibeSinSM:User;
+        recibeSinSM:User|null;
 }

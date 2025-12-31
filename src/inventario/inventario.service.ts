@@ -30,6 +30,7 @@ import { FiltrarActaEntradaDto } from './dto/filtrar-acta-entrada.dto';
 import { FiltrarActaSalidaDto } from './dto/filtrar-acta-salida.dto';
 import { FiltrarInventarioDto } from './dto/filtrar-inventario.dto';
 import { CreateActaSalidaSinSMDto } from './dto/create-acta-salida-sm.dto';
+import { CreateItemsSalidaSinSMDto } from './dto/create-items-salida-sinSM.dto';
 
 @Injectable()
 export class InventarioService {
@@ -417,12 +418,13 @@ async createActaSalida(id:number, createActaSalidaDto:CreateActaSalidaDto) {
 
       const totalItems = itemsSolicitados.reduce((s, it) => s + it.cantidad, 0);
 
-      const newRegistroSalida = {
+      const newRegistroSalida:CreateRegistroSalidaDto = {
         numActa: newNumSalida,
         total: totalItems,
         numSolicitudCompra: solMaterial,
         entrega: findEntrega,
-        observacion: createActaSalidaDto.observacion
+        Observacion: createActaSalidaDto.observacion,
+        recibeSinSM:null
       };
 
       await queryRunner.manager.save(RegistroSalida, newRegistroSalida);
@@ -642,12 +644,12 @@ async createActaSalidaSinSM(createActaSalidaSinSMDto:CreateActaSalidaSinSMDto) {
 
       
       if (delivered > 0) {
-        const newItemsSalida: CreateItemsSalidaDto = {
+        const newItemsSalida :CreateItemsSalidaDto = {
           item: item.item,
           cantidad: delivered,
           destino: item.destino,
           regSalida: registrCreated,
-          Observacion: item.Observacion,
+          Observacion: item.Observacion,         
           inventario: inventario
         };
         await queryRunner.manager.save(ItemsSalida, newItemsSalida);
