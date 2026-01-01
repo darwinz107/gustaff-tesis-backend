@@ -58,16 +58,19 @@ class ItemSolicitado {
   @Type(() => Number)
   total: number;
 
+  @IsOptional()
   @Type(() => Number)
   @IsInt()
   
   bodegaId: number;
 
+  @IsOptional()
   @Type(() => Number)
   @IsInt()
   
   seccionId: number;
 
+  @IsOptional()
   @Type(() => Number)
   @IsInt()
   

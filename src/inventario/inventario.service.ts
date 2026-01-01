@@ -413,8 +413,8 @@ async createActaSalida(id:number, createActaSalidaDto:CreateActaSalidaDto) {
 
     if (!registroSalida) {
      
-      const countReg = await queryRunner.manager.count(RegistroSalida);
-      const newNumSalida = 'AS-' + (countReg + 1).toString().padStart(5, '0');
+      const countReg = await queryRunner.manager.find(RegistroSalida,{take:1,order:{id:'DESC'}});
+      const newNumSalida = 'AS-' + (countReg[0].id + 1).toString().padStart(5, '0');
 
       const totalItems = itemsSolicitados.reduce((s, it) => s + it.cantidad, 0);
 
@@ -612,7 +612,7 @@ async createActaSalidaSinSM(createActaSalidaSinSMDto:CreateActaSalidaSinSMDto) {
     if (!findRecibe) throw new NotFoundException("No se encontro el usuario que recibe");
 
      
-      const countReg = await queryRunner.manager.find(RegistroSalida,{take:1,order:{id:"ASC"}});
+      const countReg = await queryRunner.manager.find(RegistroSalida,{take:1,order:{id:"DESC"}});
       const newNumSalida = 'AS-' + (countReg[0].id + 1).toString().padStart(5, '0');
 
       const totalItems = createActaSalidaSinSMDto.itemsSalida.reduce((s, it) => s + it.cantidad, 0);
@@ -889,7 +889,7 @@ console.log(findItem);
     .leftJoin('numOrdenTrabajo.userSolicitante','userSolicitante')
     .leftJoin('registroSalida.entrega','entrega')
     .select([
-
+      'registroSalida.id',
       'registroSalida.numActa',
       'registroSalida.fechaRemision',
       
