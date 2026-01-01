@@ -462,7 +462,8 @@ async createActaSalida(id:number, createActaSalidaDto:CreateActaSalidaDto) {
          // destino: solMaterial.Destino,
           regSalida: registroSalida,
           Observacion: item.Observacion,
-          inventario: inventario
+          inventario: inventario,
+          caracteristica:item.caracteristica
         };
         await queryRunner.manager.save(ItemsSalida, newItemsSalida);
 
@@ -596,6 +597,7 @@ await queryRunner.manager.createQueryBuilder()
 }
 
 async createActaSalidaSinSM(createActaSalidaSinSMDto:CreateActaSalidaSinSMDto) {
+  console.log(createActaSalidaSinSMDto);
   const queryRunner = this.dataSource.createQueryRunner();
   await queryRunner.connect();
   await queryRunner.startTransaction();
@@ -652,7 +654,8 @@ async createActaSalidaSinSM(createActaSalidaSinSMDto:CreateActaSalidaSinSMDto) {
          // destino: item.destino,
           regSalida: registrCreated,
           Observacion: item.Observacion,         
-          inventario: inventario
+          inventario: inventario,
+          caracteristica:item.caracteristica
         };
         await queryRunner.manager.save(ItemsSalida, newItemsSalida);
 
@@ -799,41 +802,83 @@ console.log(findItem);
     return false;
   }
 
-  async actaDeSalidaByIdCompra(id:number) {
-   
-  console.log('ID de la acta de salida:', id);
+  async actaDeSalidaByIdCompra(id?: number) {
+  
+  const hasValidId = typeof id === 'number' && !Number.isNaN(id);
 
-    const registroDeSalida = await this.registroSalidaRepository.createQueryBuilder('registroSalida')
-    .leftJoin('registroSalida.numSolicitudCompra','numSolicitudCompra')
-    .leftJoin('registroSalida.itemSalida','itemSalida')
-    .leftJoin('numSolicitudCompra.numOrdenTrabajo','numOrdenTrabajo')
-    .leftJoin('numOrdenTrabajo.userSolicitante','userSolicitante')
-    .leftJoin('registroSalida.entrega','entrega')
-    .leftJoin('itemSalida.inventario','inventario')
-    .select([
+  
+  let registroBase: RegistroSalida | null = null;
 
-      'registroSalida.numActa',
-      'registroSalida.fechaRemision',
-      'userSolicitante.id',
-      'userSolicitante.name',
-      'entrega.name',
-      'numSolicitudCompra.id',
-      'numOrdenTrabajo.id',
-      'numSolicitudCompra.Destino',
-      'itemSalida.item',
-      'itemSalida.cantidad',  
-      'itemSalida.Observacion',
-         'inventario.id',
-         'inventario.nombre',
-      'inventario.costo',
-    ])
-    .where('numSolicitudCompra.id = :id',{id})
-    .getOne();
-    if(!registroDeSalida){
-      throw new NotFoundException("No se encontro registro de salidas");
-    }
-    return registroDeSalida;
+  if (hasValidId) {
+    registroBase = await this.registroSalidaRepository.findOne({
+      where: { id },
+      relations: ['numSolicitudCompra'],
+    });
+  } else {
+    const arr = await this.registroSalidaRepository.find({
+      take: 1,
+      order: { id: 'DESC' },
+      relations: ['numSolicitudCompra'],
+    });
+    registroBase = arr[0] ?? null;
   }
+
+  if (!registroBase) {
+    throw new NotFoundException('No se encontró registro de salidas');
+  }
+
+  const qb = this.registroSalidaRepository
+    .createQueryBuilder('registroSalida')
+    .leftJoin('registroSalida.itemSalida', 'itemSalida')
+    .leftJoin('registroSalida.entrega', 'entrega')
+    .leftJoin('itemSalida.inventario', 'inventario');
+
+  if (registroBase.numSolicitudCompra) {
+    qb.leftJoin('registroSalida.numSolicitudCompra', 'numSolicitudCompra')
+      .leftJoin('numSolicitudCompra.numOrdenTrabajo', 'numOrdenTrabajo')
+      .leftJoin('numOrdenTrabajo.userSolicitante', 'userSolicitante')
+      .select([
+        'registroSalida.id',
+        'registroSalida.numActa',
+        'registroSalida.fechaRemision',
+        'userSolicitante.id',
+        'userSolicitante.name',
+        'entrega.name',
+        'numSolicitudCompra.id',
+        'numOrdenTrabajo.id',
+        'numSolicitudCompra.Destino',
+        'itemSalida.item',
+        'itemSalida.cantidad',
+        'itemSalida.Observacion',
+        'inventario.id',
+        'inventario.nombre',
+        'inventario.costo',
+      ]);
+  } else {
+    qb.leftJoin('registroSalida.recibeSinSM', 'recibe')
+      .select([
+        'registroSalida.id',
+        'registroSalida.numActa',
+        'registroSalida.fechaRemision',
+        'recibe.id',
+        'recibe.name',
+        'entrega.name',
+        'itemSalida.item',
+        'itemSalida.cantidad',
+        'itemSalida.Observacion',
+        'itemSalida.caracteristica',
+        'inventario.id',
+        'inventario.nombre',
+        'inventario.costo',
+      ]);
+  }
+
+  
+  qb.where('registroSalida.id = :id', { id: registroBase.id });
+
+  return qb.getOne();
+}
+
 
   async findAllRegistroSalida() {
 

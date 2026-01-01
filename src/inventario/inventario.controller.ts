@@ -41,9 +41,10 @@ export class InventarioController {
     return this.inventarioService.createActaSalida(+id, createActaSalidaDto);
   }
 
-     @Post('acta-salida/sin-orden')
-  createActaSalidaSinSM( @Body() createActaSalidaSinSMDto:CreateActaSalidaSinSMDto) {
-    return this.inventarioService.createActaSalidaSinSM(createActaSalidaSinSMDto);
+  @Post('acta-salida/sin-orden/crear')
+  createActaSalidaSinSM(@Body() createActaSalidaSinSMDto:CreateActaSalidaSinSMDto) {
+  console.log('Controller - createActaSalidaSinSM DTO:', createActaSalidaSinSMDto);
+  return this.inventarioService.createActaSalidaSinSM(createActaSalidaSinSMDto);
   }
 
    @Post('acta-entrada/:id')

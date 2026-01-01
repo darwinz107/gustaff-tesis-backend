@@ -11,5 +11,6 @@ export class CreateItemsSalidaDto {
     regSalida:RegistroSalida;
     Observacion:string;
     inventario:Inventario;
+    caracteristica:string;
     
 }
