@@ -923,8 +923,37 @@ console.log(findItem);
       'registroEntrada.numActa',
       'registroEntrada.fechaRemision',
       'registroEntrada.factura',
+      
+      'userSolicitante.name',
+      
+      'numSolicitudCompra.Destino'    
+    ])
+    
+    .getMany();
+    if(!registroDeEntrada){
+      throw new NotFoundException("No se encontro registro de entrada");
+    }
+    return registroDeEntrada;
+  }
+
+      async findRegistroEntradaById(id:number) {
+
+     const registroDeEntrada = await this.registroEntradaRepository.createQueryBuilder('registroEntrada')
+    .leftJoin('registroEntrada.numSolicitudCompra','numSolicitudCompra')
+    
+    .leftJoin('numSolicitudCompra.numOrdenTrabajo','numOrdenTrabajo')
+    .leftJoin('numOrdenTrabajo.userSolicitante','userSolicitante')
+    .leftJoin('registroEntrada.proovedor','proovedor')
+    .leftJoin('registroEntrada.itemEntrada','itemEntrada')
+    .leftJoin('itemEntrada.item','inventario')
+    .select([
+       'registroEntrada.id',
+      'registroEntrada.numActa',
+      'registroEntrada.fechaRemision',
+      'registroEntrada.factura',
       'registroEntrada.total',
       'userSolicitante.name',
+      'proovedor.id',
       'proovedor.nombre',
       'numSolicitudCompra.id',
       'numOrdenTrabajo.id',
@@ -937,8 +966,8 @@ console.log(findItem);
       'itemEntrada.subtotal',
       'itemEntrada.total',
     ])
-    
-    .getMany();
+    .where('registroEntrada.id = :id',{id:id})
+    .getOne();
     if(!registroDeEntrada){
       throw new NotFoundException("No se encontro registro de entrada");
     }
@@ -1199,7 +1228,10 @@ async filtrarInventarios(filtros: FiltrarInventarioDto) {
   return resultados;
 }
 
+ async findAllProovedores(){
+  return await this.proovedoresRepository.find({select:['id','nombreComercial']});
 
+ }
 
 
   update(id: number, updateInventarioDto: UpdateInventarioDto) {

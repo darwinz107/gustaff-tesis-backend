@@ -77,6 +77,11 @@ export class InventarioController {
     return this.inventarioService.findAllRegistroEntrada();
   }
 
+  @Get('actas-entradas-by/:id')
+  findRegistroEntradaById(@Param('id') id:string) {
+    return this.inventarioService.findRegistroEntradaById(+id);
+  }
+
   @Get('info-entrada/:id')
   asignarInfoActaEntrada(@Param('id') id:string) {
     return this.inventarioService.asignarInfoActaEntrada(+id);
@@ -90,6 +95,11 @@ export class InventarioController {
   @Get()
   findAll() {
     return this.inventarioService.findAll();
+  }
+
+  @Get('proovedores')
+  findAllProovedores() {
+    return this.inventarioService.findAllProovedores();
   }
 
    @Post('proovedores')
