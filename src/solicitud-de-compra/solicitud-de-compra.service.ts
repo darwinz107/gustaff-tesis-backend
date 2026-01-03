@@ -340,6 +340,11 @@ return {msj:"Solicitud de compra creada",validate:true}
   
   }
 
+  async solMaterialShort(){
+    const res = await this.solicitudDeCompraRepository.find({select:['id','numOrden']});
+    return res;
+  }
+
    async ordenCompraByOrdenTrabajoId(id:number) {
     console.log(id);
    /* if(!id){

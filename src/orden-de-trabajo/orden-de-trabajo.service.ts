@@ -55,7 +55,7 @@ export class OrdenDeTrabajoService implements OnModuleInit{
 
   async onModuleInit() {
 
-   //  await this.safeRunSetFases();
+     await this.safeRunSetFases();
 
     const estados = [EstadoTrabajoEnum.PROC,EstadoTrabajoEnum.FIN,EstadoTrabajoEnum.VEN,EstadoTrabajoEnum.PEN];
 

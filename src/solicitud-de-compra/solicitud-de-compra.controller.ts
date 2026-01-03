@@ -13,6 +13,11 @@ export class SolicitudDeCompraController {
     return this.solicitudDeCompraService.create(createSolicitudDeCompraDto);
   }
 
+    @Get('solicitud-material-short')
+  solMaterialShort() {
+    return this.solicitudDeCompraService.solMaterialShort();
+  }
+
   @Get('solicitudes-de-compra')
   findAllSolicitudesCompra() {
     return this.solicitudDeCompraService.findAllSolicitudesCompra();

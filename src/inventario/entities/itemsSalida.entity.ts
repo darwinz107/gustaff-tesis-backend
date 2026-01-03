@@ -22,4 +22,6 @@ export class ItemsSalida {
      regSalida:RegistroSalida;
      @ManyToOne(()=>Inventario,(inventario)=>inventario.itemsSalida)
      inventario:Inventario; 
+     @Column()
+     caracteristica:string;
 }
