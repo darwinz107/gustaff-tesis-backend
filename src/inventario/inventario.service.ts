@@ -14,8 +14,10 @@ import { CreateItemsSalidaDto } from './dto/create-items-salida.dto';
 import { ItemsSalida } from './entities/itemsSalida.entity';
 import { EstadoCompra } from 'src/solicitud-de-compra/entities/estadoCompra';
 import { CreateActaSalidaDto } from './dto/create-acta-salida.dto';
+import { UpdateActaSalidaDto } from './dto/update-acta-salida.dto';
 import { EstadoCompraEnum } from 'src/solicitud-de-compra/enums/estadoCompra.enum';
 import { CreateActaEntradaDto } from './dto/create-acta-entrada.dto';
+import { UpdateActaEntradaDto } from './dto/update-acta-entrada.dto';
 import { RegistroEntrada } from './entities/registroEntrada.entity';
 import { Proovedores } from './entities/proovedores.entity';
 import { ItemsEntrada } from './entities/itemsEntrada.entity';
@@ -974,6 +976,49 @@ console.log(findItem);
     return registroDeEntrada;
   }
 
+  async findRegistroSalidaById(id: number) {
+    const registroDeSalida = await this.registroSalidaRepository.createQueryBuilder('registroSalida')
+      .leftJoin('registroSalida.numSolicitudCompra', 'numSolicitudCompra')
+      .leftJoin('numSolicitudCompra.numOrdenTrabajo', 'numOrdenTrabajo')
+      .leftJoin('numOrdenTrabajo.userSolicitante', 'userSolicitante')
+      .leftJoin('registroSalida.entrega', 'entrega')
+      .leftJoin('registroSalida.recibeSinSM', 'recibeSinSM')
+      .leftJoin('registroSalida.itemSalida', 'itemSalida')
+      .leftJoin('itemSalida.inventario', 'inventario')
+      .select([
+        'registroSalida.id',
+        'registroSalida.numActa',
+        'registroSalida.fechaRemision',
+        'registroSalida.observacion',
+        'registroSalida.destino',
+        'registroSalida.total',
+        'userSolicitante.name',
+        'entrega.name',
+        'entrega.id',
+        'recibeSinSM.name',
+        'recibeSinSM.id',
+        'numSolicitudCompra.id',
+         'numSolicitudCompra.Destino',
+        'numSolicitudCompra.numOrden',
+        'numOrdenTrabajo.id',
+        'inventario.nombre',
+        'inventario.id',
+        'itemSalida.id',
+        'itemSalida.item',
+        'itemSalida.cantidad',
+        'itemSalida.caracteristica',
+        'itemSalida.Observacion',
+      ])
+      .where('registroSalida.id = :id', { id: id })
+      .getOne();
+
+    if (!registroDeSalida) {
+      throw new NotFoundException('No se encontró registro de salida');
+    }
+
+    return registroDeSalida;
+  }
+
   async actaDeEntradaByIdCompra(id:number) {
      console.log(id);
      const query = await this.registroEntradaRepository.createQueryBuilder('registroEntrada')
@@ -1233,6 +1278,279 @@ async filtrarInventarios(filtros: FiltrarInventarioDto) {
 
  }
 
+  async updateActaEntrada(id: number, updateActaEntradaDto: UpdateActaEntradaDto) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      
+      const registroEntrada = await queryRunner.manager.findOne(RegistroEntrada, {
+        where: { id: id },
+        relations: ['proovedor', 'numSolicitudCompra']
+      });
+
+      if (!registroEntrada) {
+        throw new NotFoundException('No se encontró el acta de entrada con el ID proporcionado');
+      }
+
+      
+      if (updateActaEntradaDto.factura !== undefined) {
+        registroEntrada.factura = updateActaEntradaDto.factura;
+      }
+
+      
+      if (updateActaEntradaDto.provedorId !== undefined) {
+        const proovedor = await queryRunner.manager.findOne(Proovedores, {
+          where: { id: updateActaEntradaDto.provedorId }
+        });
+
+        if (!proovedor) {
+          throw new NotFoundException('No se encontró el proveedor con el ID proporcionado');
+        }
+
+        registroEntrada.proovedor = proovedor;
+      }
+
+      
+      if (updateActaEntradaDto.solicitudCompraId !== undefined) {
+        const solicitudDeCompra = await queryRunner.manager.findOne(SolicitudDeCompra, {
+          where: { id: updateActaEntradaDto.solicitudCompraId }
+        });
+
+        if (!solicitudDeCompra) {
+          throw new NotFoundException('No se encontró la solicitud de compra con el ID proporcionado');
+        }
+
+        registroEntrada.numSolicitudCompra = solicitudDeCompra;
+      }
+
+     
+      await queryRunner.manager.save(RegistroEntrada, registroEntrada);
+
+      await queryRunner.commitTransaction();
+
+      return {
+        msj: 'Acta de entrada actualizada correctamente',
+        validate: true,
+        data: registroEntrada
+      };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      console.log(error);
+      return {
+        msj: 'Error al actualizar el acta de entrada',
+        validate: false,
+        error: error.message
+      };
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  async updateActaSalida(id: number, updateActaSalidaDto: UpdateActaSalidaDto) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // Buscar el acta de salida por ID
+      const registroSalida = await queryRunner.manager.findOne(RegistroSalida, {
+        where: { id: id },
+        relations: ['entrega', 'recibeSinSM', 'numSolicitudCompra', 'numSolicitudCompra.numOrdenTrabajo']
+      });
+
+      if (!registroSalida) {
+        throw new NotFoundException('No se encontró el acta de salida con el ID proporcionado');
+      }
+
+      // Editar entregaId (aplica para ambos casos)
+      if (updateActaSalidaDto.entregaId !== undefined) {
+        const entrega = await queryRunner.manager.findOne(User, {
+          where: { id: updateActaSalidaDto.entregaId }
+        });
+
+        if (!entrega) {
+          throw new NotFoundException('No se encontró el usuario de entrega con el ID proporcionado');
+        }
+
+        registroSalida.entrega = entrega;
+      }
+
+      // Editar observación (aplica para ambos casos)
+      if (updateActaSalidaDto.observacion !== undefined) {
+        registroSalida.observacion = updateActaSalidaDto.observacion;
+      }
+
+      // Si NO tiene solicitud de material (es salida sin SM)
+      if (!registroSalida.numSolicitudCompra) {
+        // Editar recibeSinSMId
+        if (updateActaSalidaDto.recibeSinSMId !== undefined) {
+          const recibeSinSM = await queryRunner.manager.findOne(User, {
+            where: { id: updateActaSalidaDto.recibeSinSMId }
+          });
+
+          if (!recibeSinSM) {
+            throw new NotFoundException('No se encontró el usuario que recibe con el ID proporcionado');
+          }
+
+          registroSalida.recibeSinSM = recibeSinSM;
+        }
+
+        // Editar destino
+        if (updateActaSalidaDto.destino !== undefined) {
+          registroSalida.destino = updateActaSalidaDto.destino;
+        }
+      } else {
+        // Si SÍ tiene solicitud de material
+        // Editar solicitante (numOrdenTrabajo.userSolicitante)
+        if (updateActaSalidaDto.solicitanteId !== undefined) {
+          const solicitudDeCompra = await queryRunner.manager.findOne(SolicitudDeCompra, {
+            where: { id: registroSalida.numSolicitudCompra.id },
+            relations: ['numOrdenTrabajo']
+          });
+
+          if (!solicitudDeCompra) {
+            throw new NotFoundException('No se encontró la solicitud de compra');
+          }
+
+          const nuevoSolicitante = await queryRunner.manager.findOne(User, {
+            where: { id: updateActaSalidaDto.solicitanteId }
+          });
+
+          if (!nuevoSolicitante) {
+            throw new NotFoundException('No se encontró el nuevo solicitante con el ID proporcionado');
+          }
+
+          if (solicitudDeCompra.numOrdenTrabajo) {
+            solicitudDeCompra.numOrdenTrabajo.userSolicitante = nuevoSolicitante;
+            await queryRunner.manager.save(solicitudDeCompra.numOrdenTrabajo);
+          }
+        }
+
+        // Editar destino (en la solicitud de compra)
+        if (updateActaSalidaDto.destino !== undefined) {
+          const solicitudDeCompra = await queryRunner.manager.findOne(SolicitudDeCompra, {
+            where: { id: registroSalida.numSolicitudCompra.id }
+          });
+
+          if (!solicitudDeCompra) {
+            throw new NotFoundException('No se encontró la solicitud de compra');
+          }
+
+          solicitudDeCompra.Destino = updateActaSalidaDto.destino;
+          await queryRunner.manager.save(solicitudDeCompra);
+        }
+      }
+
+      // Guardar los cambios del registro de salida
+      await queryRunner.manager.save(RegistroSalida, registroSalida);
+
+      await queryRunner.commitTransaction();
+
+      return {
+        msj: 'Acta de salida actualizada correctamente',
+        validate: true,
+        data: registroSalida
+      };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      console.log(error);
+      return {
+        msj: 'Error al actualizar el acta de salida',
+        validate: false,
+        error: error.message
+      };
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  async deleteActaEntrada(id: number) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // Buscar el acta de entrada
+      const registroEntrada = await queryRunner.manager.findOne(RegistroEntrada, {
+        where: { id: id },
+        relations: ['itemEntrada']
+      });
+
+      if (!registroEntrada) {
+        throw new NotFoundException('No se encontró el acta de entrada con el ID proporcionado');
+      }
+
+      // Eliminar todos los items de entrada relacionados
+      if (registroEntrada.itemEntrada && registroEntrada.itemEntrada.length > 0) {
+        await queryRunner.manager.remove(ItemsEntrada, registroEntrada.itemEntrada);
+      }
+
+      // Eliminar el registro de entrada
+      await queryRunner.manager.remove(RegistroEntrada, registroEntrada);
+
+      await queryRunner.commitTransaction();
+
+      return {
+        msj: 'Acta de entrada eliminada correctamente',
+        validate: true
+      };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      console.log(error);
+      return {
+        msj: 'Error al eliminar el acta de entrada',
+        validate: false,
+        error: error.message
+      };
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  async deleteActaSalida(id: number) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // Buscar el acta de salida
+      const registroSalida = await queryRunner.manager.findOne(RegistroSalida, {
+        where: { id: id },
+        relations: ['itemSalida']
+      });
+
+      if (!registroSalida) {
+        throw new NotFoundException('No se encontró el acta de salida con el ID proporcionado');
+      }
+
+      // Eliminar todos los items de salida relacionados
+      if (registroSalida.itemSalida && registroSalida.itemSalida.length > 0) {
+        await queryRunner.manager.remove(ItemsSalida, registroSalida.itemSalida);
+      }
+
+      // Eliminar el registro de salida
+      await queryRunner.manager.remove(RegistroSalida, registroSalida);
+
+      await queryRunner.commitTransaction();
+
+      return {
+        msj: 'Acta de salida eliminada correctamente',
+        validate: true
+      };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      console.log(error);
+      return {
+        msj: 'Error al eliminar el acta de salida',
+        validate: false,
+        error: error.message
+      };
+    } finally {
+      await queryRunner.release();
+    }
+  }
 
   update(id: number, updateInventarioDto: UpdateInventarioDto) {
     return `This action updates a #${id} inventario`;

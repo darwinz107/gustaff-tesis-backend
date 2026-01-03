@@ -5,7 +5,9 @@ import { UpdateInventarioDto } from './dto/update-inventario.dto';
 import { CreateItemsSolicitadosDto } from './dto/create-items-solicitados.dto';
 import { StockDto } from './dto/stock.dto';
 import { CreateActaSalidaDto } from './dto/create-acta-salida.dto';
+import { UpdateActaSalidaDto } from './dto/update-acta-salida.dto';
 import { CreateActaEntradaDto } from './dto/create-acta-entrada.dto';
+import { UpdateActaEntradaDto } from './dto/update-acta-entrada.dto';
 import { CreateProovedorDto } from './dto/create-proovedor.dto';
 import { FiltrarActaEntradaDto } from './dto/filtrar-acta-entrada.dto';
 import { FiltrarActaSalidaDto } from './dto/filtrar-acta-salida.dto';
@@ -41,6 +43,21 @@ export class InventarioController {
     return this.inventarioService.createActaSalida(+id, createActaSalidaDto);
   }
 
+  @Patch('acta-salida/:id')
+  updateActaSalida(@Param('id') id: string, @Body() updateActaSalidaDto: UpdateActaSalidaDto) {
+    return this.inventarioService.updateActaSalida(+id, updateActaSalidaDto);
+  }
+
+  @Delete('acta-entrada/:id')
+  deleteActaEntrada(@Param('id') id: string) {
+    return this.inventarioService.deleteActaEntrada(+id);
+  }
+
+  @Delete('acta-salida/:id')
+  deleteActaSalida(@Param('id') id: string) {
+    return this.inventarioService.deleteActaSalida(+id);
+  }
+
   @Post('acta-salida/sin-orden/crear')
   createActaSalidaSinSM(@Body() createActaSalidaSinSMDto:CreateActaSalidaSinSMDto) {
   console.log('Controller - createActaSalidaSinSM DTO:', createActaSalidaSinSMDto);
@@ -50,6 +67,11 @@ export class InventarioController {
    @Post('acta-entrada/:id')
   createActaEntrada(@Param('id') id: string,@Body() createActaEntradaDto:CreateActaEntradaDto) {
     return this.inventarioService.createActaEntrada(+id,createActaEntradaDto);
+  }
+
+  @Patch('acta-entrada/:id')
+  updateActaEntrada(@Param('id') id: string, @Body() updateActaEntradaDto: UpdateActaEntradaDto) {
+    return this.inventarioService.updateActaEntrada(+id, updateActaEntradaDto);
   }
 
   @Get('acta-salida-by/:id')
@@ -80,6 +102,11 @@ export class InventarioController {
   @Get('actas-entradas-by/:id')
   findRegistroEntradaById(@Param('id') id:string) {
     return this.inventarioService.findRegistroEntradaById(+id);
+  }
+
+  @Get('actas-salidas-by/:id')
+  findRegistroSalidaById(@Param('id') id:string) {
+    return this.inventarioService.findRegistroSalidaById(+id);
   }
 
   @Get('info-entrada/:id')
