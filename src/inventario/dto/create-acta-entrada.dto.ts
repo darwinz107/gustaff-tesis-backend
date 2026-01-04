@@ -8,7 +8,7 @@ import {
   IsString,
   ValidateNested,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type,Exclude } from 'class-transformer';
 
 export class CreateActaEntradaDto {
   proovedor: string;
@@ -79,5 +79,15 @@ class ItemSolicitado {
   @IsOptional()
   @IsString()
   Observacion: string;
+
+  @IsOptional()
+  @IsString()
+  @Exclude()
+  imagen: string;
+
+  @IsOptional()
+  @IsBoolean()
+  @Exclude()
+  esActualizado?: boolean;
 }
 
