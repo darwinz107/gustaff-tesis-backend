@@ -383,6 +383,7 @@ await  queryRunner.release();
 }
 
 async createActaSalida(id:number, createActaSalidaDto:CreateActaSalidaDto) {
+console.log(createActaSalidaDto);
   const queryRunner = this.dataSource.createQueryRunner();
   await queryRunner.connect();
   await queryRunner.startTransaction();
