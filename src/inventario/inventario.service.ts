@@ -416,7 +416,8 @@ async createActaSalida(id:number, createActaSalidaDto:CreateActaSalidaDto) {
     if (!registroSalida) {
      
       const countReg = await queryRunner.manager.find(RegistroSalida,{take:1,order:{id:'DESC'}});
-      const newNumSalida = 'AS-' + (countReg[0].id + 1).toString().padStart(5, '0');
+      const nextId = countReg && countReg.length > 0 ? countReg[0].id + 1 : 1;
+      const newNumSalida = 'AS-' + nextId.toString().padStart(5, '0');
 
       const totalItems = itemsSolicitados.reduce((s, it) => s + it.cantidad, 0);
 
@@ -615,7 +616,8 @@ async createActaSalidaSinSM(createActaSalidaSinSMDto:CreateActaSalidaSinSMDto) {
 
      
       const countReg = await queryRunner.manager.find(RegistroSalida,{take:1,order:{id:"DESC"}});
-      const newNumSalida = 'AS-' + (countReg[0].id + 1).toString().padStart(5, '0');
+      const nextId = countReg && countReg.length > 0 ? countReg[0].id + 1 : 1;
+      const newNumSalida = 'AS-' + nextId.toString().padStart(5, '0');
 
       const totalItems = createActaSalidaSinSMDto.itemsSalida.reduce((s, it) => s + it.cantidad, 0);
 
