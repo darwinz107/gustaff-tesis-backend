@@ -573,8 +573,7 @@ async filtrarBodegas(filtrar:FiltrarBodegaDto){
   }
 
   async editMaquina(id:number,area:string, maquina:string, imagen:string){
-    console.log("Editar maquina id:", id, " Area:", area);
-
+   
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -596,10 +595,11 @@ async filtrarBodegas(filtrar:FiltrarBodegaDto){
       return {msj:"No se encontro un area valida para la maquina",validate:false};
      }
 
-     if(area === findAreaa.nombre){
-        await queryRunner.manager.save(maquinaEdit);
-        await queryRunner.commitTransaction();
-        return {msj:"Maquina editada correctamente",validate:true};
+     if(area !== findAreaa.nombre){
+      maquinaEdit.nombre = maquina;
+       // await queryRunner.manager.save(maquinaEdit);
+       /* await queryRunner.commitTransaction();
+        return {msj:"Maquina editada correctamente",validate:true};*/
       }
 
       const findArea = await queryRunner.manager.findOne(Area,{where:{nombre:area}});
@@ -788,6 +788,12 @@ async filtrarBodegas(filtrar:FiltrarBodegaDto){
       }
       const deleteCodigo = await queryRunner.manager.delete(Codigo,maquinaDelete.codigo.id);
       if(deleteCodigo.affected ===0){
+        await queryRunner.rollbackTransaction();
+        return {msj:"No se pudo eliminar la maquina, intente de nuevo",validate:false};
+      }
+
+      const inventarioDelete = await queryRunner.manager.delete(Inventario,{nombre:maquinaDelete.nombre});
+      if(inventarioDelete.affected ===0){
         await queryRunner.rollbackTransaction();
         return {msj:"No se pudo eliminar la maquina, intente de nuevo",validate:false};
       }
