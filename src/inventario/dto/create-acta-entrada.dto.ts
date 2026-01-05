@@ -82,7 +82,7 @@ class ItemSolicitado {
 
   @IsOptional()
   @IsString()
-  @Exclude()
+  
   imagen: string;
 
   @IsOptional()

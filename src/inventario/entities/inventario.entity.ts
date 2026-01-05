@@ -12,19 +12,19 @@ export class Inventario {
      id:number;
      @Column()
      nombre:string;
-     @Column()
+     @Column({type:'int',unsigned:true,default:0})
      stock:number;
-     @Column()
+     @Column({type:'int',unsigned:true,default:0})
      stockMin:number;
-     @Column({type:"decimal",precision:10,scale:2})
+     @Column({type:"decimal",precision:10,scale:2,unsigned:true, default:0})
      costo:number;
      @Column({type: 'text', nullable: true})
      imagen: string | null;
-     @ManyToOne(()=>Bodega,(bodega)=>bodega)
+     @ManyToOne(()=>Bodega,(bodega)=>bodega,{nullable:true})
      bodega: Bodega;
-     @ManyToOne(()=>Seccion,(seccion)=>seccion)
+     @ManyToOne(()=>Seccion,(seccion)=>seccion,{nullable:true})
     seccion: Seccion;
-    @ManyToOne(()=>Percha,(percha)=>percha)
+    @ManyToOne(()=>Percha,(percha)=>percha,{nullable:true})
     percha: Percha;
      @Column({type:'boolean',default:1})
      estado:boolean;
