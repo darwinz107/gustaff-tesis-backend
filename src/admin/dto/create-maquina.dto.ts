@@ -1,4 +1,5 @@
-import { IsNotEmpty, IsString } from "class-validator";
+import { IsNotEmpty, IsOptional, IsString } from "class-validator";
+import { IsNull } from "typeorm";
 
 export class CreateMaquinaDto {
     @IsString()
@@ -7,4 +8,8 @@ export class CreateMaquinaDto {
     @IsString()
     @IsNotEmpty()
     area:string;
+
+     @IsOptional()
+    @IsString()
+    imagen:string;
 }

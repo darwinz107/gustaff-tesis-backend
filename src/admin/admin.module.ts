@@ -8,9 +8,10 @@ import { UsersModule } from 'src/users/users.module';
 import { Bodega } from 'src/parametro/entities/bodega';
 import { Seccion } from 'src/parametro/entities/seccion';
 import { Percha } from 'src/parametro/entities/percha';
+import { Inventario } from 'src/inventario/entities/inventario.entity';
 
 @Module({
-  imports:[TypeOrmModule.forFeature(),UsersModule,RolesModule,ParametroModule],
+  imports:[TypeOrmModule.forFeature([Inventario]),UsersModule,RolesModule,ParametroModule],
   controllers: [AdminController],
   providers: [AdminService],
   exports:[AdminService]

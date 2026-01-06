@@ -273,7 +273,7 @@ let solMaterial: SolicitudDeCompra | null = null;
        bodega:bodega,
        seccion:seccion,
        percha:percha,
-       
+       imagen: item.imagen ?? null,
       }
     await queryRunner.manager.save(Inventario,newInventario);
 
@@ -317,6 +317,7 @@ else{
     findItem.bodega = bodega ?? findItem.bodega;
     findItem.seccion = seccion ?? findItem.seccion;
     findItem.percha = percha ?? findItem.percha;
+    findItem.imagen = item.imagen ?? findItem.imagen;
 
     await queryRunner.manager.save(Inventario, findItem);
 
@@ -382,6 +383,7 @@ await  queryRunner.release();
 }
 
 async createActaSalida(id:number, createActaSalidaDto:CreateActaSalidaDto) {
+console.log(createActaSalidaDto);
   const queryRunner = this.dataSource.createQueryRunner();
   await queryRunner.connect();
   await queryRunner.startTransaction();

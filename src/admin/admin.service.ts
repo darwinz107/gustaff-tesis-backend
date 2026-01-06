@@ -29,6 +29,7 @@ import { CreateBodegaDto } from './dto/create-bodega.dto';
 import { CreateSeccionDto } from './dto/create-seccion.dto';
 import { CreatePerchaDto } from './dto/create-percha.dto';
 import { FiltrarBodegaDto } from './dto/filtrar-bodega';
+import { Inventario } from 'src/inventario/entities/inventario.entity';
 
 
 @Injectable()
@@ -116,7 +117,62 @@ export class AdminService implements OnModuleInit{
     
       async createMaquina(createMaquinaDto: CreateMaquinaDto) {
     
-        if (!createMaquinaDto.area) {
+       const queryRunner = this.dataSource.createQueryRunner();
+        await queryRunner.connect();
+        await queryRunner.startTransaction();
+
+        try {
+
+          if (!createMaquinaDto.area) {
+            await queryRunner.rollbackTransaction();
+            return { msj: "Asigne una area a la maquina",validate:false };
+          }
+          if (!createMaquinaDto.maquina) {
+            await queryRunner.rollbackTransaction();
+            return { msj: "Ingrese una maquina",validate:false };
+          }
+          
+          const findMaquina = await queryRunner.manager.findOne(Maquina,{ where: { nombre: createMaquinaDto.maquina } });
+          if (findMaquina) {
+            await queryRunner.rollbackTransaction();
+            return { msj: "Ya existe una maquina con ese nombre",validate:false };
+          }
+
+          const searchArea = await queryRunner.manager.findOne(Area,{ where: { nombre: createMaquinaDto.area } });
+          if (!searchArea) {
+            await queryRunner.rollbackTransaction();
+            return { msj: "No existe esa area, digite una existente",validate:false }
+          }
+          const maquinalgt = await queryRunner.manager.find(Maquina);
+          const newCod =  `GU-${createMaquinaDto.maquina.slice(0,3)}-${maquinalgt.length+1}`;
+          const nuevoCodigo =  queryRunner.manager.create(Codigo, { cod: newCod, area: { id: searchArea.id } });
+          await queryRunner.manager.save(nuevoCodigo);
+          const nuevaMaquina =  queryRunner.manager.create(Maquina, { nombre: createMaquinaDto.maquina, codigo: { id: nuevoCodigo.id },imagen: createMaquinaDto.imagen ?? null });
+          await queryRunner.manager.save(nuevaMaquina);
+
+          const newInventario = queryRunner.manager.create(Inventario,{ 
+            nombre: createMaquinaDto.maquina,
+            costo: 0,
+            stock: 0,
+            stockMin: 0,
+            estado: true,
+            imagen: createMaquinaDto.imagen ?? null,
+          });
+          
+          await queryRunner.manager.save(newInventario);
+          await queryRunner.commitTransaction();
+          return { msj: "Maquina creada!",validate:true }
+        } catch (error) {
+          await queryRunner.rollbackTransaction();
+          console.error('Error creando maquina:', error);
+          return { msj: 'Error al crear maquina', validate: false, error: error?.message ?? error };
+        }
+        finally {
+          await queryRunner.release();
+        }
+      }
+      
+      /*  if (!createMaquinaDto.area) {
           return { msj: "Asigne una area a la maquina" };
         }
     
@@ -142,11 +198,11 @@ export class AdminService implements OnModuleInit{
         await this.codigoRepository.save(nuevoCodigo);
   
     
-        const nuevaMaquina =  this.maquinaRepository.create({ nombre: createMaquinaDto.maquina, codigo: { id: nuevoCodigo.id } });
+        const nuevaMaquina =  this.maquinaRepository.create({ nombre: createMaquinaDto.maquina, codigo: { id: nuevoCodigo.id },imagen: createMaquinaDto.imagen ?? null });
         await this.maquinaRepository.save(nuevaMaquina);
     
-        return { msj: "Maquina creada!" }
-      }
+        return { msj: "Maquina creada!" }*/
+      
     
       async findAll() {
     
@@ -516,9 +572,8 @@ async filtrarBodegas(filtrar:FiltrarBodegaDto){
     return {msj:"Bodega eliminada correctamente",validate:true};*/
   }
 
-  async editMaquina(id:number,area:string, maquina:string){
-    console.log("Editar maquina id:", id, " Area:", area);
-
+  async editMaquina(id:number,area:string, maquina:string, imagen:string){
+   
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -540,10 +595,11 @@ async filtrarBodegas(filtrar:FiltrarBodegaDto){
       return {msj:"No se encontro un area valida para la maquina",validate:false};
      }
 
-     if(area === findAreaa.nombre){
-        await queryRunner.manager.save(maquinaEdit);
-        await queryRunner.commitTransaction();
-        return {msj:"Maquina editada correctamente",validate:true};
+     if(area !== findAreaa.nombre){
+      maquinaEdit.nombre = maquina;
+       // await queryRunner.manager.save(maquinaEdit);
+       /* await queryRunner.commitTransaction();
+        return {msj:"Maquina editada correctamente",validate:true};*/
       }
 
       const findArea = await queryRunner.manager.findOne(Area,{where:{nombre:area}});
@@ -571,10 +627,20 @@ async filtrarBodegas(filtrar:FiltrarBodegaDto){
         await queryRunner.rollbackTransaction();
         return {msj:"No se pudo actualizar la maquina, intente de nuevo",validate:false};
       }
+   
+       
       const newCod =  `GU-${maquinaEdit.nombre.slice(0,3)}-${lastCodId.id+1}`;
       const nuevoCodigo =  queryRunner.manager.create(Codigo, { cod: newCod, area: { id: findArea.id } });
       await queryRunner.manager.save(nuevoCodigo);
-      await queryRunner.manager.save(Maquina,{...maquinaEdit,codigo:{id:nuevoCodigo.id}});
+     const matchInventario = await queryRunner.manager.findOne(Inventario,{where:{nombre:maquinaEdit.nombre}});
+     if(matchInventario){
+      matchInventario.nombre = maquina;
+      if(imagen){
+        matchInventario.imagen = imagen;
+      }
+      await queryRunner.manager.save(matchInventario);
+      }
+      await queryRunner.manager.save(Maquina,{...maquinaEdit,codigo:{id:nuevoCodigo.id}, imagen: imagen ?? maquinaEdit.imagen});
       await queryRunner.commitTransaction();
       return {msj:"Maquina editada correctamente",validate:true};
     } catch (error) {
@@ -722,6 +788,12 @@ async filtrarBodegas(filtrar:FiltrarBodegaDto){
       }
       const deleteCodigo = await queryRunner.manager.delete(Codigo,maquinaDelete.codigo.id);
       if(deleteCodigo.affected ===0){
+        await queryRunner.rollbackTransaction();
+        return {msj:"No se pudo eliminar la maquina, intente de nuevo",validate:false};
+      }
+
+      const inventarioDelete = await queryRunner.manager.delete(Inventario,{nombre:maquinaDelete.nombre});
+      if(inventarioDelete.affected ===0){
         await queryRunner.rollbackTransaction();
         return {msj:"No se pudo eliminar la maquina, intente de nuevo",validate:false};
       }
