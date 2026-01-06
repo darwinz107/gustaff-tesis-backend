@@ -33,6 +33,7 @@ import { FiltrarActaSalidaDto } from './dto/filtrar-acta-salida.dto';
 import { FiltrarInventarioDto } from './dto/filtrar-inventario.dto';
 import { CreateActaSalidaSinSMDto } from './dto/create-acta-salida-sm.dto';
 import { CreateItemsSalidaSinSMDto } from './dto/create-items-salida-sinSM.dto';
+import { Maquina } from 'src/parametro/entities/maquina.entity';
 
 @Injectable()
 export class InventarioService {
@@ -782,7 +783,7 @@ try {
 
   async findAll() {
 
-    const inventarios = await this.inventarioRepository.find({relations:['bodega']});
+    const inventarios = await this.inventarioRepository.find({relations:['bodega','seccion','percha']});
     if(inventarios === null|| inventarios === undefined){
       return new NotFoundException("No se encontro inventarios");
     }
@@ -1242,6 +1243,7 @@ async filtrarInventarios(filtros: FiltrarInventarioDto) {
       'inventario.stockMin',
       'inventario.costo',
       'inventario.estado',
+      'inventario.imagen',
       'bodega.id',
       'bodega.bodega',
       'seccion.id',
@@ -1556,8 +1558,87 @@ async filtrarInventarios(filtros: FiltrarInventarioDto) {
     }
   }
 
-  update(id: number, updateInventarioDto: UpdateInventarioDto) {
-    return `This action updates a #${id} inventario`;
+ async update(id: number, updateInventarioDto: UpdateInventarioDto) {
+    console.log(updateInventarioDto);
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const inventario = await queryRunner.manager.findOne(Inventario,{where:{id:id}});
+      if(!inventario){
+        throw new NotFoundException("No se encontro el item de inventario");
+      }
+
+           if(updateInventarioDto.imagen !== undefined){
+        const findMaquina = await queryRunner.manager.findOne(Maquina,{where:{nombre: updateInventarioDto.nombre}});
+      if(findMaquina){
+        findMaquina.imagen = updateInventarioDto.imagen;
+        await queryRunner.manager.save(Maquina,findMaquina);
+      }
+        inventario.imagen = updateInventarioDto.imagen;
+      }
+
+      if(updateInventarioDto.nombre !== undefined){
+          const findMaquina = await queryRunner.manager.findOne(Maquina,{where:{nombre: updateInventarioDto.nombre}});
+      if(findMaquina){
+        findMaquina.nombre = updateInventarioDto.nombre;
+        await queryRunner.manager.save(Maquina,findMaquina);
+      }
+        inventario.nombre = updateInventarioDto.nombre;
+      }
+      if(updateInventarioDto.costo !== undefined){
+        inventario.costo = updateInventarioDto.costo;
+      }
+
+      if(updateInventarioDto.stock !== undefined){
+        inventario.stock = updateInventarioDto.stock;
+      }
+
+      if(updateInventarioDto.stockMin !== undefined){
+        inventario.stockMin = updateInventarioDto.stockMin;
+      }
+      if(updateInventarioDto.bodegaId !== undefined){
+        const bodega = await queryRunner.manager.findOne(Bodega,{where:{id:updateInventarioDto.bodegaId}});
+        if(!bodega){
+          throw new NotFoundException("No se encontro la bodega");
+        }
+        inventario.bodega = bodega;
+      }
+      if(updateInventarioDto.seccionId !== undefined){
+        const seccion =  await queryRunner.manager.findOne(Seccion,{where:{id:updateInventarioDto.seccionId}});
+        if(!seccion){
+          throw new NotFoundException("No se encontro la seccion");
+        }
+        inventario.seccion = seccion;
+      }
+      if(updateInventarioDto.perchaId !== undefined){
+        const percha =  await queryRunner.manager.findOne(Percha,{where:{id:updateInventarioDto.perchaId}});
+        if(!percha){
+          throw new NotFoundException("No se encontro la percha");
+        }
+        inventario.percha = percha;
+      }
+      if(updateInventarioDto.estado !== undefined){
+        inventario.estado = updateInventarioDto.estado;
+      }
+
+      await queryRunner.manager.save(Inventario, inventario);
+      await queryRunner.commitTransaction();
+      return {
+        msj: "Item de inventario actualizado correctamente",
+        validate: true
+      };
+
+      
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      console.log(error);
+      
+    } finally {
+      await queryRunner.release();
+    }
+  
   }
 
   remove(id: number) {
