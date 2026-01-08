@@ -16,7 +16,7 @@ export class CreateActaSalidaSinSMDto {
     @IsOptional()
     @IsString()
     observacion:string;
-    destino:string;
-   // caracteristica:string;
+    descripcion:string;
+   
     itemsSalida:CreateItemsSalidaDto[];
 }

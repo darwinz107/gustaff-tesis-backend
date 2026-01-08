@@ -17,6 +17,16 @@ export class UsersController {
   findAll() {
     return this.usersService.findAll();
   }
+  @Get('supervisores')
+findSupervisores() {
+  return this.usersService.findUsersBySupervisorRoles();
+}
+
+@Get('gerencia-coordinacion')
+findGerenciaYCoordinacion() {
+  return this.usersService.findUsersGerenciaYCoordinacion();
+}
+
 
   @Get('users/all')
   findAllUsers(){

@@ -2,6 +2,7 @@ import { Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "ty
 import { Proovedores } from "./proovedores.entity";
 import { ItemsEntrada } from "./itemsEntrada.entity";
 import { SolicitudDeCompra } from "src/solicitud-de-compra/entities/solicitud-de-compra.entity";
+import { User } from "src/users/entities/user.entity";
 
 @Entity()
 export class RegistroEntrada {
@@ -19,7 +20,8 @@ export class RegistroEntrada {
      proovedor:Proovedores;
      @OneToMany(()=>ItemsEntrada,(itemsEntrada)=>itemsEntrada.registroEntrada)
      itemEntrada:ItemsEntrada[];
-     
+     @ManyToOne(()=>User,(recibe)=>recibe.registroEntrada)
+     recibe:User;
      @Column({type:"decimal",precision:10,scale:2})
      total:number;
 }

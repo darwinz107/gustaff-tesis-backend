@@ -44,9 +44,7 @@ export class SolicitudDeCompraService implements OnModuleInit{
    await queryRunner.connect();
    await queryRunner.startTransaction();
  try {
-  console.log("llego al servicio de solicitud de compra");
-  console.log(createSolicitudDeCompraDto.Destino);
-
+  
  
     //const ordenTrabajo = await this.ordenDeTrabajoRepository.findOne({where:{id:createSolicitudDeCompraDto.ordenTrabajoId}});
 
@@ -90,7 +88,6 @@ export class SolicitudDeCompraService implements OnModuleInit{
       numOrden:newNumOrden,
       numOrdenTrabajo:ordenTrabajo,
       Autoriza:createSolicitudDeCompraDto.Autoriza,
-      Destino:createSolicitudDeCompraDto.Destino,
       estadoCompra:estadoDefault
     }
 
@@ -221,7 +218,7 @@ return {msj:"Solicitud de compra creada",validate:true}
       'solicitudCompra.numOrden',
       'solicitudCompra.fechaRemision',
       'solicitudCompra.Autoriza',
-      'solicitudCompra.Destino',
+      
       
       'ordenTrabajo.id',
       'ordenTrabajo.NumOrden',
@@ -270,7 +267,7 @@ return {msj:"Solicitud de compra creada",validate:true}
       'solicitudCompra.numOrden',
       'solicitudCompra.fechaRemision',
       'solicitudCompra.Autoriza',
-      'solicitudCompra.Destino',
+      
       
       //'ordenTrabajo.id',
       'ordenTrabajo.id',
@@ -374,7 +371,7 @@ return {msj:"Solicitud de compra creada",validate:true}
       'solicitudCompra.numOrden',
       'solicitudCompra.fechaRemision',
       'solicitudCompra.Autoriza',
-      'solicitudCompra.Destino',
+      
       
       //'ordenTrabajo.id',
       'ordenTrabajo.id',
@@ -482,7 +479,7 @@ return {msj:"Solicitud de compra creada",validate:true}
     throw new NotFoundException("No es encontro un estado de compra");
     }
 
-    const updateSoliMaterial = await this.solicitudDeCompraRepository.update(id,{Autoriza:updateSolicitudDeCompraDto.Autoriza,Destino:updateSolicitudDeCompraDto.Destino,numOrdenTrabajo:ordenTrabajo,estadoCompra:estCompra});
+    const updateSoliMaterial = await this.solicitudDeCompraRepository.update(id,{Autoriza:updateSolicitudDeCompraDto.Autoriza,numOrdenTrabajo:ordenTrabajo,estadoCompra:estCompra});
 
     if(updateSoliMaterial.affected !== 0){
 

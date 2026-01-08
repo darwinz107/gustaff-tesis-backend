@@ -20,8 +20,7 @@ export class SolicitudDeCompra {
     fechaRemision:Date;
     @Column()
     Autoriza:string;
-    @Column()
-    Destino:string;
+    
     @OneToMany(()=>ItemsSolicitados,(itemsSolicitados)=>itemsSolicitados.ordenCompra)
     itemSolicitados:ItemsSolicitados[]
     @OneToMany(()=>RegistroSalida,(registroSalida)=>registroSalida.numSolicitudCompra)

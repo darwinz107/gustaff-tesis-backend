@@ -3,6 +3,7 @@ import { Role } from "src/roles/entities/role.entity";
 import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { Cargo } from "./cargo.entity";
 import { RegistroSalida } from "src/inventario/entities/registroSalida.entity";
+import { RegistroEntrada } from "src/inventario/entities/registroEntrada.entity";
 
 @Entity()
 export class User {
@@ -35,4 +36,6 @@ tecnicoId:SolicitudOrden[];
 registroSalida:RegistroSalida[];
 @OneToMany(()=>RegistroSalida,(registroSalida2)=>registroSalida2.recibeSinSM)
 registroSalida2:RegistroSalida[];
+@OneToMany(()=>RegistroEntrada,(registroEntrada)=>registroEntrada.recibe)
+registroEntrada:RegistroEntrada[]
 }

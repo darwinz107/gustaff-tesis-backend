@@ -53,7 +53,7 @@ export class AuthController {
     return {isRol:true};
   }
 
-  @Rol(['JEFE DE LOGISTICA INTERNA'])
+  @Rol(['SUPERVISOR LOGISTICA INTERNA'])
   @UseGuards(AuthUser2Guard)
   @Get('validate/user2')
   validateRol2(){

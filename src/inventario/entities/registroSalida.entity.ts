@@ -22,12 +22,12 @@ export class RegistroSalida {
      @Column({type:'datetime',default:()=>'CURRENT_TIMESTAMP'})
     fechaRemision:Date;
 
+    @Column({nullable:true})
+     descripcion:string;
+
     @Column()
      observacion:string;
 
-     @Column()
-     destino:string;
-    
     @ManyToOne(()=>User,(entrega)=>entrega.registroSalida)
         entrega:User;
 

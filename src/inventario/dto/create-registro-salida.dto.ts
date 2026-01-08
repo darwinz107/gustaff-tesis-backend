@@ -11,8 +11,6 @@ export class CreateRegistroSalidaDto {
     numSolicitudCompra:SolicitudDeCompra|null;
     entrega:User;
     observacion:string;
-    
-    recibeSinSM:User|null;
-    
-    destino:string;
+    descripcion?:string;
+    recibeSinSM?:User|null;
 }

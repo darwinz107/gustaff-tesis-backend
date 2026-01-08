@@ -46,6 +46,58 @@ export class UsersService {
     
   }*/
 
+  async findUsersBySupervisorRoles() {
+  const rolesPermitidos = [
+    'SUPERVISOR MANTENIMIENTO',
+    'SUPERVISOR PLANIFICACION DE PROYECTOS',
+    'SUPERVISOR GALLETERIA',
+    'SUPERVISOR SEGURIDAD INDUSTRIAL',
+    'SUPERVISOR CONTROL DE CALIDAD',
+    'COORDINDACION DE OPERACIONES',
+    'SUPERVISOR CHOCOLATERIA',
+    'GERENCIA',
+    'SUPERVISOR LOGISTICA INTERNA',
+    'SUPERVISOR PLANTA',
+    'COORDINADOR DE MANTENIMIENTO'
+  ];
+
+  const users = await this.userRepository
+    .createQueryBuilder('user')
+    .leftJoinAndSelect('user.cargoId', 'cargo')
+    .leftJoinAndSelect('cargo.rolId', 'rol')
+    .where('rol.role IN (:...roles)', { roles: rolesPermitidos })
+    .select([
+      'user.id',
+      'user.name',
+    ])
+    .getMany();
+
+  return users;
+}
+  
+async findUsersGerenciaYCoordinacion() {
+  const rolesPermitidos = [
+    'GERENCIA',
+    'COORDINADOR DE MANTENIMIENTO',
+    'SUPERVISOR LOGISTICA INTERNA'
+  ];
+
+  const users = await this.userRepository
+    .createQueryBuilder('user')
+    .leftJoinAndSelect('user.cargoId', 'cargo')
+    .leftJoinAndSelect('cargo.rolId', 'rol')
+    .where('rol.role IN (:...roles)', { roles: rolesPermitidos })
+    .select([
+      'user.id',
+      'user.name',
+     
+    ])
+    .getMany();
+
+  return users;
+}
+
+
   async findAllUsers(){
    
     const users = await this.userRepository.find({select:['id','name','fechaNac','identification','cellphone','email','password','cargoId','estado'],relations:['cargoId']});

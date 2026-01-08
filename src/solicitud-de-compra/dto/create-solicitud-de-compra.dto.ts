@@ -10,9 +10,7 @@ export class CreateSolicitudDeCompraDto {
     @IsNotEmpty()
     @IsNumber()
     ordenTrabajoId:number;
-    @IsOptional()
-    @IsString()
-    Destino:string;
+   
     @IsArray()
     @ValidateNested({each:true})
     @Type(()=>CreateItemsSolicitadosDto)
