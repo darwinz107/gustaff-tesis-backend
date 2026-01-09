@@ -20,8 +20,8 @@ export class RegistroEntrada {
      proovedor:Proovedores;
      @OneToMany(()=>ItemsEntrada,(itemsEntrada)=>itemsEntrada.registroEntrada)
      itemEntrada:ItemsEntrada[];
-     @ManyToOne(()=>User,(recibe)=>recibe.registroEntrada)
-     recibe:User;
+     @ManyToOne(()=>User,(recibe)=>recibe.registroEntrada,{nullable:true})
+     recibe:User|null;
      @Column({type:"decimal",precision:10,scale:2})
      total:number;
 }

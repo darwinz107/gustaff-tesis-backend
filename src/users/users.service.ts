@@ -162,5 +162,20 @@ async findUsersGerenciaYCoordinacion() {
   remove(id: number) {
     return `This action removes a #${id} user`;
   }
+
+ /* async deleteUser(id: number) {
+    try {
+      const user = await this.userRepository.findOne({ where: { id } });
+      if (!user) {
+        return { msj: 'Usuario no encontrado', validate: false };
+      }
+      
+      await this.userRepository.delete(id);
+      return { msj: 'Usuario eliminado correctamente', validate: true };
+    } catch (error) {
+      console.error('Error eliminando usuario:', error);
+      return { msj: 'Error al eliminar usuario', validate: false, error: error?.message ?? error };
+    }
+  }*/
 }
 

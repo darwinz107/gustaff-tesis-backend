@@ -222,7 +222,7 @@ let solMaterial: SolicitudDeCompra | null = null;
     
     factura:createActaEntradaDto?.factura,
     numActa:newNumEntrada,
-    solicita:solMaterial?.numOrdenTrabajo?.userSolicitante.name ?? null,
+    solicita:solMaterial?.numOrdenTrabajo?.userSolicitante ?? solMaterial?.numOrdenTrabajo?.userSolicitante?.name ?? null,
     proovedor:findProovedor,
     recibe:registroExistente,
     total:createActaEntradaDto?.total,

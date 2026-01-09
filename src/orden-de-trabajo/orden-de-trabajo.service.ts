@@ -461,8 +461,8 @@ try {
   async getAllOrdenesTrabajo(){
      
       const ordenes = await this.solicitudOrdenRepository.createQueryBuilder('solicitud')
-      .innerJoin('solicitud.userSolicitante', 'userSolicitante')
-      .innerJoin('solicitud.userReceptor', 'userReceptor')
+      .leftJoin('solicitud.userSolicitante', 'userSolicitante')
+      .leftJoin('solicitud.userReceptor', 'userReceptor')
       .leftJoin('solicitud.userTecnico', 'userTecnico')
       .innerJoin('solicitud.estadoTrabajo','estado')
       .innerJoin('solicitud.estadoUso','estadoUso')

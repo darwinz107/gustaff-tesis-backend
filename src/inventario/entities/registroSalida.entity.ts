@@ -28,8 +28,8 @@ export class RegistroSalida {
     @Column()
      observacion:string;
 
-    @ManyToOne(()=>User,(entrega)=>entrega.registroSalida)
-        entrega:User;
+    @ManyToOne(()=>User,(entrega)=>entrega.registroSalida,{nullable:true})
+        entrega:User|null;
 
         @ManyToOne(()=>User,(recibeSinSM)=>recibeSinSM.registroSalida2,{nullable:true})
         
