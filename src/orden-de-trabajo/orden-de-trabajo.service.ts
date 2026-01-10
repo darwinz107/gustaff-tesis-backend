@@ -464,8 +464,8 @@ try {
       .leftJoin('solicitud.userSolicitante', 'userSolicitante')
       .leftJoin('solicitud.userReceptor', 'userReceptor')
       .leftJoin('solicitud.userTecnico', 'userTecnico')
-      .innerJoin('solicitud.estadoTrabajo','estado')
-      .innerJoin('solicitud.estadoUso','estadoUso')
+      .leftJoin('solicitud.estadoTrabajo','estado')
+      .leftJoin('solicitud.estadoUso','estadoUso')
       .select([
         'solicitud.id',
         'solicitud.NumOrden',
@@ -507,11 +507,11 @@ return new NotFoundException("No existen ordenes de trabajo");
   async getOrdenTrabajoBySolicitante(name:string){
      
       const orden = await this.solicitudOrdenRepository.createQueryBuilder('solicitud')
-      .innerJoin('solicitud.userSolicitante', 'userSolicitante')
-      .innerJoin('solicitud.userReceptor', 'userReceptor')
+      .leftJoin('solicitud.userSolicitante', 'userSolicitante')
+      .leftJoin('solicitud.userReceptor', 'userReceptor')
       .leftJoin('solicitud.userTecnico', 'userTecnico')
-      .innerJoin('solicitud.estadoTrabajo','estado')
-      .innerJoin('solicitud.estadoUso','estadoUso')
+      .leftJoin('solicitud.estadoTrabajo','estado')
+      .leftJoin('solicitud.estadoUso','estadoUso')
       .select([
         'solicitud.id',
         'solicitud.NumOrden',
@@ -544,8 +544,8 @@ return new NotFoundException("No existen ordenes de trabajo");
    async getOrdenTrabajoById(id:number){
      
       const orden = await this.solicitudOrdenRepository.createQueryBuilder('solicitud')
-      .innerJoin('solicitud.userSolicitante', 'userSolicitante')
-      .innerJoin('solicitud.userReceptor', 'userReceptor')
+      .leftJoin('solicitud.userSolicitante', 'userSolicitante')
+      .leftJoin('solicitud.userReceptor', 'userReceptor')
       .leftJoin('solicitud.userTecnico', 'userTecnico')
       .innerJoin('solicitud.estadoTrabajo','estado')
       .select([
@@ -591,8 +591,8 @@ return new NotFoundException("No existen ordenes de trabajo");
     }
 
     const solicitud = await this.solicitudOrdenRepository.createQueryBuilder('solicitud')
-      .innerJoin('solicitud.userSolicitante', 'userSolicitante')
-      .innerJoin('solicitud.userReceptor', 'userReceptor')
+      .leftJoin('solicitud.userSolicitante', 'userSolicitante')
+      .leftJoin('solicitud.userReceptor', 'userReceptor')
       .leftJoin('solicitud.userTecnico', 'userTecnico')
       .select([
         'solicitud.id',
@@ -721,11 +721,11 @@ return new NotFoundException("No existen ordenes de trabajo");
 
   async filtrarOrdenesAvanzado(filtros: FiltrarOrdenDeTrabajoAdvancedDto) {
   const qb = this.solicitudOrdenRepository.createQueryBuilder('solicitud')
-    .innerJoin('solicitud.userSolicitante', 'userSolicitante')
-    .innerJoin('solicitud.userReceptor', 'userReceptor')
+    .leftJoin('solicitud.userSolicitante', 'userSolicitante')
+    .leftJoin('solicitud.userReceptor', 'userReceptor')
     .leftJoin('solicitud.userTecnico', 'userTecnico')
-    .innerJoin('solicitud.estadoTrabajo', 'estado')
-    .innerJoin('solicitud.estadoUso', 'estadoUso')
+    .leftJoin('solicitud.estadoTrabajo', 'estado')
+    .leftJoin('solicitud.estadoUso', 'estadoUso')
     .select([
       'solicitud.id',
       'solicitud.NumOrden',

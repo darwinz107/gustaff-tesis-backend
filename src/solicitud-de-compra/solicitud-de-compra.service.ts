@@ -211,7 +211,6 @@ return {msj:"Solicitud de compra creada",validate:true}
     const solicitudesCompra = await this.solicitudDeCompraRepository.createQueryBuilder('solicitudCompra')
     .leftJoin('solicitudCompra.numOrdenTrabajo','ordenTrabajo')
     .leftJoin('ordenTrabajo.userSolicitante','userSolicitante')
-    
     .leftJoin('solicitudCompra.estadoCompra','estadoCompra')
     .select([
       'solicitudCompra.id',
