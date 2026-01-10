@@ -61,7 +61,7 @@ export class AuthController {
   }
 
   @Get('logout/token')
-  logout(@Res() response:Response){
+  logout(@Res({passthrough:true}) response:Response){
     return this.authService.logout(response);
   }
 

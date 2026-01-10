@@ -71,14 +71,14 @@ const findItem = await this.inventarioRepository.findOne({where:{nombre:stockDto
           console.log(findItem.stock);
  const compras = [
         
-        {cantidad:calcStock*(-1),estado:"Por Comprar",validate:false}
+        {cantidad:calcStock*(-1),estado:"No disponible",validate:false}
        ]
 
        return {compras,validate:true};
         }else{
            const compras = [
         {cantidad:findItem.stock,estado:"En Stock",validate:true},
-        {cantidad:calcStock*(-1),estado:"Por Comprar",validate:false}
+        {cantidad:calcStock*(-1),estado:"No disponible",validate:false}
        ]
 
        return {compras,validate:true};
@@ -848,19 +848,24 @@ console.log(findItem);
     .leftJoin('registroSalida.entrega', 'entrega')
     .leftJoin('itemSalida.inventario', 'inventario');
 
-  if (registroBase.numSolicitudCompra) {
+  
     qb.leftJoin('registroSalida.numSolicitudCompra', 'numSolicitudCompra')
       .leftJoin('numSolicitudCompra.numOrdenTrabajo', 'numOrdenTrabajo')
       .leftJoin('numOrdenTrabajo.userSolicitante', 'userSolicitante')
+      .leftJoin('registroSalida.recibeSinSM', 'recibe')
       .select([
         'registroSalida.id',
         'registroSalida.numActa',
         'registroSalida.fechaRemision',
+        'registroSalida.descripcion',
         'userSolicitante.id',
         'userSolicitante.name',
+         'recibe.id',
+        'recibe.name',
         'entrega.name',
         'numSolicitudCompra.id',
         'numOrdenTrabajo.id',
+        'numOrdenTrabajo.DescripcionTrabajo',
         'itemSalida.item',
         'itemSalida.cantidad',
         'itemSalida.Observacion',
@@ -868,24 +873,7 @@ console.log(findItem);
         'inventario.nombre',
         'inventario.costo',
       ]);
-  } else {
-    qb.leftJoin('registroSalida.recibeSinSM', 'recibe')
-      .select([
-        'registroSalida.id',
-        'registroSalida.numActa',
-        'registroSalida.fechaRemision',
-        'recibe.id',
-        'recibe.name',
-        'entrega.name',
-        'itemSalida.item',
-        'itemSalida.cantidad',
-        'itemSalida.Observacion',
-        'itemSalida.caracteristica',
-        'inventario.id',
-        'inventario.nombre',
-        'inventario.costo',
-      ]);
-  }
+  
 
   
   qb.where('registroSalida.id = :id', { id: registroBase.id });

@@ -79,12 +79,13 @@ export class AuthService{
        response.clearCookie("token",{
       httpOnly:true,
       secure:true,
-      sameSite:'none'
+      sameSite:'none',
+      path:'/'
     });
 
-    response.send({
+    return {
       msj:"Sesion terminada"
-    });
+    };
     } catch (error) {
       
       throw new NotFoundException("Error al cerrar sesion");

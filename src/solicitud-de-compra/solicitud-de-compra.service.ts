@@ -22,6 +22,7 @@ export class SolicitudDeCompraService implements OnModuleInit{
   @InjectRepository(SolicitudOrden) private readonly ordenDeTrabajoRepository:Repository<SolicitudOrden>,
   @InjectRepository(ItemsSolicitados) private readonly itemsSolicitadosRepository:Repository<ItemsSolicitados>,
   @InjectRepository(EstadoCompra) private readonly estadoCompraRepository:Repository<EstadoCompra>,
+  @InjectRepository(Inventario) private readonly inventarioRepository:Repository<Inventario>,
       private dataSource:DataSource,
       private readonly mailService:MailService,
 ){}
@@ -454,50 +455,188 @@ return {msj:"Solicitud de compra creada",validate:true}
   }
 
   async update(id: number, updateSolicitudDeCompraDto: UpdateSolicitudDeCompraDto) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    const ordenTrabajo = await this.ordenDeTrabajoRepository.findOne({where:{NumOrden:updateSolicitudDeCompraDto.ordenTrabajoId}});
+    try {
+      // Actualizar datos de la solicitud de compra
+      let updateData: any = {};
+      
+      if (updateSolicitudDeCompraDto.Autoriza) {
+        updateData.Autoriza = updateSolicitudDeCompraDto.Autoriza;
+      }
 
-    if(!ordenTrabajo){
-    return {msj:"No se encontro una orden de trabajo valida",validate:false}
+      if (updateSolicitudDeCompraDto.estadoCompra) {
+        const estCompra = await queryRunner.manager.findOne(EstadoCompra, {
+          where: { estado: updateSolicitudDeCompraDto.estadoCompra }
+        });
+        if (!estCompra) {
+          throw new NotFoundException("No se encontró un estado de compra válido");
+        }
+        updateData.estadoCompra = estCompra;
+      }
+
+      if (updateSolicitudDeCompraDto.ordenTrabajoId) {
+        const ordenTrabajo = await queryRunner.manager.findOne(SolicitudOrden, {
+          where: { NumOrden: updateSolicitudDeCompraDto.ordenTrabajoId }
+        });
+        if (!ordenTrabajo) {
+          throw new NotFoundException("No se encontró una orden de trabajo válida");
+        }
+        updateData.numOrdenTrabajo = ordenTrabajo;
+      }
+
+      if (Object.keys(updateData).length > 0) {
+        await queryRunner.manager.update(SolicitudDeCompra, { id }, updateData);
+      }
+
+      // Procesar actualizaciones de items solicitados
+      if (updateSolicitudDeCompraDto.itemsSolicitados && updateSolicitudDeCompraDto.itemsSolicitados.length > 0 && updateSolicitudDeCompraDto.itemsSolicitados !== undefined) {
+        
+        // Obtener la solicitud de compra
+        const solicitudCompra = await queryRunner.manager.findOne(SolicitudDeCompra, {
+          where: { id }
+        });
+
+        if (!solicitudCompra) {
+          throw new NotFoundException("No se encontró la solicitud de compra");
+        }
+
+        // Obtener todos los items que se van a actualizar
+        const itemsAActualizar = await queryRunner.manager.find(ItemsSolicitados, {
+          where: { id: () => `id IN (${updateSolicitudDeCompraDto?.itemsSolicitados?.map(i => i.id).join(',')})` }
+        });
+
+        // Agrupar por nombre de item para detectar si se editan ambos complementarios
+        const itemsPorNombre = new Map<string, ItemsSolicitados[]>();
+        for (const item of itemsAActualizar) {
+          if (!itemsPorNombre.has(item.item)) {
+            itemsPorNombre.set(item.item, []);
+          }
+          itemsPorNombre.get(item.item)!.push(item);
+        }
+
+        // Procesar cada update
+        for (const itemUpdate of updateSolicitudDeCompraDto.itemsSolicitados) {
+          const itemActual = itemsAActualizar.find(i => i.id === itemUpdate.id);
+
+          if (!itemActual) {
+            throw new NotFoundException(`No se encontró el item solicitado con ID ${itemUpdate.id}`);
+          }
+
+          // Detectar si se están actualizando AMBOS items complementarios a la vez
+          const itemsDelMismoNombre = itemsPorNombre.get(itemActual.item) || [];
+          const estaActualizandoAmbos = itemsDelMismoNombre.length === 2 && 
+                                        updateSolicitudDeCompraDto.itemsSolicitados.some(i => 
+                                          itemsDelMismoNombre.find(im => im.id === i.id && im.existencia !== itemActual.existencia)
+                                        );
+
+          // Si hay cambios en cantidad
+          if (itemUpdate.cantidad !== undefined && itemUpdate.cantidad !== itemActual.cantidad) {
+            
+            // CASO 1: Se están actualizando ambos items a la vez
+            if (estaActualizandoAmbos) {
+              // Actualización directa, sin lógica incremental
+              itemActual.cantidad = itemUpdate.cantidad;
+              await queryRunner.manager.save(ItemsSolicitados, itemActual);
+            } 
+            // CASO 2: Se actualiza solo este item (lógica incremental)
+            else {
+              const cantidadAnterior = itemActual.cantidad;
+              const cantidadNueva = itemUpdate.cantidad;
+              const diferencia = cantidadNueva - cantidadAnterior;
+
+              // Obtener el item complementario si existe
+              const itemComplementario = await queryRunner.manager.findOne(ItemsSolicitados, {
+                where: {
+                  item: itemActual.item,
+                  ordenCompra: { id: solicitudCompra.id },
+                  existencia: !itemActual.existencia,
+                  id: () => `id != ${itemActual.id}`
+                }
+              });
+
+              // Obtener stock actual en inventario
+              const itemInventario = await queryRunner.manager.findOne(Inventario, {
+                where: { nombre: itemActual.item }
+              });
+              const stockInventario = itemInventario ? itemInventario.stock : 0;
+
+              if (itemActual.existencia === true) {
+                // El item actual es "EN STOCK" (existencia: true)
+                const nuevaCantidadEnStock = Math.min(cantidadNueva, stockInventario);
+                const cambioEnStock = nuevaCantidadEnStock - cantidadAnterior;
+
+                // Actualizar item actual
+                itemActual.cantidad = nuevaCantidadEnStock;
+                await queryRunner.manager.save(ItemsSolicitados, itemActual);
+
+                // Ajustar item complementario
+                if (itemComplementario) {
+                  const nuevaCantidadComplementario = itemComplementario.cantidad - cambioEnStock;
+
+                  if (nuevaCantidadComplementario <= 0) {
+                    await queryRunner.manager.delete(ItemsSolicitados, { id: itemComplementario.id });
+                  } else {
+                    itemComplementario.cantidad = nuevaCantidadComplementario;
+                    await queryRunner.manager.save(ItemsSolicitados, itemComplementario);
+                  }
+                } else {
+                  // Crear complementario si es necesario
+                  const cantidadPorComprar = cantidadNueva - nuevaCantidadEnStock;
+                  if (cantidadPorComprar > 0) {
+                    const nuevoItemFaltante = queryRunner.manager.create(ItemsSolicitados, {
+                      item: itemActual.item,
+                      cantidad: cantidadPorComprar,
+                      caracteristica: itemActual.caracteristica,
+                      Observacion: itemActual.Observacion,
+                      existencia: false,
+                      ordenCompra: solicitudCompra
+                    });
+                    await queryRunner.manager.save(ItemsSolicitados, nuevoItemFaltante);
+                  }
+                }
+              } else {
+                // El item actual es "POR COMPRAR" (existencia: false)
+                itemActual.cantidad = cantidadNueva;
+                await queryRunner.manager.save(ItemsSolicitados, itemActual);
+
+                if (itemComplementario) {
+                  const nuevaCantidadComplementario = itemComplementario.cantidad - diferencia;
+
+                  if (nuevaCantidadComplementario <= 0) {
+                    await queryRunner.manager.delete(ItemsSolicitados, { id: itemComplementario.id });
+                  } else {
+                    itemComplementario.cantidad = nuevaCantidadComplementario;
+                    await queryRunner.manager.save(ItemsSolicitados, itemComplementario);
+                  }
+                }
+              }
+            }
+          } else {
+            // Solo cambios en característica u observación (sin cambio de cantidad)
+            if (itemUpdate.caracteristica !== undefined) {
+              itemActual.caracteristica = itemUpdate.caracteristica;
+            }
+            if (itemUpdate.Observacion !== undefined) {
+              itemActual.Observacion = itemUpdate.Observacion;
+            }
+            await queryRunner.manager.save(ItemsSolicitados, itemActual);
+          }
+        }
+      }
+
+      await queryRunner.commitTransaction();
+      return { msj: "Solicitud de compra actualizada correctamente", validate: true };
+
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      console.error("Error al actualizar solicitud de compra:", error);
+      throw error;
+    } finally {
+      await queryRunner.release();
     }
-
-    const nOrdenTrabajoBefore = await this.solicitudDeCompraRepository.findOne({where:{id:id},relations:['numOrdenTrabajo']});
-
-     if(!nOrdenTrabajoBefore){
-    return {msj:"No se encontro una orden de trabajo anterior",validate:false}
-    }
-
-    const ordenTrabjoOld = await this.ordenDeTrabajoRepository.findOne({where:{id:nOrdenTrabajoBefore.numOrdenTrabajo.id}});
-
-    if(!ordenTrabjoOld){
-    return {msj:"No se encontro una orden de trabajo valida",validate:false}
-    }
-
-    const estCompra = await this.estadoCompraRepository.findOne({where:{estado:updateSolicitudDeCompraDto.estadoCompra}});
-    if(!estCompra){
-    throw new NotFoundException("No es encontro un estado de compra");
-    }
-
-    const updateSoliMaterial = await this.solicitudDeCompraRepository.update(id,{Autoriza:updateSolicitudDeCompraDto.Autoriza,numOrdenTrabajo:ordenTrabajo,estadoCompra:estCompra});
-
-    if(updateSoliMaterial.affected !== 0){
-
-      const estadoAnterior = new EstadoUso();
-      estadoAnterior.id = 1;
-
-       const estadoNuevo = new EstadoUso();
-      estadoNuevo.id = 2;
-
-   ordenTrabjoOld.estadoUso = estadoAnterior;
-    await this.ordenDeTrabajoRepository.save(ordenTrabjoOld);
-
-    ordenTrabajo.estadoUso = estadoNuevo;
-    await this.ordenDeTrabajoRepository.save(ordenTrabajo);
-
-    return {msj:"Actualizado solicitud de material",validate:true}
-    }
-
-    return {msj:"No se pudo actualizar la solicitud de material"};
   }
 
  async remove(id: number) {
