@@ -74,8 +74,9 @@ export class AuthService{
   }
 
   async logout(response:Response){
-  
-    response.clearCookie("token",{
+
+    try {
+       response.clearCookie("token",{
       httpOnly:true,
       secure:true,
       sameSite:'none'
@@ -84,8 +85,27 @@ export class AuthService{
     response.send({
       msj:"Sesion terminada"
     });
+    } catch (error) {
+      
+      throw new NotFoundException("Error al cerrar sesion");
+    }
+  
+   
   }
 
+  async decodeToken(token: string) {
+    try {
+      const decoded = this.jwtService.verify(token);
+      return {
+        id: decoded.id,
+        rol: decoded.rol,
+        rolName: decoded.rolName,
+        success: true
+      };
+    } catch (error) {
+      throw new NotFoundException("Token inválido o expirado");
+    }
+  }
 
   findOne(id: number) {
     return `This action returns a #${id} auth`;

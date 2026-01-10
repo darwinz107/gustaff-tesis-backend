@@ -1,8 +1,8 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Res, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Res, UseGuards, Req } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateAuthDto } from './dto/create-auth.dto';
 import { UpdateAuthDto } from './dto/update-auth.dto';
-import { Response } from 'express';
+import { Response, Request } from 'express';
 import { Rol } from './rol/rol.decorator';
 import { AuthGuard } from './auth/auth.guard';
 import { AreaDto } from '../admin/dto/area.dto';
@@ -63,7 +63,16 @@ export class AuthController {
   @Get('logout/token')
   logout(@Res() response:Response){
     return this.authService.logout(response);
-  }  
+  }
+
+  @Get('decode/cookie')
+  decodeCookie(@Req() request: Request) {
+    const token = request.cookies.token || request.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return { success: false, message: 'No se encontró token' };
+    }
+    return this.authService.decodeToken(token);
+  }
   
   
 
