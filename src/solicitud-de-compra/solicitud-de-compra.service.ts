@@ -3,7 +3,7 @@ import { CreateSolicitudDeCompraDto } from './dto/create-solicitud-de-compra.dto
 import { UpdateSolicitudDeCompraDto } from './dto/update-solicitud-de-compra.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { SolicitudDeCompra } from './entities/solicitud-de-compra.entity';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, In, Not, Repository } from 'typeorm';
 import { SolicitudOrden } from 'src/orden-de-trabajo/entities/solicitudOrden.entity';
 
 import { ItemsSolicitados } from 'src/inventario/entities/itemsSolicitados.entity';
@@ -152,7 +152,7 @@ for(const item of createSolicitudDeCompraDto.items){
       }
 
        if(calcStock >= 0){
-        const obj1:CreateItemsSolicitadosDto = {item:item.item,cantidad:findItem.stock,caracteristica:item.caracteristica,Observacion:item.Observacion,existencia:true,ordenCompra:solCompra} 
+        const obj1:CreateItemsSolicitadosDto = {item:item.item,cantidad:item.cantidad,caracteristica:item.caracteristica,Observacion:item.Observacion,existencia:true,ordenCompra:solCompra} 
         compras = [...compras,obj1]
       
       }
@@ -502,10 +502,11 @@ return {msj:"Solicitud de compra creada",validate:true}
         if (!solicitudCompra) {
           throw new NotFoundException("No se encontró la solicitud de compra");
         }
-
+   
+        const ids = updateSolicitudDeCompraDto.itemsSolicitados.map(item => item.id);
         // Obtener todos los items que se van a actualizar
         const itemsAActualizar = await queryRunner.manager.find(ItemsSolicitados, {
-          where: { id: () => `id IN (${updateSolicitudDeCompraDto?.itemsSolicitados?.map(i => i.id).join(',')})` }
+          where: { id:In(ids)}
         });
 
         // Agrupar por nombre de item para detectar si se editan ambos complementarios
@@ -553,7 +554,7 @@ return {msj:"Solicitud de compra creada",validate:true}
                   item: itemActual.item,
                   ordenCompra: { id: solicitudCompra.id },
                   existencia: !itemActual.existencia,
-                  id: () => `id != ${itemActual.id}`
+                  id:Not(itemActual.id)
                 }
               });
 

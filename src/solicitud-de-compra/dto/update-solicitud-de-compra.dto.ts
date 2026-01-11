@@ -1,6 +1,7 @@
 import { PartialType } from '@nestjs/mapped-types';
 import { CreateSolicitudDeCompraDto } from './create-solicitud-de-compra.dto';
-import {  IsEmpty, IsNotEmpty, IsNumber, IsOptional, IsString, ValidateNested, IsArray, Type } from "class-validator";
+import {  IsEmpty, IsNotEmpty, IsNumber, IsOptional, IsString, ValidateNested, IsArray } from "class-validator";
+import { Type } from 'class-transformer';
 
 export class UpdateItemSolicitadoDto {
   @IsNumber()
