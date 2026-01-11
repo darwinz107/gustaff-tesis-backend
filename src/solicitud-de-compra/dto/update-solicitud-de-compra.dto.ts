@@ -18,10 +18,6 @@ export class UpdateItemSolicitadoDto {
   @IsOptional()
   @IsString()
   Observacion?: string;
-
-  @IsOptional()
-  @IsString()
-  item?: string;
 }
 
 export class UpdateSolicitudDeCompraDto {

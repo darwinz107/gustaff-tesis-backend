@@ -2,7 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { CreateInventarioDto } from './dto/create-inventario.dto';
 import { UpdateInventarioDto } from './dto/update-inventario.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Like, Repository } from 'typeorm';
+import { DataSource, Like, Not, Repository } from 'typeorm';
 import { Inventario } from './entities/inventario.entity';
 import { CreateItemsSolicitadosDto } from './dto/create-items-solicitados.dto';
 import { ItemsSolicitados } from './entities/itemsSolicitados.entity';
@@ -311,8 +311,20 @@ let solMaterial: SolicitudDeCompra | null = null;
     if(!itemsSol){
    throw new NotFoundException("No se encontro item solicitado");
    }
-   itemsSol.existencia = true;
-   await queryRunner.manager.save(ItemsSolicitados,itemsSol);
+   
+   // Buscar si existe otro item con existencia TRUE y mismo item/ordenCompra
+   const itemsSolTrue = await queryRunner.manager.findOne(ItemsSolicitados,{where:{item:item.nombre, existencia:true, ordenCompra:{id:id}, id:Not(itemsSol.id)}});
+   
+   if(itemsSolTrue){
+     // Si existe, sumar cantidades y eliminar el FALSE
+     itemsSolTrue.cantidad += itemsSol.cantidad;
+     await queryRunner.manager.save(ItemsSolicitados,itemsSolTrue);
+     await queryRunner.manager.delete(ItemsSolicitados,{id:itemsSol.id});
+   }else{
+     // Si no existe, solo cambiar existencia a TRUE
+     itemsSol.existencia = true;
+     await queryRunner.manager.save(ItemsSolicitados,itemsSol);
+   }
 
    } }
 else{
@@ -349,8 +361,21 @@ else{
     if(!itemsSol){
    throw new NotFoundException("No se encontro item solicitado");
    }
-   itemsSol.existencia = true;
-   await queryRunner.manager.save(ItemsSolicitados,itemsSol);}
+   
+   // Buscar si existe otro item con existencia TRUE y mismo item/ordenCompra
+   const itemsSolTrue = await queryRunner.manager.findOne(ItemsSolicitados,{where:{item:item.nombre, existencia:true, ordenCompra:{id:id}, id:Not(itemsSol.id)}});
+   
+   if(itemsSolTrue){
+     // Si existe, sumar cantidades y eliminar el FALSE
+     itemsSolTrue.cantidad += itemsSol.cantidad;
+     await queryRunner.manager.save(ItemsSolicitados,itemsSolTrue);
+     await queryRunner.manager.delete(ItemsSolicitados,{id:itemsSol.id});
+   }else{
+     // Si no existe, solo cambiar existencia a TRUE
+     itemsSol.existencia = true;
+     await queryRunner.manager.save(ItemsSolicitados,itemsSol);
+   }
+}
 }
    
    }
@@ -420,7 +445,7 @@ console.log(createActaSalidaDto);
     if (!findRecibe) throw new NotFoundException("No se encontro el usuario que recibe");
     
     let registroSalida = await queryRunner.manager.createQueryBuilder(RegistroSalida,'registroSalida')
-      .innerJoin('registroSalida.numSolicitudCompra','numSolicitudCompra')
+      .leftJoin('registroSalida.numSolicitudCompra','numSolicitudCompra')
       .where('numSolicitudCompra.id = :id',{id: solMaterial.id})
       .getOne();
 
@@ -445,7 +470,7 @@ console.log(createActaSalidaDto);
       await queryRunner.manager.save(RegistroSalida, newRegistroSalida);
 
       registroSalida = await queryRunner.manager.createQueryBuilder(RegistroSalida,'registroSalida')
-        .innerJoin('registroSalida.numSolicitudCompra','numSolicitudCompra')
+        .leftJoin('registroSalida.numSolicitudCompra','numSolicitudCompra')
         .where('numSolicitudCompra.id = :id',{id: solMaterial.id})
         .getOne();
 

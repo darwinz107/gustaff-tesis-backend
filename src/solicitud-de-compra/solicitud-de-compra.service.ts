@@ -503,127 +503,48 @@ return {msj:"Solicitud de compra creada",validate:true}
           throw new NotFoundException("No se encontró la solicitud de compra");
         }
    
-        const ids = updateSolicitudDeCompraDto.itemsSolicitados.map(item => item.id);
-        // Obtener todos los items que se van a actualizar
-        const itemsAActualizar = await queryRunner.manager.find(ItemsSolicitados, {
-          where: { id:In(ids)}
-        });
-
-        // Agrupar por nombre de item para detectar si se editan ambos complementarios
-        const itemsPorNombre = new Map<string, ItemsSolicitados[]>();
-        for (const item of itemsAActualizar) {
-          if (!itemsPorNombre.has(item.item)) {
-            itemsPorNombre.set(item.item, []);
-          }
-          itemsPorNombre.get(item.item)!.push(item);
-        }
-
-        // Procesar cada update
+        // Procesar cada item solicitado que llega
         for (const itemUpdate of updateSolicitudDeCompraDto.itemsSolicitados) {
-          const itemActual = itemsAActualizar.find(i => i.id === itemUpdate.id);
+          // Validar que el item existe
+          const itemActual = await queryRunner.manager.findOne(ItemsSolicitados, {
+            where: { id: itemUpdate.id }
+          });
 
           if (!itemActual) {
             throw new NotFoundException(`No se encontró el item solicitado con ID ${itemUpdate.id}`);
           }
 
-          // Detectar si se están actualizando AMBOS items complementarios a la vez
-          const itemsDelMismoNombre = itemsPorNombre.get(itemActual.item) || [];
-          const estaActualizandoAmbos = itemsDelMismoNombre.length === 2 && 
-                                        updateSolicitudDeCompraDto.itemsSolicitados.some(i => 
-                                          itemsDelMismoNombre.find(im => im.id === i.id && im.existencia !== itemActual.existencia)
-                                        );
+          // Obtener stock del inventario
+          const inventarioItem = await queryRunner.manager.findOne(Inventario, {
+            where: { nombre: itemActual.item },
+            select: ['stock']
+          });
 
-          // Si hay cambios en cantidad
-          if (itemUpdate.cantidad !== undefined && itemUpdate.cantidad !== itemActual.cantidad) {
-            
-            // CASO 1: Se están actualizando ambos items a la vez
-            if (estaActualizandoAmbos) {
-              // Actualización directa, sin lógica incremental
-              itemActual.cantidad = itemUpdate.cantidad;
-              await queryRunner.manager.save(ItemsSolicitados, itemActual);
-            } 
-            // CASO 2: Se actualiza solo este item (lógica incremental)
-            else {
-              const cantidadAnterior = itemActual.cantidad;
-              const cantidadNueva = itemUpdate.cantidad;
-              const diferencia = cantidadNueva - cantidadAnterior;
+          if (!inventarioItem) {
+            throw new NotFoundException(`No se encontró el item en inventario con nombre ${itemActual.item}`);
+          }
 
-              // Obtener el item complementario si existe
-              const itemComplementario = await queryRunner.manager.findOne(ItemsSolicitados, {
-                where: {
-                  item: itemActual.item,
-                  ordenCompra: { id: solicitudCompra.id },
-                  existencia: !itemActual.existencia,
-                  id:Not(itemActual.id)
-                }
-              });
+          const stockInventario = inventarioItem.stock;
 
-              // Obtener stock actual en inventario
-              const itemInventario = await queryRunner.manager.findOne(Inventario, {
-                where: { nombre: itemActual.item }
-              });
-              const stockInventario = itemInventario ? itemInventario.stock : 0;
-
-              if (itemActual.existencia === true) {
-                // El item actual es "EN STOCK" (existencia: true)
-                const nuevaCantidadEnStock = Math.min(cantidadNueva, stockInventario);
-                const cambioEnStock = nuevaCantidadEnStock - cantidadAnterior;
-
-                // Actualizar item actual
-                itemActual.cantidad = nuevaCantidadEnStock;
-                await queryRunner.manager.save(ItemsSolicitados, itemActual);
-
-                // Ajustar item complementario
-                if (itemComplementario) {
-                  const nuevaCantidadComplementario = itemComplementario.cantidad - cambioEnStock;
-
-                  if (nuevaCantidadComplementario <= 0) {
-                    await queryRunner.manager.delete(ItemsSolicitados, { id: itemComplementario.id });
-                  } else {
-                    itemComplementario.cantidad = nuevaCantidadComplementario;
-                    await queryRunner.manager.save(ItemsSolicitados, itemComplementario);
-                  }
-                } else {
-                  // Crear complementario si es necesario
-                  const cantidadPorComprar = cantidadNueva - nuevaCantidadEnStock;
-                  if (cantidadPorComprar > 0) {
-                    const nuevoItemFaltante = queryRunner.manager.create(ItemsSolicitados, {
-                      item: itemActual.item,
-                      cantidad: cantidadPorComprar,
-                      caracteristica: itemActual.caracteristica,
-                      Observacion: itemActual.Observacion,
-                      existencia: false,
-                      ordenCompra: solicitudCompra
-                    });
-                    await queryRunner.manager.save(ItemsSolicitados, nuevoItemFaltante);
-                  }
-                }
-              } else {
-                // El item actual es "POR COMPRAR" (existencia: false)
-                itemActual.cantidad = cantidadNueva;
-                await queryRunner.manager.save(ItemsSolicitados, itemActual);
-
-                if (itemComplementario) {
-                  const nuevaCantidadComplementario = itemComplementario.cantidad - diferencia;
-
-                  if (nuevaCantidadComplementario <= 0) {
-                    await queryRunner.manager.delete(ItemsSolicitados, { id: itemComplementario.id });
-                  } else {
-                    itemComplementario.cantidad = nuevaCantidadComplementario;
-                    await queryRunner.manager.save(ItemsSolicitados, itemComplementario);
-                  }
-                }
-              }
-            }
+          // Procesar según el valor de existencia
+          if (itemActual.existencia === true) {
+            // FLUJO 1: Item con existencia TRUE (llega con stock)
+            await this.handleExistenciaTrue(
+              queryRunner,
+              itemActual,
+              itemUpdate,
+              stockInventario,
+              solicitudCompra
+            );
           } else {
-            // Solo cambios en característica u observación (sin cambio de cantidad)
-            if (itemUpdate.caracteristica !== undefined) {
-              itemActual.caracteristica = itemUpdate.caracteristica;
-            }
-            if (itemUpdate.Observacion !== undefined) {
-              itemActual.Observacion = itemUpdate.Observacion;
-            }
-            await queryRunner.manager.save(ItemsSolicitados, itemActual);
+            // FLUJO 2: Item con existencia FALSE (llega sin stock)
+            await this.handleExistenciaFalse(
+              queryRunner,
+              itemActual,
+              itemUpdate,
+              stockInventario,
+              solicitudCompra
+            );
           }
         }
       }
@@ -641,25 +562,47 @@ return {msj:"Solicitud de compra creada",validate:true}
   }
 
  async remove(id: number) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    const buscarItems = await this.itemsSolicitadosRepository.find({where:{ordenCompra:{id:id}}});
+    try {
+      // Buscar la solicitud de compra
+      const solicitud = await queryRunner.manager.findOne(SolicitudDeCompra, {
+        where: { id }
+      });
 
-    if(buscarItems){
-    for(const item of buscarItems){
-        await this.itemsSolicitadosRepository.delete(item.id);
+      if (!solicitud) {
+        throw new NotFoundException(`No se encontró la solicitud de compra con ID ${id}`);
+      }
+
+      // Eliminar todos los items solicitados de esta solicitud
+      const itemsEliminados = await queryRunner.manager.delete(ItemsSolicitados, {
+        ordenCompra: { id }
+      });
+
+      // Eliminar la solicitud de compra
+      const solicitudEliminada = await queryRunner.manager.delete(SolicitudDeCompra, { id });
+
+      if (solicitudEliminada.affected === 0) {
+        throw new Error("No se pudo eliminar la solicitud de compra");
+      }
+
+      await queryRunner.commitTransaction();
+      
+      return {
+        msj: "Solicitud de material eliminada correctamente",
+        validate: true,
+        itemsEliminados: itemsEliminados.affected || 0
+      };
+
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      console.error("Error al eliminar solicitud de compra:", error);
+      throw error;
+    } finally {
+      await queryRunner.release();
     }
-  }else{
-    return {msj:"No se encontraron items relacionados"}
-  }
-
-
-    const deleteSolMaterial = await this.solicitudDeCompraRepository.delete(id);
-
-    if(deleteSolMaterial){
-     return {msj:"Solicitud de material eliminada!"}
-    }
-    return {msj:"Fallo al eliminar la solicitud de material"}
-    
   }
 
   async getAllSolicitudes(){
@@ -734,5 +677,188 @@ async filtrarSolicitudesCompra(filtros: FiltrarSolicitudCompraDto) {
   return resultados;
 }
 
-  
+  /**
+   * Maneja la actualización de un item con existencia TRUE (tiene stock en inventario)
+   * Lógica:
+   * 1. Calcula cuánto cabe en stock
+   * 2. Actualiza cantidad en el registro TRUE
+   * 3. Si sobra cantidad, busca o crea registro FALSE con lo que falta
+   * 4. Si no sobra, elimina registro FALSE si existe
+   * 5. Sincroniza características y observación en ambos registros
+   */
+  private async handleExistenciaTrue(
+    queryRunner: any,
+    itemActual: ItemsSolicitados,
+    itemUpdate: any,
+    stockInventario: number,
+    solicitudCompra: SolicitudDeCompra
+  ) {
+    const cantidadNueva = itemUpdate.cantidad !== undefined ? itemUpdate.cantidad : itemActual.cantidad;
+    
+    // Calcular cuánto cabe en stock
+    const cantidadEnStock = Math.min(cantidadNueva, stockInventario);
+    const diferencia = cantidadNueva - cantidadEnStock;
+
+    // Actualizar el registro TRUE con la cantidad que cabe en stock
+   
+    
+    // Sincronizar características y observación
+    if (itemUpdate.caracteristica !== undefined) {
+      itemActual.caracteristica = itemUpdate.caracteristica;
+    }
+    if (itemUpdate.Observacion !== undefined) {
+      itemActual.Observacion = itemUpdate.Observacion;
+    }
+
+    if(cantidadEnStock === 0){
+      await queryRunner.manager.delete(ItemsSolicitados, { id: itemActual.id });
+    }else{
+       itemActual.cantidad = cantidadEnStock;
+    await queryRunner.manager.save(ItemsSolicitados, itemActual);
+    }
+    
+
+    // Buscar registro complementario (FALSE)
+    const itemComplementario = await queryRunner.manager.findOne(ItemsSolicitados, {
+      where: {
+        item: itemActual.item,
+        ordenCompra: { id: solicitudCompra.id },
+        existencia: false,
+        id: Not(itemActual.id)
+      }
+    });
+
+    if (diferencia > 0) {
+      // Hay cantidad que sobra - necesita registro FALSE
+      if (itemComplementario) {
+        // Actualizar registro FALSE existente
+        itemComplementario.cantidad = diferencia;
+        itemComplementario.caracteristica = itemActual.caracteristica;
+        itemComplementario.Observacion = itemActual.Observacion;
+        await queryRunner.manager.save(ItemsSolicitados, itemComplementario);
+      } else {
+        // Crear nuevo registro FALSE
+        const nuevoItemFaltante = queryRunner.manager.create(ItemsSolicitados, {
+          item: itemActual.item,
+          cantidad: diferencia,
+          caracteristica: itemActual.caracteristica,
+          Observacion: itemActual.Observacion,
+          existencia: false,
+          ordenCompra: solicitudCompra
+        });
+        await queryRunner.manager.save(ItemsSolicitados, nuevoItemFaltante);
+      }
+    } else {
+      // No hay cantidad que sobra - eliminar registro FALSE si existe
+      if (itemComplementario) {
+        await queryRunner.manager.delete(ItemsSolicitados, { id: itemComplementario.id });
+      }
+    }
+  }
+
+  /**
+   * Maneja la actualización de un item con existencia FALSE (sin stock en inventario)
+   * Lógica bifurcada:
+   * A) Si stock = 0: Solo actualiza cantidad, características y observación
+   * B) Si stock > 0: Valida con inventario y distribuye entre TRUE y FALSE según stock
+   */
+  private async handleExistenciaFalse(
+    queryRunner: any,
+    itemActual: ItemsSolicitados,
+    itemUpdate: any,
+    stockInventario: number,
+    solicitudCompra: SolicitudDeCompra
+  ) {
+    const cantidadNueva = itemUpdate.cantidad !== undefined ? itemUpdate.cantidad : itemActual.cantidad;
+
+    if (stockInventario === 0) {
+      // CASO A: Stock = 0 - Solo actualizar el registro FALSE
+      
+      // Sincronizar características y observación
+      if (itemUpdate.caracteristica !== undefined) {
+        itemActual.caracteristica = itemUpdate.caracteristica;
+      }
+      if (itemUpdate.Observacion !== undefined) {
+        itemActual.Observacion = itemUpdate.Observacion;
+      }
+
+      // Si la cantidad es 0, eliminar el item
+      if (cantidadNueva === 0) {
+        await queryRunner.manager.delete(ItemsSolicitados, { id: itemActual.id });
+      } else {
+        itemActual.cantidad = cantidadNueva;
+        await queryRunner.manager.save(ItemsSolicitados, itemActual);
+      }
+    } else {
+      // CASO B: Stock > 0 - Distribuir entre TRUE y FALSE
+      
+      // Calcular cuánto cabe en stock
+      const cantidadEnStock = Math.min(cantidadNueva, stockInventario);
+      const diferencia = cantidadNueva - cantidadEnStock;
+
+      // Buscar registro complementario (TRUE)
+      const itemComplementario = await queryRunner.manager.findOne(ItemsSolicitados, {
+        where: {
+          item: itemActual.item,
+          ordenCompra: { id: solicitudCompra.id },
+          existencia: true,
+          id: Not(itemActual.id)
+        }
+      });
+
+      if (diferencia > 0) {
+        // Hay cantidad que no cabe en stock - mantener/actualizar registro FALSE
+        itemActual.cantidad = diferencia;
+        
+        // Sincronizar características y observación
+        if (itemUpdate.caracteristica !== undefined) {
+          itemActual.caracteristica = itemUpdate.caracteristica;
+        }
+        if (itemUpdate.Observacion !== undefined) {
+          itemActual.Observacion = itemUpdate.Observacion;
+        }
+        
+        await queryRunner.manager.save(ItemsSolicitados, itemActual);
+
+        // Crear o actualizar registro TRUE
+        if (itemComplementario) {
+          itemComplementario.cantidad = cantidadEnStock;
+          itemComplementario.caracteristica = itemActual.caracteristica;
+          itemComplementario.Observacion = itemActual.Observacion;
+          await queryRunner.manager.save(ItemsSolicitados, itemComplementario);
+        } else {
+          const nuevoItemEnStock = queryRunner.manager.create(ItemsSolicitados, {
+            item: itemActual.item,
+            cantidad: cantidadEnStock,
+            caracteristica: itemActual.caracteristica,
+            Observacion: itemActual.Observacion,
+            existencia: true,
+            ordenCompra: solicitudCompra
+          });
+          await queryRunner.manager.save(ItemsSolicitados, nuevoItemEnStock);
+        }
+      } else {
+        // No hay cantidad que sobra - todo cabe en stock
+        // Eliminar registro FALSE y crear/actualizar registro TRUE
+        await queryRunner.manager.delete(ItemsSolicitados, { id: itemActual.id });
+
+        if (itemComplementario) {
+          itemComplementario.cantidad = cantidadNueva;
+          itemComplementario.caracteristica = itemUpdate.caracteristica !== undefined ? itemUpdate.caracteristica : itemActual.caracteristica;
+          itemComplementario.Observacion = itemUpdate.Observacion !== undefined ? itemUpdate.Observacion : itemActual.Observacion;
+          await queryRunner.manager.save(ItemsSolicitados, itemComplementario);
+        } else {
+          const nuevoItemEnStock = queryRunner.manager.create(ItemsSolicitados, {
+            item: itemActual.item,
+            cantidad: cantidadNueva,
+            caracteristica: itemUpdate.caracteristica !== undefined ? itemUpdate.caracteristica : itemActual.caracteristica,
+            Observacion: itemUpdate.Observacion !== undefined ? itemUpdate.Observacion : itemActual.Observacion,
+            existencia: true,
+            ordenCompra: solicitudCompra
+          });
+          await queryRunner.manager.save(ItemsSolicitados, nuevoItemEnStock);
+        }
+      }
+    }
+  }
 }
