@@ -14,7 +14,7 @@ export class RegistroEntrada {
      factura:string;
       @Column({type:'datetime',default:()=>'CURRENT_TIMESTAMP'})
          fechaRemision:Date;
-     @ManyToOne(()=>SolicitudDeCompra,(solicitudDeCompra)=>solicitudDeCompra.infoEntrada,{nullable:true})
+     @ManyToOne(()=>SolicitudDeCompra,(solicitudDeCompra)=>solicitudDeCompra.infoEntrada,{nullable:true, onDelete:'SET NULL'})
           numSolicitudCompra:SolicitudDeCompra|null;   
      @ManyToOne(()=>Proovedores,(proovedores)=>proovedores.registroEntrada)
      proovedor:Proovedores;

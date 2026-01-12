@@ -562,6 +562,7 @@ return {msj:"Solicitud de compra creada",validate:true}
   }
 
  async remove(id: number) {
+  console.log("Eliminando solicitud de compra con ID:", id);
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();

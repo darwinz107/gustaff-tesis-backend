@@ -12,7 +12,7 @@ export class RegistroSalida {
      @Column()
      numActa:string;
      
-     @ManyToOne(()=>SolicitudDeCompra,(solicitudDeCompra)=>solicitudDeCompra.infoSalida,{nullable:true})
+     @ManyToOne(()=>SolicitudDeCompra,(solicitudDeCompra)=>solicitudDeCompra.infoSalida,{nullable:true, onDelete:'SET NULL'})
      numSolicitudCompra:SolicitudDeCompra|null;   
      @Column()
      total:number; 

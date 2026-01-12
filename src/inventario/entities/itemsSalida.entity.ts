@@ -18,9 +18,9 @@ export class ItemsSalida {
      destino:string;*/
      @Column({nullable:true})
     Observacion:string;
-     @ManyToOne(()=>RegistroSalida,(registroSalida)=>registroSalida.itemSalida)
-     regSalida:RegistroSalida;
-     @ManyToOne(()=>Inventario,(inventario)=>inventario.itemsSalida)
+     @ManyToOne(()=>RegistroSalida,(registroSalida)=>registroSalida.itemSalida,{nullable:true,onDelete:'SET NULL'})
+     regSalida:RegistroSalida|null;
+     @ManyToOne(()=>Inventario,(inventario)=>inventario.itemsSalida,{nullable:true,onDelete:'SET NULL'})
      inventario:Inventario; 
      @Column()
      caracteristica:string;

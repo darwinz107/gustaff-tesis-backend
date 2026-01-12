@@ -580,7 +580,59 @@ if (zeroInventarios.length > 0) {
     if (nombresConSalida.has(inv.nombre)) {
       continue;
     }
-await queryRunner.manager.createQueryBuilder()
+
+    // NUEVA LÓGICA - COMENTADA PARA VALIDACIÓN:
+    // 1. Primero, poner existencia false a todos los itemSolicitados con este item
+    // await queryRunner.manager.createQueryBuilder()
+    //   .update(ItemsSolicitados)
+    //   .set({ existencia: false })
+    //   .where('item = :item AND existencia = :ext', {
+    //     item: inv.nombre,
+    //     ext: true
+    //   })
+    //   .execute();
+
+    // 2. Buscar todos los itemSolicitados con este item (en todas las órdenes de compra)
+    // const allItemsConEsteNombre = await queryRunner.manager.find(ItemsSolicitados, {
+    //   where: { item: inv.nombre }
+    // });
+
+    // 3. Agrupar por ordenCompraId
+    // const itemsAgrupadosPorOrden = new Map<number, ItemsSolicitados[]>();
+    // for (const item of allItemsConEsteNombre) {
+    //   const ordenId = item.ordenCompra?.id;
+    //   if (ordenId) {
+    //     if (!itemsAgrupadosPorOrden.has(ordenId)) {
+    //       itemsAgrupadosPorOrden.set(ordenId, []);
+    //     }
+    //     itemsAgrupadosPorOrden.get(ordenId).push(item);
+    //   }
+    // }
+
+    // 4. Por cada ordenCompra, validar si hay duplicados con existencia false y fusionarlos
+    // for (const [ordenId, items] of itemsAgrupadosPorOrden.entries()) {
+    //   // Filtrar items sin existencia
+    //   const itemsSinExistencia = items.filter(i => i.existencia === false);
+    //   
+    //   if (itemsSinExistencia.length > 1) {
+    //     // Hay duplicados sin existencia, fusionarlos
+    //     const itemPrincipal = itemsSinExistencia[0];
+    //     let cantidadTotal = itemPrincipal.cantidad || 0;
+    //
+    //     // Sumar cantidades de los demás y eliminarlos
+    //     for (let i = 1; i < itemsSinExistencia.length; i++) {
+    //       cantidadTotal += itemsSinExistencia[i].cantidad || 0;
+    //       await queryRunner.manager.remove(ItemsSolicitados, itemsSinExistencia[i]);
+    //     }
+    //
+    //     // Actualizar el item principal con la cantidad total
+    //     itemPrincipal.cantidad = cantidadTotal;
+    //     await queryRunner.manager.save(ItemsSolicitados, itemPrincipal);
+    //   }
+    // }
+
+    // LÓGICA ORIGINAL - ACTUALMENTE ACTIVA:
+    await queryRunner.manager.createQueryBuilder()
       .update(ItemsSolicitados)
       .set({ existencia: false })
       .where('item = :item AND ordenCompraId = :ordenId AND existencia = :ext', {
@@ -1511,14 +1563,33 @@ async filtrarInventarios(filtros: FiltrarInventarioDto) {
       // Buscar el acta de entrada
       const registroEntrada = await queryRunner.manager.findOne(RegistroEntrada, {
         where: { id: id },
-        relations: ['itemEntrada']
+        relations: ['itemEntrada', 'numSolicitudCompra', 'numSolicitudCompra.estadoCompra']
       });
 
       if (!registroEntrada) {
         throw new NotFoundException('No se encontró el acta de entrada con el ID proporcionado');
       }
 
+      // Si hay una solicitud de compra asociada, cambiar su estado a "EN PROCESO"
+      // EXCEPTO si el estado es "ENTREGADO"
+      if (registroEntrada.numSolicitudCompra) {
+        const estadoActual = registroEntrada.numSolicitudCompra.estadoCompra?.estado;
+        
+        // Solo cambiar a EN PROCESO si no está en estado ENTREGADO
+        if (estadoActual !== EstadoCompraEnum.ENT && estadoActual !== EstadoCompraEnum.PAU) {
+          const estadoEnProceso = await queryRunner.manager.findOne(EstadoCompra, {
+            where: { estado: EstadoCompraEnum.PRO }
+          });
+          
+          if (estadoEnProceso) {
+            registroEntrada.numSolicitudCompra.estadoCompra = estadoEnProceso;
+            await queryRunner.manager.save(SolicitudDeCompra, registroEntrada.numSolicitudCompra);
+          }
+        }
+      }
+
       // Eliminar todos los items de entrada relacionados
+      // (Los items ya tienen onDelete: 'set null', así que se desvinculan automáticamente)
       if (registroEntrada.itemEntrada && registroEntrada.itemEntrada.length > 0) {
         await queryRunner.manager.remove(ItemsEntrada, registroEntrada.itemEntrada);
       }
@@ -1554,14 +1625,33 @@ async filtrarInventarios(filtros: FiltrarInventarioDto) {
       // Buscar el acta de salida
       const registroSalida = await queryRunner.manager.findOne(RegistroSalida, {
         where: { id: id },
-        relations: ['itemSalida']
+        relations: ['itemSalida', 'numSolicitudCompra', 'numSolicitudCompra.estadoCompra']
       });
 
       if (!registroSalida) {
         throw new NotFoundException('No se encontró el acta de salida con el ID proporcionado');
       }
 
+      // Si hay una solicitud de compra asociada, cambiar su estado a "EN PROCESO"
+      // EXCEPTO si el estado es "ENTREGADO"
+      if (registroSalida.numSolicitudCompra) {
+        const estadoActual = registroSalida.numSolicitudCompra.estadoCompra?.estado;
+        
+        // Solo cambiar a EN PROCESO si no está en estado ENTREGADO
+        if (estadoActual !== EstadoCompraEnum.ENT && estadoActual !== EstadoCompraEnum.PAU) {
+          const estadoEnProceso = await queryRunner.manager.findOne(EstadoCompra, {
+            where: { estado: EstadoCompraEnum.PRO }
+          });
+          
+          if (estadoEnProceso) {
+            registroSalida.numSolicitudCompra.estadoCompra = estadoEnProceso;
+            await queryRunner.manager.save(SolicitudDeCompra, registroSalida.numSolicitudCompra);
+          }
+        }
+      }
+
       // Eliminar todos los items de salida relacionados
+      // (Los items ya tienen onDelete: 'set null', así que se desvinculan automáticamente)
       if (registroSalida.itemSalida && registroSalida.itemSalida.length > 0) {
         await queryRunner.manager.remove(ItemsSalida, registroSalida.itemSalida);
       }
@@ -1671,7 +1761,40 @@ async filtrarInventarios(filtros: FiltrarInventarioDto) {
   
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} inventario`;
+  async remove(id: number) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // Buscar el inventario
+      const inventario = await queryRunner.manager.findOne(Inventario, {
+        where: { id: id }
+      });
+
+      if (!inventario) {
+        throw new NotFoundException(`No se encontró el inventario con ID ${id}`);
+      }
+
+      // Eliminar el inventario
+      await queryRunner.manager.remove(Inventario, inventario);
+
+      await queryRunner.commitTransaction();
+
+      return {
+        msj: 'Inventario eliminado correctamente',
+        validate: true
+      };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      console.log(error);
+      return {
+        msj: 'Error al eliminar el inventario',
+        validate: false,
+        error: error.message
+      };
+    } finally {
+      await queryRunner.release();
+    }
   }
 }
