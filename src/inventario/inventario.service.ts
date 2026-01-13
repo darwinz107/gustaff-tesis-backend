@@ -563,76 +563,74 @@ console.log(createActaSalidaDto);
       select: ['id','nombre'],
     });
 
- const itemsConSalida = await queryRunner.manager.createQueryBuilder(ItemsSalida, 'is')
-  .leftJoin('is.regSalida', 'regSalida')
-  .leftJoin('regSalida.numSolicitudCompra', 'numSolicitudCompra')
-  .where('numSolicitudCompra.id = :id', { id: solMaterial.id })
-  .select(['is.item'])
-  .getMany();
 
-const nombresConSalida = new Set(itemsConSalida.map(s => s.item));
 
 
 let nombresVacios: string[] = [];
 if (zeroInventarios.length > 0) {
   for (const inv of zeroInventarios) {
     
-    if (nombresConSalida.has(inv.nombre)) {
-      continue;
-    }
 
     // NUEVA LÓGICA - COMENTADA PARA VALIDACIÓN:
     // 1. Primero, poner existencia false a todos los itemSolicitados con este item
-    // await queryRunner.manager.createQueryBuilder()
-    //   .update(ItemsSolicitados)
-    //   .set({ existencia: false })
-    //   .where('item = :item AND existencia = :ext', {
-    //     item: inv.nombre,
-    //     ext: true
-    //   })
-    //   .execute();
+
+    const actualizarItems = await queryRunner.manager.createQueryBuilder(ItemsSolicitados,'ItemsSolicitados')
+      .leftJoin('ItemsSolicitados.ordenCompra', 'ordenCompra')
+      .leftJoin('ordenCompra.estadoCompra', 'estadoCompra')
+      .where('ItemsSolicitados.item = :item AND ItemsSolicitados.existencia = :ext AND estadoCompra.estado != :estado', {
+        item: inv.nombre,
+        ext: true,
+        estado: EstadoCompraEnum.ENT 
+      })
+      .getMany();
+  if (actualizarItems.length > 0) {
+      await queryRunner.manager.update(ItemsSolicitados, actualizarItems.map(i => i.id), { existencia: false });
+    }
+     
 
     // 2. Buscar todos los itemSolicitados con este item (en todas las órdenes de compra)
-    // const allItemsConEsteNombre = await queryRunner.manager.find(ItemsSolicitados, {
-    //   where: { item: inv.nombre }
-    // });
+     const allItemsConEsteNombre = await queryRunner.manager.find(ItemsSolicitados, {
+       where: { item: inv.nombre },relations: ['ordenCompra','ordenCompra.estadoCompra']
+     });
 
     // 3. Agrupar por ordenCompraId
-    // const itemsAgrupadosPorOrden = new Map<number, ItemsSolicitados[]>();
-    // for (const item of allItemsConEsteNombre) {
-    //   const ordenId = item.ordenCompra?.id;
-    //   if (ordenId) {
-    //     if (!itemsAgrupadosPorOrden.has(ordenId)) {
-    //       itemsAgrupadosPorOrden.set(ordenId, []);
-    //     }
-    //     itemsAgrupadosPorOrden.get(ordenId).push(item);
-    //   }
-    // }
+     const itemsAgrupadosPorOrden = new Map<number, ItemsSolicitados[]>();
+     for (const item of allItemsConEsteNombre) {
+      if(item.ordenCompra.estadoCompra.estado === EstadoCompraEnum.ENT) continue; // Ignorar órdenes ya entregadas
+       const ordenId = item.ordenCompra?.id;
+       if (ordenId) {
+         if (!itemsAgrupadosPorOrden.has(ordenId)) {
+           itemsAgrupadosPorOrden.set(ordenId, []);
+         }
+         
+         itemsAgrupadosPorOrden.get(ordenId)?.push(item);
+       }
+     }
 
     // 4. Por cada ordenCompra, validar si hay duplicados con existencia false y fusionarlos
-    // for (const [ordenId, items] of itemsAgrupadosPorOrden.entries()) {
+     for (const [ordenId, items] of itemsAgrupadosPorOrden.entries()) {
     //   // Filtrar items sin existencia
-    //   const itemsSinExistencia = items.filter(i => i.existencia === false);
-    //   
-    //   if (itemsSinExistencia.length > 1) {
+       const itemsSinExistencia = items.filter(i => i.existencia === false);
+       
+       if (itemsSinExistencia.length > 1) {
     //     // Hay duplicados sin existencia, fusionarlos
-    //     const itemPrincipal = itemsSinExistencia[0];
-    //     let cantidadTotal = itemPrincipal.cantidad || 0;
-    //
+         const itemPrincipal = itemsSinExistencia[0];
+         let cantidadTotal = itemPrincipal.cantidad || 0;
+    
     //     // Sumar cantidades de los demás y eliminarlos
-    //     for (let i = 1; i < itemsSinExistencia.length; i++) {
-    //       cantidadTotal += itemsSinExistencia[i].cantidad || 0;
-    //       await queryRunner.manager.remove(ItemsSolicitados, itemsSinExistencia[i]);
-    //     }
-    //
+         for (let i = 1; i < itemsSinExistencia.length; i++) {
+           cantidadTotal += itemsSinExistencia[i].cantidad || 0;
+           await queryRunner.manager.remove(ItemsSolicitados, itemsSinExistencia[i]);
+         }
+    
     //     // Actualizar el item principal con la cantidad total
-    //     itemPrincipal.cantidad = cantidadTotal;
-    //     await queryRunner.manager.save(ItemsSolicitados, itemPrincipal);
-    //   }
-    // }
+         itemPrincipal.cantidad = cantidadTotal;
+         await queryRunner.manager.save(ItemsSolicitados, itemPrincipal);
+       }
+     }
 
-    // LÓGICA ORIGINAL - ACTUALMENTE ACTIVA:
-    await queryRunner.manager.createQueryBuilder()
+    // LÓGICA ORIGINAL :
+   /* await queryRunner.manager.createQueryBuilder()
       .update(ItemsSolicitados)
       .set({ existencia: false })
       .where('item = :item AND ordenCompraId = :ordenId AND existencia = :ext', {
@@ -640,7 +638,7 @@ if (zeroInventarios.length > 0) {
         ordenId: solMaterial.id,
         ext: true
       })
-      .execute();
+      .execute(); */
 
     nombresVacios.push(inv.nombre);
   }
