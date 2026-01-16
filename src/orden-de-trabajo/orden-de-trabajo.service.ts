@@ -31,6 +31,8 @@ import { Fases } from './entities/fases';
 import { addDays, isBefore, isSunday, parseISO } from 'date-fns';
 import { MailService } from 'src/mail/mail.service';
 import { CronJob } from 'cron';
+import { TipoMantenimiento } from '../parametro/entities/tipoMantenimiento.entity';
+import { Periodo } from '../parametro/entities/periodo.entity';
 
 
 
@@ -48,6 +50,8 @@ export class OrdenDeTrabajoService implements OnModuleInit{
     @InjectRepository(EstadoUso) private readonly estadoUsoRepository: Repository<EstadoUso>, 
     @InjectRepository(Jornada) private readonly jornadaRepository: Repository<Jornada>,
     @InjectRepository(Fases) private readonly fasesRepository: Repository<Fases>,
+    @InjectRepository(TipoMantenimiento) private readonly tipoMantenimientoRepository: Repository<TipoMantenimiento>,
+    @InjectRepository(Periodo) private readonly periodoRepository: Repository<Periodo>,
     private dataSource:DataSource,
     private readonly mailService:MailService,
     private schedulerRegistry: SchedulerRegistry,
@@ -74,6 +78,31 @@ export class OrdenDeTrabajoService implements OnModuleInit{
          const crearUso =  this.estadoUsoRepository.create({uso:uso});
         await this.estadoUsoRepository.save(crearUso);
        }
+    }
+
+    // Crear Tipos de Mantenimiento
+    const tiposMantenimiento = [
+      { inicial: 'MC', mantenimiento: 'MANTENIMIENTO COMPLETO' },
+      { inicial: 'MP', mantenimiento: 'MANTENIMIENTO PREVENTIVO' }
+    ];
+
+    for (const tipo of tiposMantenimiento) {
+      const exist = await this.tipoMantenimientoRepository.findOne({ where: { inicial: tipo.inicial } });
+      if (!exist) {
+        const newTipo = this.tipoMantenimientoRepository.create(tipo);
+        await this.tipoMantenimientoRepository.save(newTipo);
+      }
+    }
+
+    // Crear Periodos
+    const periodos = ['TRIMESTRAL', 'CUATRIMESTRAL', 'SEMESTRAL', 'BIMESTRAL', 'ANUAL'];
+
+    for (const nombrePeriodo of periodos) {
+      const exist = await this.periodoRepository.findOne({ where: { nombre: nombrePeriodo } });
+      if (!exist) {
+        const newPeriodo = this.periodoRepository.create({ nombre: nombrePeriodo });
+        await this.periodoRepository.save(newPeriodo);
+      }
     }
 
      const cronExpressions = [
