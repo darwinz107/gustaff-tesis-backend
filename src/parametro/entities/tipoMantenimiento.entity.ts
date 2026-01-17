@@ -1,5 +1,5 @@
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
-import { Maquina } from "./maquina.entity";
+//import { Maquina } from "./maquina.entity";
 
 @Entity()
 export class TipoMantenimiento {
@@ -12,6 +12,6 @@ export class TipoMantenimiento {
    @Column()
    mantenimiento: string;
 
-   @OneToMany(() => Maquina, (maquina) => maquina.tipoMantenimiento)
-   maquinas: Maquina[];
+   /*@OneToMany(() => Maquina, (maquina) => maquina.tipoMantenimiento)
+   maquinas: Maquina[];*/
 }
