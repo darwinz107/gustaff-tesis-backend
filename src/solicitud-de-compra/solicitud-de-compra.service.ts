@@ -344,12 +344,12 @@ return {msj:"Solicitud de compra creada",validate:true}
 
    async ordenCompraByOrdenTrabajoId(id:number) {
     console.log(id);
-   /* if(!id){
+    if(!id){
      const sinId = await this.solicitudDeCompraRepository.createQueryBuilder('solicitudMaterial')
       .select([
         'solicitudMaterial.id'
       ])
-      .orderBy('solicitudMaterial.id','ASC')
+      .orderBy('solicitudMaterial.id','DESC')
       .getOne();
 
       if(!sinId){
@@ -357,7 +357,8 @@ return {msj:"Solicitud de compra creada",validate:true}
       }
       console.log(sinId);
       id = sinId.id;
-    }*/
+    }
+    
 
     console.log('ID de la solicitud de compra:', id);
 
@@ -391,7 +392,7 @@ return {msj:"Solicitud de compra creada",validate:true}
       'itemSolicitados.Observacion',
       'itemSolicitados.existencia',
     ])
-    .where('ordenTrabajo.id = :id',{id})
+    .where('solicitudCompra.id = :id',{id})
     .getOne();
     if(!solicitudesCompra){
       throw new NotFoundException("No se encontro solicitudes de compra");

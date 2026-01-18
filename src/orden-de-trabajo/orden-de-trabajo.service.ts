@@ -733,17 +733,34 @@ return new NotFoundException("No existen ordenes de trabajo");
 
  async remove(id: number) {
 
-  console.log(id);
+  
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+  
   try {
-       const deleteOrdenTrabajo = await this.solicitudOrdenRepository.delete({id});
+       const ordenTrabajo = await queryRunner.manager.findOne(SolicitudOrden,{where:{id}});
 
-   if(deleteOrdenTrabajo){
-   return {msj:"Se elimino correctamente!"}
-   }else{
-    return {msj:"Fallo al eliminarse"};
-   }
+       if (!ordenTrabajo) {
+        throw new NotFoundException(`No se encontró la orden de trabajo con ID ${id}`);
+      }
+
+    const fases = await queryRunner.manager.find(Fases,{where:{jornada:{OrdenDeTrabajoId:{id}}}});
+
+    await queryRunner.manager.delete(Fases,fases.map(fase => fase.id));
+
+    const deleteJornadas = await queryRunner.manager.delete(Jornada,{OrdenDeTrabajoId:id});
+
+    const deleteOrdenTrabajo = await queryRunner.manager.delete(SolicitudOrden,{id});
+
+    await queryRunner.commitTransaction();
+    return { msj: "Orden de trabajo eliminada!",validate:true };
   } catch (error) {
-    console.log("Error en eliminar orden de trabajo", error);
+    await queryRunner.rollbackTransaction();
+    console.log(error);
+    return { msj: `No se pudo eliminar la orden de trabajo: ${error}`,validate:false };
+  }finally{
+    await  queryRunner.release();
   }
 
   }

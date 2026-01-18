@@ -596,7 +596,7 @@ if (zeroInventarios.length > 0) {
     // 3. Agrupar por ordenCompraId
      const itemsAgrupadosPorOrden = new Map<number, ItemsSolicitados[]>();
      for (const item of allItemsConEsteNombre) {
-      if(item.ordenCompra.estadoCompra.estado === EstadoCompraEnum.ENT) continue; // Ignorar órdenes ya entregadas
+      if(item.ordenCompra?.estadoCompra?.estado === EstadoCompraEnum.ENT) continue; // Ignorar órdenes ya entregadas
        const ordenId = item.ordenCompra?.id;
        if (ordenId) {
          if (!itemsAgrupadosPorOrden.has(ordenId)) {
