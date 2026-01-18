@@ -677,6 +677,41 @@ return new NotFoundException("No existen ordenes de trabajo");
 
   }
 
+  async filtrarOrdenesSinUso(filtrarOrdenDeTrabajoDto: FiltrarOrdenDeTrabajoDto){
+
+    console.log(filtrarOrdenDeTrabajoDto);
+   const qb = await this.solicitudOrdenRepository.createQueryBuilder('solicitud')
+   .leftJoin('solicitud.userSolicitante','userSolicitante')
+   .leftJoin('solicitud.estadoUso','estadoUso')
+   .where('estadoUso.id = :estadoUsoId',{estadoUsoId:1});
+
+    if(filtrarOrdenDeTrabajoDto.numOrden){
+      qb.andWhere('solicitud.NumOrden LIKE :numOrden',{numOrden:`${filtrarOrdenDeTrabajoDto.numOrden}%`});
+    }
+    if(filtrarOrdenDeTrabajoDto.userSolicitante){
+      qb.andWhere('userSolicitante.name LIKE :name',{name:`${filtrarOrdenDeTrabajoDto.userSolicitante}%`});
+    }
+
+    if(filtrarOrdenDeTrabajoDto.Area){
+    qb.andWhere('solicitud.Area LIKE :area',{area:`${filtrarOrdenDeTrabajoDto.Area}%`});
+    }
+
+    qb.select([
+      'solicitud.id',
+      'solicitud.NumOrden',
+      'solicitud.Area',
+      'solicitud.Codigo',
+      'solicitud.Maquina',
+      'solicitud.DescripcionTrabajo',
+      'userSolicitante.name'
+    ]);
+    
+    const ordenes = await qb.getMany();
+    
+    return ordenes;
+
+  }
+
   async getEstadosTrabajo(){
 
     const estados = await this.estadoTrabajoRepository.find();

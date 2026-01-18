@@ -32,6 +32,11 @@ export class OrdenDeTrabajoController {
   return this.ordenDeTrabajoService.getAllOrdenesTrabajoSinUso();
  }
 
+ @Patch('filtrar-ordenes/sin-uso')
+  filtrarOrdenesSinUso(@Body() filtrarOrdenDeTrabajoDto:FiltrarOrdenDeTrabajoDto){
+    return this.ordenDeTrabajoService.filtrarOrdenesSinUso(filtrarOrdenDeTrabajoDto);
+  }
+
   @Post('orden-by-solicitante')
  getOrdenTrabajoBySolicitante(@Body() searchbyuser:{solicitante:string}){
   return this.ordenDeTrabajoService.getOrdenTrabajoBySolicitante(searchbyuser.solicitante);

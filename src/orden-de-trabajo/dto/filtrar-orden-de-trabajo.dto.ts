@@ -5,12 +5,21 @@ import { IsDate, IsEmpty, IsNotEmpty, IsNumber, IsOptional, IsString } from "cla
 export class FiltrarOrdenDeTrabajoDto {
     @Type(()=> Date)
     @IsDate()
-    @IsEmpty()
+    
     @IsOptional()
     fechaInicio :Date;
  
-    @IsString()
     @IsOptional()
-    @IsEmpty()
+    @IsString() 
     userSolicitante:string;
+
+    @IsOptional()
+    @IsString() 
+    Area:string;
+
+    
+    @IsOptional()
+    @Type(()=> String)
+    @IsString()
+    numOrden:string;
 }
