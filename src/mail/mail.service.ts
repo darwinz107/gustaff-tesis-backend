@@ -111,7 +111,7 @@ private readonly logger = new Logger(MailService.name);
         .createQueryBuilder('user')
         .innerJoinAndSelect('user.cargoId', 'cargo')
         .innerJoinAndSelect('cargo.rolId', 'rol')
-        .where('rol.role IN (:...roles)', { roles: ['ADMIN', 'JEFE DE LOGISTICA INTERNA'] })
+        .where('rol.role IN (:...roles)', { roles: ['ADMIN', 'SUPERVISOR LOGISTICA INTERNA'] })
         .select(['user.id','user.email'])
         .getMany();
 
@@ -165,7 +165,7 @@ private readonly logger = new Logger(MailService.name);
         .createQueryBuilder('user')
         .innerJoinAndSelect('user.cargoId', 'cargo')
         .innerJoinAndSelect('cargo.rolId', 'rol')
-        .where('rol.role IN (:...roles)', { roles: ['ADMIN', 'JEFE DE LOGISTICA INTERNA'] })
+        .where('rol.role IN (:...roles)', { roles: ['ADMIN', 'SUPERVISOR LOGISTICA INTERNA'] })
         .select(['user.id','user.email'])
         .getMany();
 
@@ -209,16 +209,18 @@ private readonly logger = new Logger(MailService.name);
   }
 
      async sendActaSalidaSinOrden(numSal:string) {
+
+      console.log("Entrando a sendActaSalidaSinOrden con numSal:", numSal);
     try {
       
       const users = await this.userRepository
         .createQueryBuilder('user')
         .innerJoinAndSelect('user.cargoId', 'cargo')
         .innerJoinAndSelect('cargo.rolId', 'rol')
-        .where('rol.role IN (:...roles)', { roles: ['ADMIN', 'JEFE DE LOGISTICA INTERNA'] })
+        .where('rol.role IN (:...roles)', { roles: ['ADMIN', 'SUPERVISOR LOGISTICA INTERNA'] })
         .select(['user.id','user.email'])
         .getMany();
-
+console.log('users encontrados:', users.length, users.map(u => u.email));
       const emails = users.map(u => u.email).filter(Boolean);
       if (emails.length === 0) {
         this.logger.warn('No se encontraron usuarios para notificar.');
@@ -242,7 +244,7 @@ private readonly logger = new Logger(MailService.name);
         html,
       });
 
-      this.logger.log(`Notificación enviada a: ${emails.join(', ')}`);
+      this.logger.log(`Notificación enviada desde acta salida sin orden a: ${emails.join(', ')}`);
     } catch (err) {
       this.logger.error('Error enviando notificación por correo', err);
     }
@@ -255,7 +257,7 @@ private readonly logger = new Logger(MailService.name);
         .createQueryBuilder('user')
         .innerJoinAndSelect('user.cargoId', 'cargo')
         .innerJoinAndSelect('cargo.rolId', 'rol')
-        .where('rol.role IN (:...roles)', { roles: ['ADMIN', 'JEFE DE LOGISTICA INTERNA'] })
+        .where('rol.role IN (:...roles)', { roles: ['ADMIN', 'SUPERVISOR LOGISTICA INTERNA'] })
         .select(['user.id','user.email'])
         .getMany();
 
