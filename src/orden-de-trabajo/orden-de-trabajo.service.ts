@@ -3,7 +3,7 @@ import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { UpdateOrdenDeTrabajoDto } from './dto/update-orden-de-trabajo.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Area } from '../parametro/entities/area.entity';
-import { DataSource, In, Like, Repository } from 'typeorm';
+import { DataSource, In, Like, QueryRunner, Repository } from 'typeorm';
 import { Codigo } from '../parametro/entities/codigo.entity';
 import { Maquina } from '../parametro/entities/maquina.entity';
 import { CreateAreaDto } from '../admin/dto/create-area.dto';
@@ -33,6 +33,7 @@ import { MailService } from 'src/mail/mail.service';
 import { CronJob } from 'cron';
 import { TipoMantenimiento } from '../parametro/entities/tipoMantenimiento.entity';
 import { Periodo } from '../parametro/entities/periodo.entity';
+import { Query } from 'mysql2/typings/mysql/lib/protocol/sequences/Query';
 
 
 
@@ -242,7 +243,7 @@ for (let i = 0; i < fases.length; i++) {
 }
 
   @Cron(CronExpression.EVERY_5_MINUTES)
-  async ordenTrabajoVencida(){
+  private async ordenTrabajoVencida(){
  //console.log('Verificando ordenes de trabajo vencidas...');
     try {
         const ordenesTrabajo = await this.solicitudOrdenRepository.find({where:{estadoTrabajo:{id:In([1,3])}},relations:['estadoTrabajo']});
@@ -421,31 +422,7 @@ try {
 
      const solicitudCreated = await queryRunner.manager.save(SolicitudOrden,nuevaSolicitud);
 
-     const horariosxDia = ['09:30:00','12:00:00','15:00:00','16:30:00'];
-     
-  let fechaI = parseISO(solicitudCreated.fechaInicio);
-  let fechaf = parseISO(solicitudCreated.fechaFinal);
-
-   const toDateTime = (hora:string) => parseISO(`1970-01-01T${hora}`)
-
-   const horaI = toDateTime(solicitudCreated.HoraInicio);
-    const horaF = toDateTime(solicitudCreated.HoraFinal);
-  // const horasDate = horariosxDia.map(hora => toDateTime(hora));
-
-     while(isBefore(fechaI, addDays(fechaf,1))) {
-    if(isSunday(fechaI) === false){
-       const newJornada = await queryRunner.manager.save(Jornada,{ fecha:fechaI, OrdenDeTrabajoId:solicitudCreated });
-      
-      for(const hora of horariosxDia){
-        const horaActual = toDateTime(hora);
-        if(horaI > horaActual) continue;
-        if(horaF < horaActual) break;   
-         await queryRunner.manager.save(Fases,{ hora:hora, jornada:newJornada });
-         
-      }
-     }
-      fechaI = addDays(fechaI,1);
-    }
+      await this.crearJornadasyFases(createSolicitudOrdenDto.fechaInicio,createSolicitudOrdenDto.fechaFinal,createSolicitudOrdenDto.HoraInicio,createSolicitudOrdenDto.HoraFinal,solicitudCreated.id,queryRunner);
     
      await queryRunner.commitTransaction();
      await this.mailService.newOrdenTrabajoNoti(solicitudCreated.NumOrden,solicitudCreated.fechaInicio,solicitudCreated.fechaFinal);
@@ -486,6 +463,37 @@ try {
      }finally{
     await  queryRunner.release();
   }}
+
+ private async crearJornadasyFases(fechaInicio:string,fechaFinal:string,HoraInicio:string,HoraFinal:string,ordenTrabajoId:number, queryRunner:QueryRunner){
+        const horariosxDia = ['09:30:00','12:00:00','15:00:00','16:30:00'];
+     
+  let fechaI = parseISO(fechaInicio);
+  let fechaf = parseISO(fechaFinal);
+
+   const toDateTime = (hora:string) => parseISO(`1970-01-01T${hora}`)
+
+   const horaI = toDateTime(HoraInicio);
+   const horaF = toDateTime(HoraFinal);
+  // const horasDate = horariosxDia.map(hora => toDateTime(hora));
+const ordenTrabajo = await queryRunner.manager.findOne(SolicitudOrden,{where:{id:ordenTrabajoId}});
+  if(!ordenTrabajo){
+    throw new NotFoundException("No se encontro la orden de trabajo para crear jornadas y fases");
+  }
+     while(isBefore(fechaI, addDays(fechaf,1))) {
+    if(isSunday(fechaI) === false){
+       const newJornada = await queryRunner.manager.save(Jornada,{ fecha:fechaI, OrdenDeTrabajoId:ordenTrabajo});
+      
+      for(const hora of horariosxDia){
+        const horaActual = toDateTime(hora);
+        if(horaI > horaActual) continue;
+        if(horaF < horaActual) break;   
+         await queryRunner.manager.save(Fases,{ hora:hora, jornada:newJornada });
+         
+      }
+     }
+      fechaI = addDays(fechaI,1);
+    }
+  }
 
   async getAllOrdenesTrabajo(){
      
@@ -724,24 +732,54 @@ return new NotFoundException("No existen ordenes de trabajo");
 
   async update(id: number, updateOrdenDeTrabajoDto: UpdateOrdenDeTrabajoDto) {
 
-    const solicitante = await this.userRepository.findOne({ where: { name: updateOrdenDeTrabajoDto.userSolicitante }, select: ['id'] });
-    const receptor = await this.userRepository.findOne({ where: { name: updateOrdenDeTrabajoDto.userReceptor }, select: ['id'] });
-    const tecnico = await this.userRepository.findOne({ where: { name: updateOrdenDeTrabajoDto.userTecnico }, select: ['id'] });
-    const estado = await this.estadoTrabajoRepository.findOne({where:{estado:updateOrdenDeTrabajoDto.estado},select:['id']});
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    if(!solicitante){
-      throw new NotFoundException("No se encontro un solicitante");
-    }
-    if(!receptor){
-      throw new NotFoundException("No se encontro un receptor");
-    }
+    let solicitante:User|null = null;
+    let receptor:User|null = null;
+    let tecnico:User|null = null;
+    let estado:EstadoTrabajo|null = null;
+    try {
+      if(updateOrdenDeTrabajoDto.userSolicitante){
+         solicitante = await queryRunner.manager.findOne(User,{where:{name:updateOrdenDeTrabajoDto.userSolicitante},select:['id']});
+      }
 
-     if(!estado){
-      throw new NotFoundException("No se encontro un estado");
-    }
+      if(updateOrdenDeTrabajoDto.userReceptor){
+        receptor = await queryRunner.manager.findOne(User,{where:{name:updateOrdenDeTrabajoDto.userReceptor},select:['id']});
+      }
 
+      if(updateOrdenDeTrabajoDto.userTecnico){
+        tecnico = await queryRunner.manager.findOne(User,{where:{name:updateOrdenDeTrabajoDto.userTecnico},select:['id']});
+      }
+  
+      if(updateOrdenDeTrabajoDto.estado){
+        estado = await queryRunner.manager.findOne(EstadoTrabajo,{where:{estado:updateOrdenDeTrabajoDto.estado},select:['id']});
+      }
+
+      const ordenTrabajoExist = await queryRunner.manager.findOne(SolicitudOrden,{where:{id}});
+      if(!ordenTrabajoExist){
+        throw new NotFoundException("No se encontro la orden de trabajo a actualizar");
+      }
+
+    if(updateOrdenDeTrabajoDto.fechaInicio || updateOrdenDeTrabajoDto.fechaFinal && updateOrdenDeTrabajoDto.HoraInicio || updateOrdenDeTrabajoDto.HoraFinal){
+     const jornadasExist = await queryRunner.manager.find(Jornada,{where:{OrdenDeTrabajoId:{id}}});
+     const fasesExist = await queryRunner.manager.createQueryBuilder(Fases,'fases')
+      .innerJoin('fases.jornada','jornada')
+      .where('jornada.OrdenDeTrabajoId = :id',{id})
+      .getMany();
     
-   const updateSoli = await this.solicitudOrdenRepository.update(id,{
+      if(fasesExist.length > 0) await queryRunner.manager.delete(Fases,fasesExist.map(fase => fase.id));
+
+   if(jornadasExist.length > 0) await queryRunner.manager.delete(Jornada,jornadasExist.map(jornada => jornada.id));
+
+    await this.crearJornadasyFases(updateOrdenDeTrabajoDto.fechaInicio ?? ordenTrabajoExist.fechaInicio ,updateOrdenDeTrabajoDto.fechaFinal ?? ordenTrabajoExist.fechaFinal,updateOrdenDeTrabajoDto.HoraInicio ?? ordenTrabajoExist.HoraInicio,updateOrdenDeTrabajoDto.HoraFinal ?? ordenTrabajoExist.HoraFinal,id,queryRunner);
+
+   
+    }
+
+
+    await queryRunner.manager.update(SolicitudOrden,id,{
     fechaInicio:updateOrdenDeTrabajoDto.fechaInicio,
     fechaFinal:updateOrdenDeTrabajoDto.fechaFinal,
     HoraInicio:updateOrdenDeTrabajoDto.HoraInicio,
@@ -756,14 +794,20 @@ return new NotFoundException("No existen ordenes de trabajo");
     userSolicitante: solicitante,
     userReceptor: receptor,
     userTecnico: tecnico ?? null,
-    estadoTrabajo:estado
+    estadoTrabajo: estado ?? ordenTrabajoExist.estadoTrabajo
    });
-   
-   if(updateSoli.affected != 0){
-    return {msj:"Solicitud de orden actualizada!"};
-   }else{
-    return {msj:"No se pudo actualizar la solicitud"};
-   }  
+   await queryRunner.commitTransaction();
+   await this.ordenTrabajoVencida();
+   return {msj:"Solicitud de orden actualizada!",validate:true  };
+    
+  }
+   catch (error) {
+    await queryRunner.rollbackTransaction();
+    console.log(error);
+    return { msj: `No se pudo actualizar la solicitud: ${error}`,validate:false };
+       }finally{
+       queryRunner.release();
+      }  
   }
 
  async remove(id: number) {
