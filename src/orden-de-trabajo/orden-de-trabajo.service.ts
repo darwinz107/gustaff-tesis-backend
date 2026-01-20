@@ -182,6 +182,7 @@ for(const ot of jornadas){
 
       if (f.completo && f.agotado) {
   console.log(`Saltando fase ${f.id} porque ya está completa`);
+   count ++;
   continue;
 }
           const horaLimite = horariosxDia[count];
