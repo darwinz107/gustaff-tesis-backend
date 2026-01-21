@@ -426,6 +426,7 @@ try {
       await this.crearJornadasyFases(createSolicitudOrdenDto.fechaInicio,createSolicitudOrdenDto.fechaFinal,createSolicitudOrdenDto.HoraInicio,createSolicitudOrdenDto.HoraFinal,solicitudCreated.id,queryRunner);
     
      await queryRunner.commitTransaction();
+     await this.setFasesVencidas();
      await this.mailService.newOrdenTrabajoNoti(solicitudCreated.NumOrden,solicitudCreated.fechaInicio,solicitudCreated.fechaFinal);
       return { msj: "Solicitud de orden creada!",validate:true };
     /*else{
@@ -777,6 +778,7 @@ return new NotFoundException("No existen ordenes de trabajo");
     await this.crearJornadasyFases(updateOrdenDeTrabajoDto.fechaInicio ?? ordenTrabajoExist.fechaInicio ,updateOrdenDeTrabajoDto.fechaFinal ?? ordenTrabajoExist.fechaFinal,updateOrdenDeTrabajoDto.HoraInicio ?? ordenTrabajoExist.HoraInicio,updateOrdenDeTrabajoDto.HoraFinal ?? ordenTrabajoExist.HoraFinal,id,queryRunner);
 
    
+   
     }
 
 
@@ -799,6 +801,8 @@ return new NotFoundException("No existen ordenes de trabajo");
    });
    await queryRunner.commitTransaction();
    await this.ordenTrabajoVencida();
+    await this.setFasesVencidas();
+
    return {msj:"Solicitud de orden actualizada!",validate:true  };
     
   }
@@ -990,6 +994,7 @@ console.log(id,descripcion);
   fase.descripcion = descripcion;
  //fase.agotado = true;
   await this.fasesRepository.save(fase);
+ // await this.ordenTrabajoVencida();
   return {msj:"Fase marcada como completada"};
    
 }
