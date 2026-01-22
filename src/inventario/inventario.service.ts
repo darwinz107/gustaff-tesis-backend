@@ -35,6 +35,7 @@ import { CreateActaSalidaSinSMDto } from './dto/create-acta-salida-sm.dto';
 import { CreateItemsSalidaSinSMDto } from './dto/create-items-salida-sinSM.dto';
 import { Maquina } from 'src/parametro/entities/maquina.entity';
 
+
 @Injectable()
 export class InventarioService {
 
@@ -203,9 +204,10 @@ let solMaterial: SolicitudDeCompra | null = null;
    }
 
 
-   const registroEntrada = await queryRunner.manager.count(RegistroEntrada);
+    const countReg = await queryRunner.manager.find(RegistroEntrada,{take:1,order:{id:"DESC"}});
+      const nextId = countReg && countReg.length > 0 ? countReg[0].id + 1 : 1;
 
-   const newNumEntrada = 'AE-'+( registroEntrada+1).toString().padStart(5,'0');
+   const newNumEntrada = 'AE-'+nextId.toString().padStart(5,'0');
 
    const findProovedor = await queryRunner.manager.findOne(Proovedores,{where:{nombreComercial:createActaEntradaDto?.proovedor}});
 
@@ -982,7 +984,7 @@ console.log(findItem);
       'numOrdenTrabajo.id',
       'numOrdenTrabajo.DescripcionTrabajo'
     ])
-    
+    .orderBy('registroSalida.id','DESC')
     .getMany();
     if(!registroDeSalida){
       throw new NotFoundException("No se encontro registro de salidas");
@@ -1011,7 +1013,7 @@ console.log(findItem);
       'numOrdenTrabajo.id',
       'numOrdenTrabajo.DescripcionTrabajo',    
     ])
-    
+    .orderBy('registroEntrada.id','DESC')
     .getMany();
     if(!registroDeEntrada){
       throw new NotFoundException("No se encontro registro de entrada");
@@ -1226,7 +1228,7 @@ async filtrarActasEntrada(filtros: FiltrarActaEntradaDto) {
       'proovedor.nombre',
       'numSolicitudCompra.id',
       'numOrdenTrabajo.id',
-      'numSolicitudCompra.Destino',
+     
       'inventario.nombre',
       'itemEntrada.cantidad',
       'itemEntrada.costo',
@@ -1282,7 +1284,7 @@ async filtrarActasSalida(filtros: FiltrarActaSalidaDto) {
       'entregaUser.name',
       'numSolicitudCompra.id',
       'numOrdenTrabajo.id',
-      'numSolicitudCompra.Destino',
+      
       'itemSalida.item',
       'itemSalida.cantidad',
       'itemSalida.Observacion',

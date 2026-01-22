@@ -696,7 +696,7 @@ return new NotFoundException("No existen ordenes de trabajo");
    .where('estadoUso.id = :estadoUsoId',{estadoUsoId:1});
 
     if(filtrarOrdenDeTrabajoDto.numOrden){
-      qb.andWhere('solicitud.NumOrden LIKE :numOrden',{numOrden:`${filtrarOrdenDeTrabajoDto.numOrden}%`});
+      qb.andWhere('solicitud.NumOrden LIKE :numOrden',{numOrden:`%${filtrarOrdenDeTrabajoDto.numOrden}%`});
     }
     if(filtrarOrdenDeTrabajoDto.userSolicitante){
       qb.andWhere('userSolicitante.name LIKE :name',{name:`${filtrarOrdenDeTrabajoDto.userSolicitante}%`});

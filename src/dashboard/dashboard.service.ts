@@ -101,13 +101,12 @@ export class DashboardService {
       .where('estado.estado = :estado AND YEAR(o.fechaRemision) = :year AND MONTH(o.fechaRemision) = :month', { estado: EstadoCompraEnum.PRO, year: currentYear, month: currentMonth })
       .getCount();
 
-    const parcial = await this.dataSource
+   /* const parcial = await this.dataSource
       .getRepository('SolicitudDeCompra')
       .createQueryBuilder('o')
       .innerJoin('o.estadoCompra', 'e')
       .where('e.estado = :estado AND YEAR(o.fechaRemision) = :year AND MONTH(o.fechaRemision) = :month', { estado: EstadoCompraEnum.PAR, year: currentYear, month: currentMonth })
-      .getCount();
-
+      .getCount();*/
       const entregado = await this.dataSource
       .getRepository('SolicitudDeCompra')
       .createQueryBuilder('o')
@@ -115,32 +114,20 @@ export class DashboardService {
       .where('e.estado = :estado AND YEAR(o.fechaRemision) = :year AND MONTH(o.fechaRemision) = :month', { estado: EstadoCompraEnum.ENT, year: currentYear, month: currentMonth })
       .getCount();
 
-   /* const solicitudesPendientes = await this.dataSource
+      const listoParaEntrega = await this.dataSource
       .getRepository('SolicitudDeCompra')
-      .createQueryBuilder('s')
-      .innerJoin('s.estadoCompra', 'e')
-      .where('e.estado = :estado', { estado: EstadoCompraEnum. })
-      .getCount();*/
-
-    
-  /*  const solicitudes = await this.dataSource
-      .getRepository('SolicitudDeCompra')
-      .createQueryBuilder('s')
-      .leftJoin('s.itemSolicitados', 'it')
-      .select('s.id')
-      .addSelect('SUM(CASE WHEN it.existencia = 1 THEN 1 ELSE 0 END)', 'existencias')
-      .addSelect('COUNT(it.id)', 'totalItems')
-      .groupBy('s.id')
-      .getRawMany();
-
-    const completas = solicitudes.filter(r => Number(r.existencias) === Number(r.totalItems)).length;*/
+      .createQueryBuilder('o')
+      .innerJoin('o.estadoCompra', 'e')
+      .where('e.estado = :estado AND YEAR(o.fechaRemision) = :year AND MONTH(o.fechaRemision) = :month', { estado: EstadoCompraEnum.LIS, year: currentYear, month: currentMonth })
+      .getCount();
 
     return {
       mes: currentMonth,
       año: currentYear,
       totalSol,
       enProceso,
-      parcial,
+     
+      listoParaEntrega,
       entregado
     };
   }
@@ -197,7 +184,7 @@ export class DashboardService {
       .select([
         'o.id AS id',
         'o.NumOrden AS numOrden',
-        'o.fechaInicio',
+        'o.fechaInicio as fechaInicio',
         'o.fechaFinal ',
         'u.name AS solicitante',
         'estado.estado as estado',
@@ -277,8 +264,8 @@ export class DashboardService {
 
       const totalStock = await this.dataSource.getRepository('Inventario')
       .createQueryBuilder('in')
-      .select('SUM(in.stock)','total')
-      .getRawOne();
+      .select('in.id')
+      .getCount();
    
 
 const totalRegEntrada =  await this.dataSource.getRepository('RegistroEntrada')
@@ -307,6 +294,8 @@ const totalRegEntrada =  await this.dataSource.getRepository('RegistroEntrada')
       .getRawOne();
   
       return {
+        mes: currentMonth,
+        año: currentYear,
         totalStock,
         totalRegEntrada,
         totalItemsEntrada,
@@ -428,5 +417,56 @@ async getUltimosUsuarios(limit = 5) {
     .getRawMany();
 }
 
+async getActasEntradaMesActual() {
+  const currentDate = new Date();
+  const currentMonth = currentDate.getMonth() + 1;
+  const currentYear = currentDate.getFullYear();
+
+  return await this.dataSource
+    .getRepository('RegistroEntrada')
+    .createQueryBuilder('re')
+    .leftJoin('re.proovedor', 'p')
+    .leftJoin('re.recibe', 'u')
+    .leftJoin('re.numSolicitudCompra', 's')
+    .select([
+      're.id AS id',
+      're.numActa AS numActa',
+      're.factura AS factura',
+      're.fechaRemision AS fechaRemision',
+      'p.nombre AS proovedor',
+      'u.name AS recibidoPor',
+      's.numOrden AS numOrdenCompra',
+      're.total AS total'
+    ])
+    .where('YEAR(re.fechaRemision) = :year AND MONTH(re.fechaRemision) = :month', { year: currentYear, month: currentMonth })
+    .orderBy('re.fechaRemision', 'DESC')
+    .getRawMany();
+}
+
+async getActasSalidaMesActual() {
+  const currentDate = new Date();
+  const currentMonth = currentDate.getMonth() + 1;
+  const currentYear = currentDate.getFullYear();
+
+  return await this.dataSource
+    .getRepository('RegistroSalida')
+    .createQueryBuilder('rs')
+    .leftJoin('rs.entrega', 'u_entrega')
+    .leftJoin('rs.recibeSinSM', 'u_recibe')
+    .leftJoin('rs.numSolicitudCompra', 's')
+    .select([
+      'rs.id AS id',
+      'rs.numActa AS numActa',
+      'rs.fechaRemision AS fechaRemision',
+      'u_entrega.name AS entregadoPor',
+      'u_recibe.name AS recibidoPor',
+      's.numOrden AS numOrdenCompra',
+      'rs.total AS total',
+      'rs.observacion AS observacion'
+    ])
+    .where('YEAR(rs.fechaRemision) = :year AND MONTH(rs.fechaRemision) = :month', { year: currentYear, month: currentMonth })
+    .orderBy('rs.fechaRemision', 'DESC')
+    .getRawMany();
+}
 
 }

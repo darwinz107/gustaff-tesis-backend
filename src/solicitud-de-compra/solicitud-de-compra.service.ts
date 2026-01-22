@@ -15,6 +15,7 @@ import { EstadoUso } from 'src/orden-de-trabajo/entities/estadoUso';
 import { MailService } from 'src/mail/mail.service';
 import { FiltrarSolicitudCompraDto } from './dto/filtrar-solicitud-orden.dto';
 
+
 @Injectable()
 export class SolicitudDeCompraService implements OnModuleInit{
 
@@ -228,7 +229,7 @@ return {msj:"Solicitud de compra creada",validate:true}
       'estadoCompra.id',
       'estadoCompra.estado'
     ])
-    
+    .orderBy('solicitudCompra.id','DESC')
     .getMany();
     console.log(solicitudesCompra[0]);
  
@@ -609,7 +610,8 @@ return {msj:"Solicitud de compra creada",validate:true}
 
   async getAllSolicitudes(){
 
-    const solicitudes = await this.solicitudDeCompraRepository.find({where:[{estadoCompra:{estado:EstadoCompraEnum.PRO}},{estadoCompra:{estado:EstadoCompraEnum.LIS}}],relations:['itemSolicitados']});
+    const solicitudes = await this.solicitudDeCompraRepository.find({where:[{estadoCompra:{estado:EstadoCompraEnum.PRO}},{estadoCompra:{estado:EstadoCompraEnum.LIS}}],relations:['itemSolicitados','numOrdenTrabajo','numOrdenTrabajo.userSolicitante'],
+    order:{id:"DESC"}});
     if(solicitudes.length ===0){
     return []
     }
@@ -622,7 +624,9 @@ return {msj:"Solicitud de compra creada",validate:true}
 
    async getAllSolicitudesParciales(){
 
-    const solicitudes = await this.solicitudDeCompraRepository.find({where:[{estadoCompra:{estado:EstadoCompraEnum.PAR}},{estadoCompra:{estado:EstadoCompraEnum.PRO}}],relations:['itemSolicitados']});
+    const solicitudes = await this.solicitudDeCompraRepository.find({where:[{estadoCompra:{estado:EstadoCompraEnum.PAR}},{estadoCompra:{estado:EstadoCompraEnum.PRO}}],relations:['itemSolicitados','numOrdenTrabajo','numOrdenTrabajo.userSolicitante']
+    ,order:{id:"DESC"}
+    });
     console.log(solicitudes.length);
     if(solicitudes.length ===0){
     return []
@@ -644,14 +648,16 @@ async filtrarSolicitudesCompra(filtros: FiltrarSolicitudCompraDto) {
       'solicitudCompra.numOrden',
       'solicitudCompra.fechaRemision',
       'solicitudCompra.Autoriza',
-      'solicitudCompra.Destino',
+      
       'ordenTrabajo.id',
       'ordenTrabajo.NumOrden',
       'ordenTrabajo.DescripcionTrabajo',
       'userSolicitante.name',
       'estadoCompra.id',
       'estadoCompra.estado'
-    ]);
+    ])
+    .orderBy('solicitudCompra.id','DESC')
+    ;
 
   if (filtros.numOrden) {
     qb.andWhere('solicitudCompra.numOrden LIKE :numOrden', { numOrden: `%${filtros.numOrden}%` });
