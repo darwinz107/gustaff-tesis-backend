@@ -524,7 +524,7 @@ const ordenTrabajo = await queryRunner.manager.findOne(SolicitudOrden,{where:{id
         'estado.estado',
         "estadoUso.uso"
       ])
-     
+     .orderBy('solicitud.id','DESC')
       .getMany();
 
     if (ordenes !==undefined) {
