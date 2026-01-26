@@ -131,7 +131,7 @@ export class ReporteService {
     const infoReporte = await this.registroSalidaRepository.createQueryBuilder('registroSalida')
     .leftJoinAndSelect('registroSalida.itemSalida','itemSalida')
     .leftJoinAndSelect('registroSalida.recibeSinSM','recibeSinSM')
-    .where('MONTH(registroSalida.fechaSalida) = :mesActual AND YEAR(registroSalida.fechaSalida) = :anioActual',{mesActual, anioActual})
+    .where('MONTH(registroSalida.fechaRemision) = :mesActual AND YEAR(registroSalida.fechaRemision) = :anioActual',{mesActual, anioActual})
     .orderBy('registroSalida.id','DESC')
     .getMany()
     ;
@@ -178,9 +178,9 @@ export class ReporteService {
       id: rep.id,
       NumActa: rep.numActa,
       cantidad: rep.itemSalida.reduce((sum, item) => sum + item.cantidad, 0),
-      fechaSalida: rep.fechaRemision,
-      recibe: rep.recibeSinSM ?? 'N/A',
-      destino: rep.descripcion,
+      fechaSalida: rep.fechaRemision.getDate() + '/' + (rep.fechaRemision.getMonth() + 1) + '/' + rep.fechaRemision.getFullYear(),
+      recibe: rep.recibeSinSM?.name ?? 'N/A',
+      destino: rep.descripcion || 'N/A',
       itemsEntregados: itemsEntregados,
     });
   });
