@@ -6,12 +6,14 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { SolicitudOrden } from 'src/orden-de-trabajo/entities/solicitudOrden.entity';
 import { Repository } from 'typeorm';
 import * as ExcelJS from 'exceljs';
+import { RegistroSalida } from 'src/inventario/entities/registroSalida.entity';
 
 @Injectable()
 export class ReporteService {
 
    constructor(
      @InjectRepository(SolicitudOrden) private readonly solicitudOrdenRepository:Repository<SolicitudOrden>,
+     @InjectRepository(RegistroSalida) private readonly registroSalidaRepository:Repository<RegistroSalida>,
    ) {}
 
   create(createReporteDto: CreateReporteDto) {
@@ -24,7 +26,15 @@ export class ReporteService {
 
   async generarReporteOrdenTrabajo(res:Response) {
     
-    const infoReporte = await this.solicitudOrdenRepository.find();
+    const mesActual = new Date().getMonth() + 1;
+    const anioActual = new Date().getFullYear();
+
+    const infoReporte = await this.solicitudOrdenRepository.createQueryBuilder('solicitudOrden')
+    .leftJoinAndSelect('solicitudOrden.estadoTrabajo','estadoTrabajo')
+    .where('MONTH(solicitudOrden.fechaRemision) = :mesActual AND YEAR(solicitudOrden.fechaRemision) = :anioActual',{mesActual, anioActual})
+    .orderBy('solicitudOrden.id','DESC')
+    .getMany()
+    ;
     if(infoReporte.length === 0){
       res.status(404).json({message:'No hay datos para generar el reporte'});
       return;
@@ -49,19 +59,22 @@ export class ReporteService {
 
     const headerRow = worksheet.getRow(1);
     headerRow.height = 20;
-    headerRow.font = { bold: true };
-    headerRow.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFB0C4DE' },
-    };
-    headerRow.border = {
-      top: { style: 'thin' },
-      left: { style: 'thin' },
-      bottom: { style: 'thick' },
-      right: { style: 'thin' },
-    };
-    headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+   
+    headerRow.eachCell((cell) => {
+      cell.font = {bold:true};
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: '4F81BD' },
+      };
+      cell.border = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thick' },
+        right: { style: 'thin' },
+      };
+      cell.alignment = { vertical: 'middle', horizontal: 'center' };
+    });
 
     infoReporte.forEach((rep)=>{
       worksheet.addRow({
@@ -80,23 +93,124 @@ export class ReporteService {
       });
     });
 
-    for (let i = 2; i <= worksheet.rowCount; i++) {
-      const row = worksheet.getRow(i);
+    worksheet.eachRow({includeEmpty:false},(row, i) => {
+      if (i === 1) return; 
+    
+      if(row.actualCellCount > 0){
       row.height = 18;
-      row.alignment = { vertical: 'middle', horizontal: 'left' };
-      row.border = {
-        top: { style: 'thin' },
-        left: { style: 'thin' },
-        bottom: { style: 'thin' },
-        right: { style: 'thin' },
+}
+      row.eachCell({includeEmpty:true},(cell) => {
+     const val = cell.value;
+
+     const hashValue = val !== null && val !== undefined && !(typeof val === 'string' && val.trim() === '');
+
+     if(hashValue){
+       cell.alignment = { vertical: 'middle', horizontal: 'left' };
+       cell.border = {
+         top: { style: 'thin' },
+         left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' },
+     };
+     
       };
-    }
+      });
+    
+    });
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', `attachment; filename=reporte_ordenes_trabajo_${new Date().toISOString().slice(0, 10)}.xlsx`);
     await workbook.xlsx.write(res);
     res.end();
   }
+
+  async generarReporteActaSalida(res:Response){
+  
+    const mesActual = new Date().getMonth() + 1;
+    const anioActual = new Date().getFullYear();
+    const infoReporte = await this.registroSalidaRepository.createQueryBuilder('registroSalida')
+    .leftJoinAndSelect('registroSalida.itemSalida','itemSalida')
+    .leftJoinAndSelect('registroSalida.recibeSinSM','recibeSinSM')
+    .where('MONTH(registroSalida.fechaSalida) = :mesActual AND YEAR(registroSalida.fechaSalida) = :anioActual',{mesActual, anioActual})
+    .orderBy('registroSalida.id','DESC')
+    .getMany()
+    ;
+
+    if(infoReporte.length === 0){
+      res.status(404).json({message:'No hay datos para generar el reporte'});
+      return;
+  }
+
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Reporte Acta de Salida');
+
+  worksheet.columns = [
+    { header: 'ID', key: 'id', width: 10 },
+    { header: 'NumActa', key: 'NumActa', width: 30 },
+    { header: 'Cantidad', key: 'cantidad', width: 15 },
+    { header: 'Fecha de Salida', key: 'fechaSalida', width: 20 },
+    { header: 'Recibe', key: 'recibe', width: 25 },
+    { header: 'Destino', key: 'destino', width: 25 },
+    {header:'Items Entregados', key:'itemsEntregados', width:30},
+  ];
+
+  const headerRow = worksheet.getRow(1);
+  headerRow.height = 20;
+  headerRow.eachCell((cell) => {
+    cell.font = {bold:true};
+    cell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: '4F81BD' },
+    };
+    cell.border = {
+      top: { style: 'thin' },
+      left: { style: 'thin' },
+      bottom: { style: 'thick' },
+      right: { style: 'thin' },
+    };
+    cell.alignment = { vertical: 'middle', horizontal: 'center' };
+  });
+
+  infoReporte.forEach((rep)=>{
+    const itemsEntregados = rep.itemSalida.map(item=>`${item.item} (Cantidad: ${item.cantidad})`).join(', ');
+    worksheet.addRow({
+      id: rep.id,
+      NumActa: rep.numActa,
+      cantidad: rep.itemSalida.reduce((sum, item) => sum + item.cantidad, 0),
+      fechaSalida: rep.fechaRemision,
+      recibe: rep.recibeSinSM ?? 'N/A',
+      destino: rep.descripcion,
+      itemsEntregados: itemsEntregados,
+    });
+  });
+
+  worksheet.eachRow({includeEmpty:false},(row, i) => {
+    if (i === 1) return;
+    if(row.actualCellCount > 0){
+      row.height = 18;
+    }
+    row.eachCell({includeEmpty:true},(cell) => {
+     const val = cell.value;
+      const hashValue = val !== null && val !== undefined && !(typeof val === 'string' && val.trim() === '');
+      if(hashValue){
+       cell.alignment = { vertical: 'middle', horizontal: 'left' };
+       cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' },
+       };
+      }
+    });
+  });
+
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', `attachment; filename=reporte_acta_salida_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  await workbook.xlsx.write(res);
+  res.end();
+  }
+
 
   findOne(id: number) {
     return `This action returns a #${id} reporte`;

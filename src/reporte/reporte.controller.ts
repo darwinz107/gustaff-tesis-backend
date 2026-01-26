@@ -23,6 +23,11 @@ export class ReporteController {
     return this.reporteService.generarReporteOrdenTrabajo(res);
   }
 
+  @Get('acta-salida')
+  generarReporteActaSalida(@Res() res: Response) {
+    return this.reporteService.generarReporteActaSalida(res);
+  }
+
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateReporteDto: UpdateReporteDto) {
     return this.reporteService.update(+id, updateReporteDto);
