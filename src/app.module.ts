@@ -17,6 +17,9 @@ import { MailerModule } from '@nestjs-modules/mailer';
 
 import { DashboardModule } from './dashboard/dashboard.module';
 
+import { ReporteModule } from './reporte/reporte.module';
+
+
 
 @Module({
   imports: [   
@@ -52,7 +55,7 @@ JwtModule.register({
       entities: [],
       autoLoadEntities:true,
       synchronize: true,
-  }),UsersModule, AuthModule,RolesModule, OrdenDeTrabajoModule, SolicitudDeCompraModule, InventarioModule, ParametroModule, AdminModule, DashboardModule],
+  }),UsersModule, AuthModule,RolesModule, OrdenDeTrabajoModule, SolicitudDeCompraModule, InventarioModule, ParametroModule, AdminModule, DashboardModule, ReporteModule],
     
 
   controllers: [AppController],
