@@ -22,5 +22,7 @@ export class UpdateUserDto{
         fechaNac?:Date;
         
         cargo?:number;
+
+        estado?:boolean;
     
 }

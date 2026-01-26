@@ -326,7 +326,7 @@ export class AdminService implements OnModuleInit{
     if (updateUserDto.identification !== undefined) user.identification = updateUserDto.identification;
     if (updateUserDto.cellphone !== undefined) user.cellphone = updateUserDto.cellphone;
     if (updateUserDto.email !== undefined) user.email = updateUserDto.email;
-
+    if (updateUserDto.estado !== undefined) user.estado = updateUserDto.estado;
     
     if (updateUserDto.fechaNac !== undefined && updateUserDto.fechaNac !== null) {
       const f = updateUserDto.fechaNac;
