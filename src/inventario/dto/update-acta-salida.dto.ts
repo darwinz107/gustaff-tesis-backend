@@ -9,13 +9,14 @@ export class UpdateActaSalidaDto {
   @IsString()
   observacion?: string;
 
+    @IsOptional()
+  @IsString()
+  descripcion: string;
+
   @IsOptional()
   @IsInt()
   recibeSinSMId?: number;
 
-  @IsOptional()
-  @IsString()
-  destino?: string;
 
   @IsOptional()
   @IsInt()

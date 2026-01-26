@@ -46,6 +46,58 @@ export class UsersService {
     
   }*/
 
+  async findUsersBySupervisorRoles() {
+  const rolesPermitidos = [
+    'SUPERVISOR MANTENIMIENTO',
+    'SUPERVISOR PLANIFICACION DE PROYECTOS',
+    'SUPERVISOR GALLETERIA',
+    'SUPERVISOR SEGURIDAD INDUSTRIAL',
+    'SUPERVISOR CONTROL DE CALIDAD',
+    'COORDINDACION DE OPERACIONES',
+    'SUPERVISOR CHOCOLATERIA',
+    'GERENCIA',
+    'SUPERVISOR LOGISTICA INTERNA',
+    'SUPERVISOR PLANTA',
+    'COORDINADOR DE MANTENIMIENTO'
+  ];
+
+  const users = await this.userRepository
+    .createQueryBuilder('user')
+    .leftJoinAndSelect('user.cargoId', 'cargo')
+    .leftJoinAndSelect('cargo.rolId', 'rol')
+    .where('rol.role IN (:...roles)', { roles: rolesPermitidos })
+    .select([
+      'user.id',
+      'user.name',
+    ])
+    .getMany();
+
+  return users;
+}
+  
+async findUsersGerenciaYCoordinacion() {
+  const rolesPermitidos = [
+    'GERENCIA',
+    'COORDINADOR DE MANTENIMIENTO',
+    'SUPERVISOR LOGISTICA INTERNA'
+  ];
+
+  const users = await this.userRepository
+    .createQueryBuilder('user')
+    .leftJoinAndSelect('user.cargoId', 'cargo')
+    .leftJoinAndSelect('cargo.rolId', 'rol')
+    .where('rol.role IN (:...roles)', { roles: rolesPermitidos })
+    .select([
+      'user.id',
+      'user.name',
+     
+    ])
+    .getMany();
+
+  return users;
+}
+
+
   async findAllUsers(){
    
     const users = await this.userRepository.find({select:['id','name','fechaNac','identification','cellphone','email','password','cargoId','estado'],relations:['cargoId']});
@@ -110,5 +162,20 @@ export class UsersService {
   remove(id: number) {
     return `This action removes a #${id} user`;
   }
+
+ /* async deleteUser(id: number) {
+    try {
+      const user = await this.userRepository.findOne({ where: { id } });
+      if (!user) {
+        return { msj: 'Usuario no encontrado', validate: false };
+      }
+      
+      await this.userRepository.delete(id);
+      return { msj: 'Usuario eliminado correctamente', validate: true };
+    } catch (error) {
+      console.error('Error eliminando usuario:', error);
+      return { msj: 'Error al eliminar usuario', validate: false, error: error?.message ?? error };
+    }
+  }*/
 }
 

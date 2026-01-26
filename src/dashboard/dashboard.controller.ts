@@ -61,5 +61,14 @@ export class DashboardController {
     return this.svc.getUltimosUsuarios(Number(limit));
   }
 
+  @Get('actas-entrada-mes')
+  getActasEntradaMesActual() {
+    return this.svc.getActasEntradaMesActual();
+  }
+
+  @Get('actas-salida-mes')
+  getActasSalidaMesActual() {
+    return this.svc.getActasSalidaMesActual();
+  }
 
 }

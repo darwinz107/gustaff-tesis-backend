@@ -13,15 +13,14 @@ export class SolicitudDeCompra {
     @Column()
     numOrden:string;
     
-    @OneToOne(()=>SolicitudOrden,(solicitudOrden)=>solicitudOrden.solicitudTrabajo)
+    @OneToOne(()=>SolicitudOrden,(solicitudOrden)=>solicitudOrden.solicitudTrabajo,{nullable:true,onDelete:'SET NULL'})
     @JoinColumn()
     numOrdenTrabajo:SolicitudOrden;
     @Column({type:'datetime',default:()=>'CURRENT_TIMESTAMP'})
     fechaRemision:Date;
     @Column()
     Autoriza:string;
-    @Column()
-    Destino:string;
+    
     @OneToMany(()=>ItemsSolicitados,(itemsSolicitados)=>itemsSolicitados.ordenCompra)
     itemSolicitados:ItemsSolicitados[]
     @OneToMany(()=>RegistroSalida,(registroSalida)=>registroSalida.numSolicitudCompra)

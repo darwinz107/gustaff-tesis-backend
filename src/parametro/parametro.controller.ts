@@ -17,6 +17,16 @@ export class ParametroController {
     return this.parametroService.findAll();
   }
 
+  @Get('tipos-mantenimiento')
+  getTiposMantenimiento() {
+    return this.parametroService.getTiposMantenimiento();
+  }
+
+  @Get('periodos')
+  getPeriodos() {
+    return this.parametroService.getPeriodos();
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.parametroService.findOne(+id);

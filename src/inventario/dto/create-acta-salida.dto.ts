@@ -9,4 +9,8 @@ export class CreateActaSalidaDto {
     @IsOptional()
     @IsString()
     observacion:string;
+    @Type(()=>Number)
+    @IsNotEmpty()
+    @IsNumber()
+    recibe:number;
 }

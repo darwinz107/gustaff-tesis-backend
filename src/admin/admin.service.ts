@@ -30,6 +30,9 @@ import { CreateSeccionDto } from './dto/create-seccion.dto';
 import { CreatePerchaDto } from './dto/create-percha.dto';
 import { FiltrarBodegaDto } from './dto/filtrar-bodega';
 import { Inventario } from 'src/inventario/entities/inventario.entity';
+import { SolicitudOrden } from 'src/orden-de-trabajo/entities/solicitudOrden.entity';
+import { RegistroEntrada } from 'src/inventario/entities/registroEntrada.entity';
+import { RegistroSalida } from 'src/inventario/entities/registroSalida.entity';
 
 
 @Injectable()
@@ -49,6 +52,12 @@ export class AdminService implements OnModuleInit{
     private readonly seccionRepository: Repository<Seccion>,
     @InjectRepository(Percha)
     private readonly perchaRepository: Repository<Percha>,
+    @InjectRepository(SolicitudOrden)
+    private readonly solicitudOrdenRepository: Repository<SolicitudOrden>,
+    @InjectRepository(RegistroEntrada)
+    private readonly registroEntradaRepository: Repository<RegistroEntrada>,
+    @InjectRepository(RegistroSalida)
+    private readonly registroSalidaRepository: Repository<RegistroSalida>,
     private dataSource:DataSource,
   ){}
     async onModuleInit() {
@@ -317,7 +326,7 @@ export class AdminService implements OnModuleInit{
     if (updateUserDto.identification !== undefined) user.identification = updateUserDto.identification;
     if (updateUserDto.cellphone !== undefined) user.cellphone = updateUserDto.cellphone;
     if (updateUserDto.email !== undefined) user.email = updateUserDto.email;
-
+    if (updateUserDto.estado !== undefined) user.estado = updateUserDto.estado;
     
     if (updateUserDto.fechaNac !== undefined && updateUserDto.fechaNac !== null) {
       const f = updateUserDto.fechaNac;
@@ -420,19 +429,7 @@ async deleteUser(id: number) {
 
   console.log("Eliminar usuario id:", id);
 
-
-  const ordenTrabajoUser = await this.userRepository.find({where:{id},relations:['ordenesTrabajo']});
-
-  if(ordenTrabajoUser && ordenTrabajoUser.length >0){
-    return {msj:"No se puede eliminar el usuario porque tiene ordenes de trabajo asociadas",validate:false};
-  }
-
-  const userdelete = await this.userRepository.delete(id);
-
-  if(userdelete.affected ===0) return {msj:"No se encontro un usuario valido",validate:false};
-
-  return {msj:"Se elimino correctamente",validate:true};
-
+  return this.deleteUserCascade(id);
 
 }
 
@@ -941,6 +938,80 @@ async filtrarBodegas(filtrar:FiltrarBodegaDto){
       throw new NotFoundException('No se encontraron tipos de trabajo');
     }
     return tiposTrabajo;
+  }
+
+  async deleteUserCascade(userId: number) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // Verificar que el usuario existe
+      const user = await queryRunner.manager.findOne(User, { where: { id: userId } });
+      if (!user) {
+        await queryRunner.rollbackTransaction();
+        return { msj: 'Usuario no encontrado', validate: false };
+      }
+
+      // 1. Actualizar ordenes de trabajo donde el usuario es solicitante
+      await queryRunner.manager.update(
+        SolicitudOrden,
+        { userSolicitante: { id: userId } },
+        { userSolicitante: null }
+      );
+
+      // 2. Actualizar ordenes de trabajo donde el usuario es receptor
+      await queryRunner.manager.update(
+        SolicitudOrden,
+        { userReceptor: { id: userId } },
+        { userReceptor: null }
+      );
+
+      // 3. Actualizar ordenes de trabajo donde el usuario es técnico
+      await queryRunner.manager.update(
+        SolicitudOrden,
+        { userTecnico: { id: userId } },
+        { userTecnico: null }
+      );
+
+      // 4. Actualizar registros de entrada donde el usuario recibe
+      await queryRunner.manager.update(
+        RegistroEntrada,
+        { recibe: { id: userId } },
+        { recibe: null }
+      );
+
+      // 5. Actualizar registros de salida donde el usuario entrega
+      await queryRunner.manager.update(
+        RegistroSalida,
+        { entrega: { id: userId } },
+        { entrega: null }
+      );
+
+      // 6. Actualizar registros de salida donde el usuario recibe sin SM
+      await queryRunner.manager.update(
+        RegistroSalida,
+        { recibeSinSM: { id: userId } },
+        { recibeSinSM: null }
+      );
+
+      // 7. Eliminar el usuario
+      const deleteResult = await queryRunner.manager.delete(User, { id: userId });
+
+      if (deleteResult.affected === 0) {
+        await queryRunner.rollbackTransaction();
+        return { msj: 'No se pudo eliminar el usuario', validate: false };
+      }
+
+      await queryRunner.commitTransaction();
+      return { msj: 'Usuario eliminado correctamente. Se actualizaron todos los registros relacionados.', validate: true };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      console.error('Error eliminando usuario:', error);
+      return { msj: 'Error al eliminar usuario', validate: false, error: error?.message ?? error };
+    } finally {
+      await queryRunner.release();
+    }
   }
 
 }

@@ -12,7 +12,7 @@ export class RegistroSalida {
      @Column()
      numActa:string;
      
-     @ManyToOne(()=>SolicitudDeCompra,(solicitudDeCompra)=>solicitudDeCompra.infoSalida,{nullable:true})
+     @ManyToOne(()=>SolicitudDeCompra,(solicitudDeCompra)=>solicitudDeCompra.infoSalida,{nullable:true, onDelete:'SET NULL'})
      numSolicitudCompra:SolicitudDeCompra|null;   
      @Column()
      total:number; 
@@ -22,14 +22,14 @@ export class RegistroSalida {
      @Column({type:'datetime',default:()=>'CURRENT_TIMESTAMP'})
     fechaRemision:Date;
 
+    @Column({nullable:true})
+     descripcion:string;
+
     @Column()
      observacion:string;
 
-     @Column()
-     destino:string;
-    
-    @ManyToOne(()=>User,(entrega)=>entrega.registroSalida)
-        entrega:User;
+    @ManyToOne(()=>User,(entrega)=>entrega.registroSalida,{nullable:true})
+        entrega:User|null;
 
         @ManyToOne(()=>User,(recibeSinSM)=>recibeSinSM.registroSalida2,{nullable:true})
         

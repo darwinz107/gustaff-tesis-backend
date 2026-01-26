@@ -3,7 +3,7 @@ import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { UpdateOrdenDeTrabajoDto } from './dto/update-orden-de-trabajo.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Area } from '../parametro/entities/area.entity';
-import { DataSource, In, Like, Repository } from 'typeorm';
+import { DataSource, In, Like, QueryRunner, Repository } from 'typeorm';
 import { Codigo } from '../parametro/entities/codigo.entity';
 import { Maquina } from '../parametro/entities/maquina.entity';
 import { CreateAreaDto } from '../admin/dto/create-area.dto';
@@ -31,6 +31,9 @@ import { Fases } from './entities/fases';
 import { addDays, isBefore, isSunday, parseISO } from 'date-fns';
 import { MailService } from 'src/mail/mail.service';
 import { CronJob } from 'cron';
+import { TipoMantenimiento } from '../parametro/entities/tipoMantenimiento.entity';
+import { Periodo } from '../parametro/entities/periodo.entity';
+import { Query } from 'mysql2/typings/mysql/lib/protocol/sequences/Query';
 
 
 
@@ -48,6 +51,8 @@ export class OrdenDeTrabajoService implements OnModuleInit{
     @InjectRepository(EstadoUso) private readonly estadoUsoRepository: Repository<EstadoUso>, 
     @InjectRepository(Jornada) private readonly jornadaRepository: Repository<Jornada>,
     @InjectRepository(Fases) private readonly fasesRepository: Repository<Fases>,
+    @InjectRepository(TipoMantenimiento) private readonly tipoMantenimientoRepository: Repository<TipoMantenimiento>,
+    @InjectRepository(Periodo) private readonly periodoRepository: Repository<Periodo>,
     private dataSource:DataSource,
     private readonly mailService:MailService,
     private schedulerRegistry: SchedulerRegistry,
@@ -74,6 +79,31 @@ export class OrdenDeTrabajoService implements OnModuleInit{
          const crearUso =  this.estadoUsoRepository.create({uso:uso});
         await this.estadoUsoRepository.save(crearUso);
        }
+    }
+
+    // Crear Tipos de Mantenimiento
+    const tiposMantenimiento = [
+      { inicial: 'MC', mantenimiento: 'MANTENIMIENTO COMPLETO' },
+      { inicial: 'MP', mantenimiento: 'MANTENIMIENTO PREVENTIVO' }
+    ];
+
+    for (const tipo of tiposMantenimiento) {
+      const exist = await this.tipoMantenimientoRepository.findOne({ where: { inicial: tipo.inicial } });
+      if (!exist) {
+        const newTipo = this.tipoMantenimientoRepository.create(tipo);
+        await this.tipoMantenimientoRepository.save(newTipo);
+      }
+    }
+
+    // Crear Periodos
+    const periodos = ['TRIMESTRAL', 'CUATRIMESTRAL', 'SEMESTRAL', 'BIMESTRAL', 'ANUAL'];
+
+    for (const nombrePeriodo of periodos) {
+      const exist = await this.periodoRepository.findOne({ where: { nombre: nombrePeriodo } });
+      if (!exist) {
+        const newPeriodo = this.periodoRepository.create({ nombre: nombrePeriodo });
+        await this.periodoRepository.save(newPeriodo);
+      }
     }
 
      const cronExpressions = [
@@ -152,6 +182,7 @@ for(const ot of jornadas){
 
       if (f.completo && f.agotado) {
   console.log(`Saltando fase ${f.id} porque ya está completa`);
+   count ++;
   continue;
 }
           const horaLimite = horariosxDia[count];
@@ -213,7 +244,7 @@ for (let i = 0; i < fases.length; i++) {
 }
 
   @Cron(CronExpression.EVERY_5_MINUTES)
-  async ordenTrabajoVencida(){
+  private async ordenTrabajoVencida(){
  //console.log('Verificando ordenes de trabajo vencidas...');
     try {
         const ordenesTrabajo = await this.solicitudOrdenRepository.find({where:{estadoTrabajo:{id:In([1,3])}},relations:['estadoTrabajo']});
@@ -392,33 +423,10 @@ try {
 
      const solicitudCreated = await queryRunner.manager.save(SolicitudOrden,nuevaSolicitud);
 
-     const horariosxDia = ['09:30:00','12:00:00','15:00:00','16:30:00'];
-     
-  let fechaI = parseISO(solicitudCreated.fechaInicio);
-  let fechaf = parseISO(solicitudCreated.fechaFinal);
-
-   const toDateTime = (hora:string) => parseISO(`1970-01-01T${hora}`)
-
-   const horaI = toDateTime(solicitudCreated.HoraInicio);
-    const horaF = toDateTime(solicitudCreated.HoraFinal);
-  // const horasDate = horariosxDia.map(hora => toDateTime(hora));
-
-     while(isBefore(fechaI, addDays(fechaf,1))) {
-    if(isSunday(fechaI) === false){
-       const newJornada = await queryRunner.manager.save(Jornada,{ fecha:fechaI, OrdenDeTrabajoId:solicitudCreated });
-      
-      for(const hora of horariosxDia){
-        const horaActual = toDateTime(hora);
-        if(horaI > horaActual) continue;
-        if(horaF < horaActual) break;   
-         await queryRunner.manager.save(Fases,{ hora:hora, jornada:newJornada });
-         
-      }
-     }
-      fechaI = addDays(fechaI,1);
-    }
+      await this.crearJornadasyFases(createSolicitudOrdenDto.fechaInicio,createSolicitudOrdenDto.fechaFinal,createSolicitudOrdenDto.HoraInicio,createSolicitudOrdenDto.HoraFinal,solicitudCreated.id,queryRunner);
     
      await queryRunner.commitTransaction();
+     await this.setFasesVencidas();
      await this.mailService.newOrdenTrabajoNoti(solicitudCreated.NumOrden,solicitudCreated.fechaInicio,solicitudCreated.fechaFinal);
       return { msj: "Solicitud de orden creada!",validate:true };
     /*else{
@@ -458,14 +466,45 @@ try {
     await  queryRunner.release();
   }}
 
+ private async crearJornadasyFases(fechaInicio:string,fechaFinal:string,HoraInicio:string,HoraFinal:string,ordenTrabajoId:number, queryRunner:QueryRunner){
+        const horariosxDia = ['09:30:00','12:00:00','15:00:00','16:30:00'];
+     
+  let fechaI = parseISO(fechaInicio);
+  let fechaf = parseISO(fechaFinal);
+
+   const toDateTime = (hora:string) => parseISO(`1970-01-01T${hora}`)
+
+   const horaI = toDateTime(HoraInicio);
+   const horaF = toDateTime(HoraFinal);
+  // const horasDate = horariosxDia.map(hora => toDateTime(hora));
+const ordenTrabajo = await queryRunner.manager.findOne(SolicitudOrden,{where:{id:ordenTrabajoId}});
+  if(!ordenTrabajo){
+    throw new NotFoundException("No se encontro la orden de trabajo para crear jornadas y fases");
+  }
+     while(isBefore(fechaI, addDays(fechaf,1))) {
+    if(isSunday(fechaI) === false){
+       const newJornada = await queryRunner.manager.save(Jornada,{ fecha:fechaI, OrdenDeTrabajoId:ordenTrabajo});
+      
+      for(const hora of horariosxDia){
+        const horaActual = toDateTime(hora);
+        if(horaI > horaActual) continue;
+        if(horaF < horaActual) break;   
+         await queryRunner.manager.save(Fases,{ hora:hora, jornada:newJornada });
+         
+      }
+     }
+      fechaI = addDays(fechaI,1);
+    }
+  }
+
   async getAllOrdenesTrabajo(){
      
       const ordenes = await this.solicitudOrdenRepository.createQueryBuilder('solicitud')
-      .innerJoin('solicitud.userSolicitante', 'userSolicitante')
-      .innerJoin('solicitud.userReceptor', 'userReceptor')
+      .leftJoin('solicitud.userSolicitante', 'userSolicitante')
+      .leftJoin('solicitud.userReceptor', 'userReceptor')
       .leftJoin('solicitud.userTecnico', 'userTecnico')
-      .innerJoin('solicitud.estadoTrabajo','estado')
-      .innerJoin('solicitud.estadoUso','estadoUso')
+      .leftJoin('solicitud.estadoTrabajo','estado')
+      .leftJoin('solicitud.estadoUso','estadoUso')
       .select([
         'solicitud.id',
         'solicitud.NumOrden',
@@ -485,7 +524,7 @@ try {
         'estado.estado',
         "estadoUso.uso"
       ])
-     
+     .orderBy('solicitud.id','DESC')
       .getMany();
 
     if (ordenes !==undefined) {
@@ -507,11 +546,11 @@ return new NotFoundException("No existen ordenes de trabajo");
   async getOrdenTrabajoBySolicitante(name:string){
      
       const orden = await this.solicitudOrdenRepository.createQueryBuilder('solicitud')
-      .innerJoin('solicitud.userSolicitante', 'userSolicitante')
-      .innerJoin('solicitud.userReceptor', 'userReceptor')
+      .leftJoin('solicitud.userSolicitante', 'userSolicitante')
+      .leftJoin('solicitud.userReceptor', 'userReceptor')
       .leftJoin('solicitud.userTecnico', 'userTecnico')
-      .innerJoin('solicitud.estadoTrabajo','estado')
-      .innerJoin('solicitud.estadoUso','estadoUso')
+      .leftJoin('solicitud.estadoTrabajo','estado')
+      .leftJoin('solicitud.estadoUso','estadoUso')
       .select([
         'solicitud.id',
         'solicitud.NumOrden',
@@ -544,8 +583,8 @@ return new NotFoundException("No existen ordenes de trabajo");
    async getOrdenTrabajoById(id:number){
      
       const orden = await this.solicitudOrdenRepository.createQueryBuilder('solicitud')
-      .innerJoin('solicitud.userSolicitante', 'userSolicitante')
-      .innerJoin('solicitud.userReceptor', 'userReceptor')
+      .leftJoin('solicitud.userSolicitante', 'userSolicitante')
+      .leftJoin('solicitud.userReceptor', 'userReceptor')
       .leftJoin('solicitud.userTecnico', 'userTecnico')
       .innerJoin('solicitud.estadoTrabajo','estado')
       .select([
@@ -591,8 +630,8 @@ return new NotFoundException("No existen ordenes de trabajo");
     }
 
     const solicitud = await this.solicitudOrdenRepository.createQueryBuilder('solicitud')
-      .innerJoin('solicitud.userSolicitante', 'userSolicitante')
-      .innerJoin('solicitud.userReceptor', 'userReceptor')
+      .leftJoin('solicitud.userSolicitante', 'userSolicitante')
+      .leftJoin('solicitud.userReceptor', 'userReceptor')
       .leftJoin('solicitud.userTecnico', 'userTecnico')
       .select([
         'solicitud.id',
@@ -648,6 +687,41 @@ return new NotFoundException("No existen ordenes de trabajo");
 
   }
 
+  async filtrarOrdenesSinUso(filtrarOrdenDeTrabajoDto: FiltrarOrdenDeTrabajoDto){
+
+    console.log(filtrarOrdenDeTrabajoDto);
+   const qb = await this.solicitudOrdenRepository.createQueryBuilder('solicitud')
+   .leftJoin('solicitud.userSolicitante','userSolicitante')
+   .leftJoin('solicitud.estadoUso','estadoUso')
+   .where('estadoUso.id = :estadoUsoId',{estadoUsoId:1});
+
+    if(filtrarOrdenDeTrabajoDto.numOrden){
+      qb.andWhere('solicitud.NumOrden LIKE :numOrden',{numOrden:`%${filtrarOrdenDeTrabajoDto.numOrden}%`});
+    }
+    if(filtrarOrdenDeTrabajoDto.userSolicitante){
+      qb.andWhere('userSolicitante.name LIKE :name',{name:`${filtrarOrdenDeTrabajoDto.userSolicitante}%`});
+    }
+
+    if(filtrarOrdenDeTrabajoDto.Area){
+    qb.andWhere('solicitud.Area LIKE :area',{area:`${filtrarOrdenDeTrabajoDto.Area}%`});
+    }
+
+    qb.select([
+      'solicitud.id',
+      'solicitud.NumOrden',
+      'solicitud.Area',
+      'solicitud.Codigo',
+      'solicitud.Maquina',
+      'solicitud.DescripcionTrabajo',
+      'userSolicitante.name'
+    ]);
+    
+    const ordenes = await qb.getMany();
+    
+    return ordenes;
+
+  }
+
   async getEstadosTrabajo(){
 
     const estados = await this.estadoTrabajoRepository.find();
@@ -660,24 +734,55 @@ return new NotFoundException("No existen ordenes de trabajo");
 
   async update(id: number, updateOrdenDeTrabajoDto: UpdateOrdenDeTrabajoDto) {
 
-    const solicitante = await this.userRepository.findOne({ where: { name: updateOrdenDeTrabajoDto.userSolicitante }, select: ['id'] });
-    const receptor = await this.userRepository.findOne({ where: { name: updateOrdenDeTrabajoDto.userReceptor }, select: ['id'] });
-    const tecnico = await this.userRepository.findOne({ where: { name: updateOrdenDeTrabajoDto.userTecnico }, select: ['id'] });
-    const estado = await this.estadoTrabajoRepository.findOne({where:{estado:updateOrdenDeTrabajoDto.estado},select:['id']});
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    if(!solicitante){
-      throw new NotFoundException("No se encontro un solicitante");
-    }
-    if(!receptor){
-      throw new NotFoundException("No se encontro un receptor");
-    }
+    let solicitante:User|null = null;
+    let receptor:User|null = null;
+    let tecnico:User|null = null;
+    let estado:EstadoTrabajo|null = null;
+    try {
+      if(updateOrdenDeTrabajoDto.userSolicitante){
+         solicitante = await queryRunner.manager.findOne(User,{where:{name:updateOrdenDeTrabajoDto.userSolicitante},select:['id']});
+      }
 
-     if(!estado){
-      throw new NotFoundException("No se encontro un estado");
-    }
+      if(updateOrdenDeTrabajoDto.userReceptor){
+        receptor = await queryRunner.manager.findOne(User,{where:{name:updateOrdenDeTrabajoDto.userReceptor},select:['id']});
+      }
 
+      if(updateOrdenDeTrabajoDto.userTecnico){
+        tecnico = await queryRunner.manager.findOne(User,{where:{name:updateOrdenDeTrabajoDto.userTecnico},select:['id']});
+      }
+  
+      if(updateOrdenDeTrabajoDto.estado){
+        estado = await queryRunner.manager.findOne(EstadoTrabajo,{where:{estado:updateOrdenDeTrabajoDto.estado},select:['id']});
+      }
+
+      const ordenTrabajoExist = await queryRunner.manager.findOne(SolicitudOrden,{where:{id}});
+      if(!ordenTrabajoExist){
+        throw new NotFoundException("No se encontro la orden de trabajo a actualizar");
+      }
+
+    if(updateOrdenDeTrabajoDto.fechaInicio || updateOrdenDeTrabajoDto.fechaFinal && updateOrdenDeTrabajoDto.HoraInicio || updateOrdenDeTrabajoDto.HoraFinal){
+     const jornadasExist = await queryRunner.manager.find(Jornada,{where:{OrdenDeTrabajoId:{id}}});
+     const fasesExist = await queryRunner.manager.createQueryBuilder(Fases,'fases')
+      .innerJoin('fases.jornada','jornada')
+      .where('jornada.OrdenDeTrabajoId = :id',{id})
+      .getMany();
     
-   const updateSoli = await this.solicitudOrdenRepository.update(id,{
+      if(fasesExist.length > 0) await queryRunner.manager.delete(Fases,fasesExist.map(fase => fase.id));
+
+   if(jornadasExist.length > 0) await queryRunner.manager.delete(Jornada,jornadasExist.map(jornada => jornada.id));
+
+    await this.crearJornadasyFases(updateOrdenDeTrabajoDto.fechaInicio ?? ordenTrabajoExist.fechaInicio ,updateOrdenDeTrabajoDto.fechaFinal ?? ordenTrabajoExist.fechaFinal,updateOrdenDeTrabajoDto.HoraInicio ?? ordenTrabajoExist.HoraInicio,updateOrdenDeTrabajoDto.HoraFinal ?? ordenTrabajoExist.HoraFinal,id,queryRunner);
+
+   
+   
+    }
+
+
+    await queryRunner.manager.update(SolicitudOrden,id,{
     fechaInicio:updateOrdenDeTrabajoDto.fechaInicio,
     fechaFinal:updateOrdenDeTrabajoDto.fechaFinal,
     HoraInicio:updateOrdenDeTrabajoDto.HoraInicio,
@@ -692,40 +797,65 @@ return new NotFoundException("No existen ordenes de trabajo");
     userSolicitante: solicitante,
     userReceptor: receptor,
     userTecnico: tecnico ?? null,
-    estadoTrabajo:estado
+    estadoTrabajo: estado ?? ordenTrabajoExist.estadoTrabajo
    });
-   
-   if(updateSoli.affected != 0){
-    return {msj:"Solicitud de orden actualizada!"};
-   }else{
-    return {msj:"No se pudo actualizar la solicitud"};
-   }  
+   await queryRunner.commitTransaction();
+   await this.ordenTrabajoVencida();
+    await this.setFasesVencidas();
+
+   return {msj:"Solicitud de orden actualizada!",validate:true  };
+    
+  }
+   catch (error) {
+    await queryRunner.rollbackTransaction();
+    console.log(error);
+    return { msj: `No se pudo actualizar la solicitud: ${error}`,validate:false };
+       }finally{
+       queryRunner.release();
+      }  
   }
 
  async remove(id: number) {
 
-  console.log(id);
+  
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+  
   try {
-       const deleteOrdenTrabajo = await this.solicitudOrdenRepository.delete({id});
+       const ordenTrabajo = await queryRunner.manager.findOne(SolicitudOrden,{where:{id}});
 
-   if(deleteOrdenTrabajo){
-   return {msj:"Se elimino correctamente!"}
-   }else{
-    return {msj:"Fallo al eliminarse"};
-   }
+       if (!ordenTrabajo) {
+        throw new NotFoundException(`No se encontró la orden de trabajo con ID ${id}`);
+      }
+
+    const fases = await queryRunner.manager.find(Fases,{where:{jornada:{OrdenDeTrabajoId:{id}}}});
+
+    await queryRunner.manager.delete(Fases,fases.map(fase => fase.id));
+
+    const deleteJornadas = await queryRunner.manager.delete(Jornada,{OrdenDeTrabajoId:id});
+
+    const deleteOrdenTrabajo = await queryRunner.manager.delete(SolicitudOrden,{id});
+
+    await queryRunner.commitTransaction();
+    return { msj: "Orden de trabajo eliminada!",validate:true };
   } catch (error) {
-    console.log("Error en eliminar orden de trabajo", error);
+    await queryRunner.rollbackTransaction();
+    console.log(error);
+    return { msj: `No se pudo eliminar la orden de trabajo: ${error}`,validate:false };
+  }finally{
+    await  queryRunner.release();
   }
 
   }
 
   async filtrarOrdenesAvanzado(filtros: FiltrarOrdenDeTrabajoAdvancedDto) {
   const qb = this.solicitudOrdenRepository.createQueryBuilder('solicitud')
-    .innerJoin('solicitud.userSolicitante', 'userSolicitante')
-    .innerJoin('solicitud.userReceptor', 'userReceptor')
+    .leftJoin('solicitud.userSolicitante', 'userSolicitante')
+    .leftJoin('solicitud.userReceptor', 'userReceptor')
     .leftJoin('solicitud.userTecnico', 'userTecnico')
-    .innerJoin('solicitud.estadoTrabajo', 'estado')
-    .innerJoin('solicitud.estadoUso', 'estadoUso')
+    .leftJoin('solicitud.estadoTrabajo', 'estado')
+    .leftJoin('solicitud.estadoUso', 'estadoUso')
     .select([
       'solicitud.id',
       'solicitud.NumOrden',
@@ -864,6 +994,7 @@ console.log(id,descripcion);
   fase.descripcion = descripcion;
  //fase.agotado = true;
   await this.fasesRepository.save(fase);
+ // await this.ordenTrabajoVencida();
   return {msj:"Fase marcada como completada"};
    
 }

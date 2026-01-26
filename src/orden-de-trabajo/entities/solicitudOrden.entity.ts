@@ -36,12 +36,12 @@ export class SolicitudOrden {
     TipoTrabajo:string;
     @Column({nullable:true})
     DescripcionTrabajo:string;
-    @ManyToOne(()=>User,(user)=>user.solicitanteId)
-    userSolicitante:User;
-    @ManyToOne(()=>User,(user)=>user.receptorId)
-    userReceptor:User;
+    @ManyToOne(()=>User,(user)=>user.solicitanteId,{nullable:true})
+    userSolicitante:User|null;
+    @ManyToOne(()=>User,(user)=>user.receptorId,{nullable:true})
+    userReceptor:User|null;
     @ManyToOne(()=>User,(user)=>user.tecnicoId,{nullable:true})
-    userTecnico:User|null; 
+    userTecnico:User|null;
     @OneToOne(()=>SolicitudDeCompra,(solicitudDeCompra)=>solicitudDeCompra.numOrdenTrabajo)
     solicitudTrabajo:SolicitudDeCompra;
     @ManyToOne(()=>EstadoTrabajo,(estadoTrabajo)=>estadoTrabajo.ordenTrabajo)

@@ -13,8 +13,8 @@ export class ItemsSolicitados{
     caracteristica:string;
     @Column({nullable:true})
     Observacion:string;
-    @ManyToOne(()=>SolicitudDeCompra,(solicitudDeCompra)=>solicitudDeCompra.itemSolicitados)
-    ordenCompra:SolicitudDeCompra;
+    @ManyToOne(()=>SolicitudDeCompra,(solicitudDeCompra)=>solicitudDeCompra.itemSolicitados,{nullable:true,onDelete:'SET NULL'})
+    ordenCompra:SolicitudDeCompra|null;
     @Column({type:'boolean'})
     existencia:boolean;
 }

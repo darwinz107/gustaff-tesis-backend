@@ -7,7 +7,7 @@ import { Inventario } from "./inventario.entity";
 export class ItemsEntrada {
      @PrimaryGeneratedColumn()
      id:number;
-     @ManyToOne(()=>Inventario,(inventario)=>inventario.itemEntrada)
+     @ManyToOne(()=>Inventario,(inventario)=>inventario.itemEntrada,{nullable:true,onDelete:'SET NULL'})
                item:Inventario;  
     
      @Column()
@@ -24,6 +24,6 @@ export class ItemsEntrada {
     Observacion:string;
     @Column({type:"decimal",precision:10,scale:2})
     total: number;   
-     @ManyToOne(()=>RegistroEntrada,(registroEntrada)=>registroEntrada.itemEntrada)
-     registroEntrada:RegistroEntrada;
+     @ManyToOne(()=>RegistroEntrada,(registroEntrada)=>registroEntrada.itemEntrada,{nullable:true,onDelete:'SET NULL'})
+     registroEntrada:RegistroEntrada|null;
 }

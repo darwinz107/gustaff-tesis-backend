@@ -29,7 +29,7 @@ constructor(private reflector:Reflector,
       if(!token){
          return false;
       }
-
+     console.log(token);
       const validate = this.jwtService.verify(token);
 
       if(!validate){

@@ -2,6 +2,7 @@ import { Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "ty
 import { Proovedores } from "./proovedores.entity";
 import { ItemsEntrada } from "./itemsEntrada.entity";
 import { SolicitudDeCompra } from "src/solicitud-de-compra/entities/solicitud-de-compra.entity";
+import { User } from "src/users/entities/user.entity";
 
 @Entity()
 export class RegistroEntrada {
@@ -13,13 +14,14 @@ export class RegistroEntrada {
      factura:string;
       @Column({type:'datetime',default:()=>'CURRENT_TIMESTAMP'})
          fechaRemision:Date;
-     @ManyToOne(()=>SolicitudDeCompra,(solicitudDeCompra)=>solicitudDeCompra.infoEntrada,{nullable:true})
+     @ManyToOne(()=>SolicitudDeCompra,(solicitudDeCompra)=>solicitudDeCompra.infoEntrada,{nullable:true, onDelete:'SET NULL'})
           numSolicitudCompra:SolicitudDeCompra|null;   
      @ManyToOne(()=>Proovedores,(proovedores)=>proovedores.registroEntrada)
      proovedor:Proovedores;
      @OneToMany(()=>ItemsEntrada,(itemsEntrada)=>itemsEntrada.registroEntrada)
      itemEntrada:ItemsEntrada[];
-     
+     @ManyToOne(()=>User,(recibe)=>recibe.registroEntrada,{nullable:true})
+     recibe:User|null;
      @Column({type:"decimal",precision:10,scale:2})
      total:number;
 }

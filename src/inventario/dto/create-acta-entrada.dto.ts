@@ -12,7 +12,8 @@ import { Type,Exclude } from 'class-transformer';
 
 export class CreateActaEntradaDto {
   proovedor: string;
-
+  @Type(()=>Number)
+  recibe:number;
   factura: string;
 total:number;
 
