@@ -34,6 +34,8 @@ import { CronJob } from 'cron';
 import { TipoMantenimiento } from '../parametro/entities/tipoMantenimiento.entity';
 import { Periodo } from '../parametro/entities/periodo.entity';
 import { Query } from 'mysql2/typings/mysql/lib/protocol/sequences/Query';
+import { EstadoCompra } from 'src/solicitud-de-compra/entities/estadoCompra';
+import { EstadoCompraEnum } from 'src/solicitud-de-compra/enums/estadoCompra.enum';
 
 
 
@@ -49,6 +51,7 @@ export class OrdenDeTrabajoService implements OnModuleInit{
     @InjectRepository(EstadoTrabajo) private readonly estadoTrabajoRepository: Repository<EstadoTrabajo>, 
     @InjectRepository(SolicitudDeCompra) private readonly solicitudDeCompraRepository: Repository<SolicitudDeCompra>, 
     @InjectRepository(EstadoUso) private readonly estadoUsoRepository: Repository<EstadoUso>, 
+    @InjectRepository(EstadoCompra) private readonly estadoCompraRepository:Repository<EstadoCompra>,
     @InjectRepository(Jornada) private readonly jornadaRepository: Repository<Jornada>,
     @InjectRepository(Fases) private readonly fasesRepository: Repository<Fases>,
     @InjectRepository(TipoMantenimiento) private readonly tipoMantenimientoRepository: Repository<TipoMantenimiento>,
@@ -247,7 +250,7 @@ for (let i = 0; i < fases.length; i++) {
   private async ordenTrabajoVencida(){
  //console.log('Verificando ordenes de trabajo vencidas...');
     try {
-        const ordenesTrabajo = await this.solicitudOrdenRepository.find({where:{estadoTrabajo:{id:In([1,3])}},relations:['estadoTrabajo']});
+        const ordenesTrabajo = await this.solicitudOrdenRepository.find({where:{estadoTrabajo:{id:In([1,3])}},relations:['estadoTrabajo','estadoUso']});
 
         if(ordenesTrabajo.length === 0){
          // console.log('No hay ordenes de trabajo en estado procesado');
@@ -290,9 +293,35 @@ const existOrdenTrabajo = await this.solicitudOrdenRepository.findOne({where:{id
     
     orden.estadoTrabajo = estadoVencido;
      console.log('Verificación de vencidos ejecutada...');
+     if(orden.estadoUso.uso === true){
+        const smAsociada =  await this.solicitudDeCompraRepository.findOne({where:{numOrdenTrabajo:{id:orden.id}}});
+        if(smAsociada){
+         const cancelado = await this.estadoCompraRepository.findOne({where:{estado:EstadoCompraEnum.CAN}});
+         if(!cancelado){
+         throw new NotFoundException("No se encontro el estado de compra CANCELADO");
+        }
+          smAsociada.estadoCompra = cancelado;
+          await this.solicitudDeCompraRepository.save(smAsociada);
+        }
+        console.log(`La orden de trabajo ${orden.NumOrden} tiene una solicitud de compra asociada que ha sido cancelada.`);
+     }
   } else /*if (fechaActual.getTime() <= fechaFinal.getTime() && fechaActual.getTime() >= fechaInicio.getTime())*/ {
     orden.estadoTrabajo = estadoEnProceso;
      console.log('Verificación de en procesos ejecutada...');
+     
+     if(orden.estadoUso.uso === true){
+        const smAsociada =  await this.solicitudDeCompraRepository.findOne({where:{numOrdenTrabajo:{id:orden.id}}});
+        if(smAsociada){
+          const enProceso = await this.estadoCompraRepository.findOne({where:{estado:EstadoCompraEnum.PRO}});
+          if(!enProceso){
+          throw new NotFoundException("No se encontro el estado de compra EN PROCESO");
+          }
+          smAsociada.estadoCompra = enProceso;
+          await this.solicitudDeCompraRepository.save(smAsociada);
+        }
+        console.log(`La orden de trabajo ${orden.NumOrden} tiene una solicitud de compra asociada que está en proceso.`);
+     }
+    
   } /*else if (fechaActual.getTime() < fechaInicio.getTime()) {
     orden.estadoTrabajo = estadoPendiente;
   }*/

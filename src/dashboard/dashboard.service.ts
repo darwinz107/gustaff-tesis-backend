@@ -200,6 +200,13 @@ export class DashboardService {
         ELSE 5
         END
         `,'prioridad')
+        .addSelect(`
+         CASE 
+    WHEN o.fechaInicio > CURDATE() THEN 0
+    WHEN estado.estado = '${EstadoTrabajoEnum.FIN}' && o.fechaFinal <= CURDATE() THEN DATEDIFF(o.fechaFinal, o.fechaInicio)
+    ELSE DATEDIFF(CURDATE(), o.fechaInicio) 
+END
+          `,'dias_transcurridos')
       .orderBy('prioridad','ASC')
       .addOrderBy('o.id', 'DESC')
       .limit(limit)
@@ -234,10 +241,11 @@ export class DashboardService {
       ])
        .addSelect(`
         CASE 
-        WHEN e.estado = '${EstadoCompraEnum.LIS}' THEN 1
-        WHEN e.estado = '${EstadoCompraEnum.PRO}' THEN 2
-        WHEN e.estado = '${EstadoCompraEnum.ENT}' THEN 3
-        ELSE 4
+        WHEN e.estado = '${EstadoCompraEnum.CAN}' THEN 1
+        WHEN e.estado = '${EstadoCompraEnum.LIS}' THEN 2
+        WHEN e.estado = '${EstadoCompraEnum.PRO}' THEN 3
+        WHEN e.estado = '${EstadoCompraEnum.ENT}' THEN 4
+        ELSE 5
         END
         `,'prioridad')
       .addSelect('SUM(is.cantidad)','total_items')
@@ -461,6 +469,7 @@ async getActasEntradaMesActual() {
     ])
     .where('YEAR(re.fechaRemision) = :year AND MONTH(re.fechaRemision) = :month', { year: currentYear, month: currentMonth })
     .orderBy('re.fechaRemision', 'DESC')
+    .limit(5)
     .getRawMany();
 }
 
@@ -487,6 +496,7 @@ async getActasSalidaMesActual() {
     ])
     .where('YEAR(rs.fechaRemision) = :year AND MONTH(rs.fechaRemision) = :month', { year: currentYear, month: currentMonth })
     .orderBy('rs.fechaRemision', 'DESC')
+    .limit(5)
     .getRawMany();
 }
 

@@ -4,5 +4,6 @@ export enum EstadoCompraEnum{
     PAU = "PAUSADO",
     PAR = "ENTREGA PARCIAL",
     LIS = "LISTO PARA ENTREGA",
-    ENT = "ENTREGADO"
+    ENT = "ENTREGADO",
+    CAN = "CANCELADO"
 }
