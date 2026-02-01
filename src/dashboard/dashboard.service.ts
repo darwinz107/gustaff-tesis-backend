@@ -170,7 +170,7 @@ export class DashboardService {
   }
 
   
-  async getUltimasOrdenes(limit = 5) {
+  async getUltimasOrdenes(limit:number) {
     const currentDate = new Date();
     const currentMonth = currentDate.getMonth() + 1;
     const currentYear = currentDate.getFullYear();
@@ -181,22 +181,33 @@ export class DashboardService {
       .innerJoin('o.userSolicitante', 'u')
       .innerJoin('o.estadoTrabajo', 'estado')
       .where('YEAR(o.fechaInicio) = :year AND MONTH(o.fechaInicio) = :month', { year: currentYear, month: currentMonth })
+     
       .select([
         'o.id AS id',
         'o.NumOrden AS numOrden',
         'o.fechaInicio as fechaInicio',
-        'o.fechaFinal ',
+        'o.fechaFinal',
         'u.name AS solicitante',
         'estado.estado as estado',
         'o.DescripcionTrabajo AS descripcion'
       ])
-      .orderBy('o.id', 'DESC')
+       .addSelect(`
+        CASE 
+        WHEN estado.estado = '${EstadoTrabajoEnum.VEN}' THEN 1
+        WHEN estado.estado = '${EstadoTrabajoEnum.PROC}' THEN 2
+        WHEN estado.estado = '${EstadoTrabajoEnum.PEN}' THEN 3
+        WHEN estado.estado = '${EstadoTrabajoEnum.FIN}' THEN 4
+        ELSE 5
+        END
+        `,'prioridad')
+      .orderBy('prioridad','ASC')
+      .addOrderBy('o.id', 'DESC')
       .limit(limit)
       .getRawMany();
   }
 
  
-  async getUltimasSolicitudes(limit = 5) {
+  async getUltimasSolicitudes(limit:number) {
     const currentDate = new Date();
     const currentMonth = currentDate.getMonth() + 1;
     const currentYear = currentDate.getFullYear();
@@ -210,19 +221,29 @@ export class DashboardService {
       .innerJoin('s.estadoCompra', 'e')
       
       .where('YEAR(s.fechaRemision) = :year AND MONTH(s.fechaRemision) = :month', { year: currentYear, month: currentMonth })
+     
       .select([
         's.id as id',
         's.numOrden ',
         's.fechaRemision ',
         'o.NumOrden AS numOrdenTrabajo',
         's.Autoriza AS userAutoriza',
-        //'s.Destino AS destino',
+        
         'u.name AS solicitante',
         'e.estado AS estado'
       ])
+       .addSelect(`
+        CASE 
+        WHEN e.estado = '${EstadoCompraEnum.LIS}' THEN 1
+        WHEN e.estado = '${EstadoCompraEnum.PRO}' THEN 2
+        WHEN e.estado = '${EstadoCompraEnum.ENT}' THEN 3
+        ELSE 4
+        END
+        `,'prioridad')
       .addSelect('SUM(is.cantidad)','total_items')
       .groupBy('s.id')
-      .orderBy('s.id', 'DESC')
+      .orderBy('prioridad','ASC')
+      .addOrderBy('s.id', 'DESC')
       .limit(limit)
       .getRawMany();
   };
