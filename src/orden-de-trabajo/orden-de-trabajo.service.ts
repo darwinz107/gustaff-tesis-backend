@@ -305,23 +305,6 @@ const existOrdenTrabajo = await this.solicitudOrdenRepository.findOne({where:{id
         }
         console.log(`La orden de trabajo ${orden.NumOrden} tiene una solicitud de compra asociada que ha sido cancelada.`);
      }
-  } else /*if (fechaActual.getTime() <= fechaFinal.getTime() && fechaActual.getTime() >= fechaInicio.getTime())*/ {
-    orden.estadoTrabajo = estadoEnProceso;
-     console.log('Verificación de en procesos ejecutada...');
-     
-     if(orden.estadoUso.uso === true){
-        const smAsociada =  await this.solicitudDeCompraRepository.findOne({where:{numOrdenTrabajo:{id:orden.id}}});
-        if(smAsociada){
-          const enProceso = await this.estadoCompraRepository.findOne({where:{estado:EstadoCompraEnum.PRO}});
-          if(!enProceso){
-          throw new NotFoundException("No se encontro el estado de compra EN PROCESO");
-          }
-          smAsociada.estadoCompra = enProceso;
-          await this.solicitudDeCompraRepository.save(smAsociada);
-        }
-        console.log(`La orden de trabajo ${orden.NumOrden} tiene una solicitud de compra asociada que está en proceso.`);
-     }
-    
   } /*else if (fechaActual.getTime() < fechaInicio.getTime()) {
     orden.estadoTrabajo = estadoPendiente;
   }*/

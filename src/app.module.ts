@@ -47,7 +47,7 @@ JwtModule.register({
     signOptions:{expiresIn:'10h'}
   }),TypeOrmModule.forRoot({
      type: 'mysql',
-      host: 'localhost',
+       host: 'localhost',
       port: 3306,
       username: process.env.user,
       password: process.env.pass,
