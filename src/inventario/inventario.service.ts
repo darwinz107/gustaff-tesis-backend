@@ -153,8 +153,8 @@ let compras:{}[] =[];
       "numOrdenTrabajo.NumOrden"
     ])
   .where("solicitudDeCompra.id =:id",{id:id})
-  .orWhere("estadoCompra.estado =:estado",{estado:EstadoCompraEnum.PAR})
-  .orWhere("estadoCompra.estado =:estado",{estado:EstadoCompraEnum.PRO})
+  //.orWhere("estadoCompra.estado =:estado",{estado:EstadoCompraEnum.PAR})
+  .andWhere("estadoCompra.estado =:estado",{estado:EstadoCompraEnum.PRO})
   .getOne();
 
 if(!registroEntradaInfo){
