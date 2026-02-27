@@ -21,10 +21,10 @@ export class DashboardController {
   }
 
   @Get('ultimas-ordenes')
-  getUltimasOrdenes(@Query('limit') limit?: string) { return this.svc.getUltimasOrdenes(Number(limit) || 5); }
+  getUltimasOrdenes(@Query('limit') limit?: string) { return this.svc.getUltimasOrdenes(Number(limit) || 7); }
 
   @Get('ultimas-solicitudes')
-  getUltimasSolicitudes(@Query('limit') limit?: string) { return this.svc.getUltimasSolicitudes(Number(limit) || 5); }
+  getUltimasSolicitudes(@Query('limit') limit?: string) { return this.svc.getUltimasSolicitudes(Number(limit) || 7); }
 
   @Get('entradas-por-dia')
   getActaEntradaPorDia(@Query('days') days?: string) {

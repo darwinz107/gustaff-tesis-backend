@@ -29,7 +29,7 @@ export class SolicitudDeCompraService implements OnModuleInit{
 ){}
 
  async onModuleInit() {
-     const lgt = [EstadoCompraEnum.PRO,EstadoCompraEnum.PAU,EstadoCompraEnum.PAR,EstadoCompraEnum.LIS,EstadoCompraEnum.ENT];
+     const lgt = [EstadoCompraEnum.PRO,EstadoCompraEnum.PAU,EstadoCompraEnum.PAR,EstadoCompraEnum.LIS,EstadoCompraEnum.ENT,EstadoCompraEnum.CAN];
      
      for(const estado of lgt){
         const findEstado = await this.estadoCompraRepository.findOne({where:{estado:estado}});
