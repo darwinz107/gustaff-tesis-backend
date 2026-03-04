@@ -88,8 +88,8 @@ export class OrdenDeTrabajoController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.ordenDeTrabajoService.remove(+id);
+  remove(@Param('id') id: string, @Body() datos: { motivo: string }) {
+    return this.ordenDeTrabajoService.remove(+id, datos.motivo);
   }
 
   @Post('filter')

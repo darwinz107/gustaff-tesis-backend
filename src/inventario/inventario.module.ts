@@ -9,6 +9,7 @@ import { ItemsSalida } from './entities/itemsSalida.entity';
 import { ItemsSolicitados } from './entities/itemsSolicitados.entity';
 import { RegistroEntrada } from './entities/registroEntrada.entity';
 import { ItemsEntrada } from './entities/itemsEntrada.entity';
+import { MotivosEliminacion } from './entities/motivos-eliminacion.entity';
 import { SolicitudDeCompraModule } from 'src/solicitud-de-compra/solicitud-de-compra.module';
 import { AdminModule } from 'src/admin/admin.module';
 import { Bodega } from 'src/parametro/entities/bodega';
@@ -19,7 +20,7 @@ import { Maquina } from 'src/parametro/entities/maquina.entity';
 import { User } from 'src/users/entities/user.entity';
 
 @Module({
-  imports:[TypeOrmModule.forFeature([Inventario,Proovedores,ItemsSolicitados,RegistroSalida,ItemsSalida,RegistroEntrada,ItemsEntrada,Bodega,Seccion,Percha,Maquina,User]),SolicitudDeCompraModule,AdminModule,MailModule],
+  imports:[TypeOrmModule.forFeature([Inventario,Proovedores,ItemsSolicitados,RegistroSalida,ItemsSalida,RegistroEntrada,ItemsEntrada,MotivosEliminacion,Bodega,Seccion,Percha,Maquina,User]),SolicitudDeCompraModule,AdminModule,MailModule],
   controllers: [InventarioController],
   providers: [InventarioService],
   exports:[]

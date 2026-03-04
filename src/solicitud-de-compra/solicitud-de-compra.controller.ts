@@ -53,8 +53,8 @@ export class SolicitudDeCompraController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.solicitudDeCompraService.remove(+id);
+  remove(@Param('id') id: string, @Body() datos: { motivo: string }) {
+    return this.solicitudDeCompraService.remove(+id, datos.motivo);
   }
 
   @Get('buscar-solicitudes')

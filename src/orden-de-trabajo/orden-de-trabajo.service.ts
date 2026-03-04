@@ -36,6 +36,7 @@ import { Periodo } from '../parametro/entities/periodo.entity';
 import { Query } from 'mysql2/typings/mysql/lib/protocol/sequences/Query';
 import { EstadoCompra } from 'src/solicitud-de-compra/entities/estadoCompra';
 import { EstadoCompraEnum } from 'src/solicitud-de-compra/enums/estadoCompra.enum';
+import { MotivosEliminacion } from 'src/inventario/entities/motivos-eliminacion.entity';
 
 
 
@@ -56,6 +57,7 @@ export class OrdenDeTrabajoService implements OnModuleInit{
     @InjectRepository(Fases) private readonly fasesRepository: Repository<Fases>,
     @InjectRepository(TipoMantenimiento) private readonly tipoMantenimientoRepository: Repository<TipoMantenimiento>,
     @InjectRepository(Periodo) private readonly periodoRepository: Repository<Periodo>,
+    @InjectRepository(MotivosEliminacion) private readonly motivosEliminacionRepository: Repository<MotivosEliminacion>,
     private dataSource:DataSource,
     private readonly mailService:MailService,
     private schedulerRegistry: SchedulerRegistry,
@@ -643,8 +645,11 @@ return new NotFoundException("No existen ordenes de trabajo");
 
     const solicitud = await this.solicitudOrdenRepository.createQueryBuilder('solicitud')
       .leftJoin('solicitud.userSolicitante', 'userSolicitante')
+      .leftJoin('userSolicitante.cargoId', 'solicitanteCargo')
       .leftJoin('solicitud.userReceptor', 'userReceptor')
+      .leftJoin('userReceptor.cargoId', 'receptorCargo')
       .leftJoin('solicitud.userTecnico', 'userTecnico')
+      .leftJoin('userTecnico.cargoId', 'technicoCargo')
       .select([
         'solicitud.id',
         'solicitud.NumOrden',
@@ -659,8 +664,11 @@ return new NotFoundException("No existen ordenes de trabajo");
         'solicitud.Maquina',
         'solicitud.DescripcionTrabajo',
         'userSolicitante.name',
+        'solicitanteCargo.name',
         'userReceptor.name',
-        'userTecnico.name'
+        'receptorCargo.name',
+        'userTecnico.name',
+        'technicoCargo.name'
       ])
       .where('solicitud.id = :id', { id })
       .getOne();
@@ -827,7 +835,7 @@ return new NotFoundException("No existen ordenes de trabajo");
       }  
   }
 
- async remove(id: number) {
+ async remove(id: number, motivo: string) {
 
   
     const queryRunner = this.dataSource.createQueryRunner();
@@ -840,6 +848,13 @@ return new NotFoundException("No existen ordenes de trabajo");
        if (!ordenTrabajo) {
         throw new NotFoundException(`No se encontró la orden de trabajo con ID ${id}`);
       }
+
+      // Guardar motivo de eliminación con el NumOrden del ordenTrabajo
+      const motivoEliminacion = this.motivosEliminacionRepository.create({
+        asunto: motivo,
+        numDocumento: ordenTrabajo.NumOrden
+      });
+      await queryRunner.manager.save(motivoEliminacion);
 
     const fases = await queryRunner.manager.find(Fases,{where:{jornada:{OrdenDeTrabajoId:{id}}}});
 
