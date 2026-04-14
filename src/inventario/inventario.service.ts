@@ -34,6 +34,7 @@ import { FiltrarInventarioDto } from './dto/filtrar-inventario.dto';
 import { CreateActaSalidaSinSMDto } from './dto/create-acta-salida-sm.dto';
 import { CreateItemsSalidaSinSMDto } from './dto/create-items-salida-sinSM.dto';
 import { Maquina } from 'src/parametro/entities/maquina.entity';
+import { MotivosEliminacion } from './entities/motivos-eliminacion.entity';
 
 
 @Injectable()
@@ -48,6 +49,7 @@ export class InventarioService {
                @InjectRepository(Bodega) private readonly bodegaRepository:Repository<Bodega>,
                @InjectRepository(Seccion) private readonly seccionRepository:Repository<Seccion>,
                @InjectRepository(Percha) private readonly perchaRepository:Repository<Percha>,
+               @InjectRepository(MotivosEliminacion) private readonly motivosEliminacionRepository:Repository<MotivosEliminacion>,
                private readonly mailService:MailService,
                    private readonly adminService: AdminService,
     
@@ -923,13 +925,16 @@ console.log(findItem);
     .createQueryBuilder('registroSalida')
     .leftJoin('registroSalida.itemSalida', 'itemSalida')
     .leftJoin('registroSalida.entrega', 'entrega')
+    .leftJoin('entrega.cargoId', 'entregaCargo')
     .leftJoin('itemSalida.inventario', 'inventario');
 
   
     qb.leftJoin('registroSalida.numSolicitudCompra', 'numSolicitudCompra')
       .leftJoin('numSolicitudCompra.numOrdenTrabajo', 'numOrdenTrabajo')
       .leftJoin('numOrdenTrabajo.userSolicitante', 'userSolicitante')
+      .leftJoin('userSolicitante.cargoId', 'solicitanteCargo')
       .leftJoin('registroSalida.recibeSinSM', 'recibe')
+      .leftJoin('recibe.cargoId', 'recibeCargo')
       .select([
         'registroSalida.id',
         'registroSalida.numActa',
@@ -937,9 +942,12 @@ console.log(findItem);
         'registroSalida.descripcion',
         'userSolicitante.id',
         'userSolicitante.name',
+        'solicitanteCargo.name',
          'recibe.id',
         'recibe.name',
+        'recibeCargo.name',
         'entrega.name',
+        'entregaCargo.name',
         'numSolicitudCompra.id',
         'numSolicitudCompra.numOrden',
         'numOrdenTrabajo.id',
@@ -1116,7 +1124,9 @@ console.log(findItem);
     
     .leftJoin('numSolicitudCompra.numOrdenTrabajo','numOrdenTrabajo')
     .leftJoin('numOrdenTrabajo.userSolicitante','userSolicitante')
+    .leftJoin('userSolicitante.cargoId','solicitanteCargo')
     .leftJoin('registroEntrada.recibe','recibe')
+    .leftJoin('recibe.cargoId','recibeCargo')
     .leftJoin('registroEntrada.proovedor','proovedor')
     .leftJoin('registroEntrada.itemEntrada','itemEntrada')
     .leftJoin('itemEntrada.item','inventario')
@@ -1127,8 +1137,10 @@ console.log(findItem);
       'registroEntrada.factura',
       'registroEntrada.total',
       'userSolicitante.name',
+      'solicitanteCargo.name',
       'recibe.id',
       'recibe.name',
+      'recibeCargo.name',
       'proovedor.id',
       'proovedor.nombre',
       'numSolicitudCompra.id',
@@ -1558,7 +1570,7 @@ async filtrarInventarios(filtros: FiltrarInventarioDto) {
     }
   }
 
-  async deleteActaEntrada(id: number) {
+  async deleteActaEntrada(id: number, motivo: string) {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -1573,6 +1585,13 @@ async filtrarInventarios(filtros: FiltrarInventarioDto) {
       if (!registroEntrada) {
         throw new NotFoundException('No se encontró el acta de entrada con el ID proporcionado');
       }
+
+      // Guardar motivo de eliminación con el numActa del registro
+      const motivoEliminacion = this.motivosEliminacionRepository.create({
+        asunto: motivo,
+        numDocumento: registroEntrada.numActa
+      });
+      await queryRunner.manager.save(motivoEliminacion);
 
       // Si hay una solicitud de compra asociada, cambiar su estado a "EN PROCESO"
       // EXCEPTO si el estado es "ENTREGADO"
@@ -1620,7 +1639,7 @@ async filtrarInventarios(filtros: FiltrarInventarioDto) {
     }
   }
 
-  async deleteActaSalida(id: number) {
+  async deleteActaSalida(id: number, motivo: string) {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -1635,6 +1654,13 @@ async filtrarInventarios(filtros: FiltrarInventarioDto) {
       if (!registroSalida) {
         throw new NotFoundException('No se encontró el acta de salida con el ID proporcionado');
       }
+
+      // Guardar motivo de eliminación con el numActa del registro
+      const motivoEliminacion = this.motivosEliminacionRepository.create({
+        asunto: motivo,
+        numDocumento: registroSalida.numActa
+      });
+      await queryRunner.manager.save(motivoEliminacion);
 
       // Si hay una solicitud de compra asociada, cambiar su estado a "EN PROCESO"
       // EXCEPTO si el estado es "ENTREGADO"

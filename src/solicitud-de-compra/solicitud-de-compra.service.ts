@@ -10,6 +10,7 @@ import { ItemsSolicitados } from 'src/inventario/entities/itemsSolicitados.entit
 import { EstadoCompra } from './entities/estadoCompra';
 import { EstadoCompraEnum } from './enums/estadoCompra.enum';
 import { Inventario } from 'src/inventario/entities/inventario.entity';
+import { MotivosEliminacion } from 'src/inventario/entities/motivos-eliminacion.entity';
 import { CreateItemsSolicitadosDto } from 'src/inventario/dto/create-items-solicitados.dto';
 import { EstadoUso } from 'src/orden-de-trabajo/entities/estadoUso';
 import { MailService } from 'src/mail/mail.service';
@@ -23,8 +24,7 @@ export class SolicitudDeCompraService implements OnModuleInit{
   @InjectRepository(SolicitudOrden) private readonly ordenDeTrabajoRepository:Repository<SolicitudOrden>,
   @InjectRepository(ItemsSolicitados) private readonly itemsSolicitadosRepository:Repository<ItemsSolicitados>,
   @InjectRepository(EstadoCompra) private readonly estadoCompraRepository:Repository<EstadoCompra>,
-  @InjectRepository(Inventario) private readonly inventarioRepository:Repository<Inventario>,
-      private dataSource:DataSource,
+  @InjectRepository(Inventario) private readonly inventarioRepository:Repository<Inventario>,  @InjectRepository(MotivosEliminacion) private readonly motivosEliminacionRepository:Repository<MotivosEliminacion>,      private dataSource:DataSource,
       private readonly mailService:MailService,
 ){}
 
@@ -366,6 +366,9 @@ return {msj:"Solicitud de compra creada",validate:true}
     const solicitudesCompra = await this.solicitudDeCompraRepository.createQueryBuilder('solicitudCompra')
     .leftJoin('solicitudCompra.numOrdenTrabajo','ordenTrabajo')
     .leftJoin('ordenTrabajo.userSolicitante','userSolicitante')
+    .leftJoin('userSolicitante.cargoId','solicitanteCargo')
+    .leftJoinAndSelect("User", "usuarioAutoriza", "usuarioAutoriza.name = solicitudCompra.Autoriza")
+    .leftJoin('usuarioAutoriza.cargoId','autorizaCargo')
     .leftJoin('solicitudCompra.estadoCompra','estadoCompra')
     .leftJoin('solicitudCompra.itemSolicitados','itemSolicitados')
     .select([
@@ -384,6 +387,10 @@ return {msj:"Solicitud de compra creada",validate:true}
       'ordenTrabajo.Maquina',
       //'userSolicitante.id',
       'userSolicitante.name',
+      'solicitanteCargo.name',
+      'usuarioAutoriza.id',
+      'usuarioAutoriza.name',
+      'autorizaCargo.name',
       'estadoCompra.id',
       'estadoCompra.estado',
       'itemSolicitados.id',
@@ -563,7 +570,7 @@ return {msj:"Solicitud de compra creada",validate:true}
     }
   }
 
- async remove(id: number) {
+ async remove(id: number, motivo: string) {
   console.log("Eliminando solicitud de compra con ID:", id);
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -578,6 +585,13 @@ return {msj:"Solicitud de compra creada",validate:true}
       if (!solicitud) {
         throw new NotFoundException(`No se encontró la solicitud de compra con ID ${id}`);
       }
+
+      // Guardar motivo de eliminación con el numOrden de la solicitud
+      const motivoEliminacion = this.motivosEliminacionRepository.create({
+        asunto: motivo,
+        numDocumento: solicitud.numOrden
+      });
+      await queryRunner.manager.save(motivoEliminacion);
 
       // Eliminar todos los items solicitados de esta solicitud
       const itemsEliminados = await queryRunner.manager.delete(ItemsSolicitados, {

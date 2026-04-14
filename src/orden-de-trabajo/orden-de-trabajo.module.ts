@@ -15,11 +15,12 @@ import { MailModule } from 'src/mail/mail.module';
 import { TipoMantenimiento } from 'src/parametro/entities/tipoMantenimiento.entity';
 import { Periodo } from 'src/parametro/entities/periodo.entity';
 import { EstadoCompra } from 'src/solicitud-de-compra/entities/estadoCompra';
+import { MotivosEliminacion } from 'src/inventario/entities/motivos-eliminacion.entity';
 
 
 
 @Module({
-  imports:[TypeOrmModule.forFeature([SolicitudOrden,EstadoTrabajo,SolicitudDeCompra,EstadoUso,Jornada,Fases,TipoMantenimiento,Periodo,EstadoCompra]),UsersModule,MailModule],
+  imports:[TypeOrmModule.forFeature([SolicitudOrden,EstadoTrabajo,SolicitudDeCompra,EstadoUso,Jornada,Fases,TipoMantenimiento,Periodo,EstadoCompra,MotivosEliminacion]),UsersModule,MailModule],
   controllers: [OrdenDeTrabajoController],
   providers: [OrdenDeTrabajoService],
   exports:[TypeOrmModule]

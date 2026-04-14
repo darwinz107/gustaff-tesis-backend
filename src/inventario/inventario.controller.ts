@@ -49,13 +49,13 @@ export class InventarioController {
   }
 
   @Delete('acta-entrada/:id')
-  deleteActaEntrada(@Param('id') id: string) {
-    return this.inventarioService.deleteActaEntrada(+id);
+  deleteActaEntrada(@Param('id') id: string, @Body() datos: { motivo: string }) {
+    return this.inventarioService.deleteActaEntrada(+id, datos.motivo);
   }
 
   @Delete('acta-salida/:id')
-  deleteActaSalida(@Param('id') id: string) {
-    return this.inventarioService.deleteActaSalida(+id);
+  deleteActaSalida(@Param('id') id: string, @Body() datos: { motivo: string }) {
+    return this.inventarioService.deleteActaSalida(+id, datos.motivo);
   }
 
   @Post('acta-salida/sin-orden/crear')
